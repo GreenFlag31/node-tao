@@ -1,19 +1,14 @@
-import { Cacher } from "./storage.ts";
-import { compile } from "./compile.ts";
-import { compileBody, compileToString } from "./compile-string.ts";
-import { defaultConfig } from "./config.ts";
-import { parse } from "./parse.ts";
-import {
-  render,
-  renderAsync,
-  renderString,
-  renderStringAsync,
-} from "./render.ts";
-import { EtaError, RuntimeErr } from "./err.ts";
-import { TemplateFunction } from "./compile.ts";
+import { Cacher } from "./storage";
+import { compile } from "./compile";
+import { compileBody, compileToString } from "./compile-string";
+import { defaultConfig } from "./config";
+import { parse } from "./parse";
+import { render, renderAsync, renderString, renderStringAsync } from "./render";
+import { EtaError, RuntimeErr } from "./err";
+import { TemplateFunction } from "./compile";
 
 /* TYPES */
-import type { EtaConfig, Options } from "./config.ts";
+import type { EtaConfig, Options } from "./config";
 /* END TYPES */
 
 export class Eta {
@@ -43,10 +38,7 @@ export class Eta {
   templatesAsync: Cacher<TemplateFunction> = new Cacher<TemplateFunction>({});
 
   // resolvePath takes a relative path from the "views" directory
-  resolvePath:
-    | null
-    | ((this: Eta, template: string, options?: Partial<Options>) => string) =
-      null;
+  resolvePath: null | ((this: Eta, template: string, options?: Partial<Options>) => string) = null;
   readFile: null | ((this: Eta, path: string) => string) = null;
 
   // METHODS
@@ -62,21 +54,16 @@ export class Eta {
   loadTemplate(
     name: string,
     template: string | TemplateFunction, // template string or template function
-    options?: { async: boolean },
+    options?: { async: boolean }
   ): void {
     if (typeof template === "string") {
-      const templates = options && options.async
-        ? this.templatesAsync
-        : this.templatesSync;
+      const templates = options && options.async ? this.templatesAsync : this.templatesSync;
 
       templates.define(name, this.compile(template, options));
     } else {
       let templates = this.templatesSync;
 
-      if (
-        template.constructor.name === "AsyncFunction" ||
-        (options && options.async)
-      ) {
+      if (template.constructor.name === "AsyncFunction" || (options && options.async)) {
         templates = this.templatesAsync;
       }
 

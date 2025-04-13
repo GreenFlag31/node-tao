@@ -1,8 +1,8 @@
 /* TYPES */
 
-import type { Options } from "./config.ts";
-import type { AstObject } from "./parse.ts";
-import type { Eta } from "./core.ts";
+import type { AstObject } from "./parse";
+import type { Eta } from "./core";
+import { Options } from "./config";
 
 /* END TYPES */
 
@@ -10,11 +10,7 @@ import type { Eta } from "./core.ts";
  * Compiles a template string to a function string. Most often users just use `compile()`, which calls `compileToString` and creates a new function using the result
  */
 
-export function compileToString(
-  this: Eta,
-  str: string,
-  options?: Partial<Options>,
-): string {
+export function compileToString(this: Eta, str: string, options?: Partial<Options>): string {
   const config = this.config;
   const isAsync = options && options.async;
 
@@ -38,15 +34,13 @@ let __eta = {res: "", e: this.config.escapeFunction, f: this.config.filterFuncti
 function layout(path, data) {
   __eta.layout = path;
   __eta.layoutData = data;
-}${config.debug ? "try {" : ""}${
-    config.useWith ? "with(" + config.varName + "||{}){" : ""
-  }
+}${config.debug ? "try {" : ""}${config.useWith ? "with(" + config.varName + "||{}){" : ""}
 
 ${compileBody.call(this, buffer)}
 if (__eta.layout) {
-  __eta.res = ${
-    isAsync ? "await includeAsync" : "include"
-  } (__eta.layout, {...${config.varName}, body: __eta.res, ...__eta.layoutData});
+  __eta.res = ${isAsync ? "await includeAsync" : "include"} (__eta.layout, {...${
+    config.varName
+  }, body: __eta.res, ...__eta.layoutData});
 }
 ${config.useWith ? "}" : ""}${
     config.debug

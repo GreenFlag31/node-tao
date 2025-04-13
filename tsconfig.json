@@ -1,20 +1,46 @@
+// {
+//   "compilerOptions": {
+//     "strict": true,
+//     "lib": ["ES2022", "DOM"],
+//     "target": "ESNext",
+//     "module": "ESNext",
+//     "moduleResolution": "NodeNext",
+//     "allowImportingTsExtensions": true,
+//     "forceConsistentCasingInFileNames": true,
+//     "skipLibCheck": true,
+//     "declaration": true,
+//     "declarationMap": true,
+//     "declarationDir": "dist/types",
+//     "outDir": "dist",
+//     "noUnusedLocals": true,
+//     "noUnusedParameters": true,
+//     "esModuleInterop": true
+//   },
+//   "files": ["src/index.ts", "src/browser.ts"]
+// }
+
 {
+  "include": ["./src/**/*"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
-    "strict": true,
-    "lib": ["ES2022", "DOM"],
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "ES6",
+    "lib": ["ES6"],
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "allowImportingTsExtensions": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
+    "types": ["node", "jest"],
+
     "declaration": true,
     "declarationMap": true,
-    "declarationDir": "dist/types",
+    "sourceMap": true,
     "outDir": "dist",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "esModuleInterop": true
-  },
-  "files": ["src/index.ts", "src/browser.ts"]
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "skipLibCheck": true
+  }
 }

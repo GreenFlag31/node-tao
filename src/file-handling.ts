@@ -1,12 +1,10 @@
-import { EtaFileResolutionError } from "./err.ts";
-
+import { EtaFileResolutionError } from "./err";
 import * as path from "node:path";
-
 import * as fs from "node:fs";
 
 /* TYPES */
-import type { Eta as EtaCore } from "./core.ts";
-import type { Options } from "./config.ts";
+import type { Eta as EtaCore } from "./core";
+import type { Options } from "./config";
 /* END TYPES */
 
 export function readFile(this: EtaCore, path: string): string {
@@ -29,7 +27,7 @@ export function readFile(this: EtaCore, path: string): string {
 export function resolvePath(
   this: EtaCore,
   templatePath: string,
-  options?: Partial<Options>,
+  options?: Partial<Options>
 ): string {
   let resolvedFilePath = "";
 
@@ -40,9 +38,8 @@ export function resolvePath(
   }
 
   const baseFilePath = options && options.filepath;
-  const defaultExtension = this.config.defaultExtension === undefined
-    ? ".eta"
-    : this.config.defaultExtension;
+  const defaultExtension =
+    this.config.defaultExtension === undefined ? ".eta" : this.config.defaultExtension;
 
   // how we index cached template paths
   const cacheIndex = JSON.stringify({
@@ -81,9 +78,7 @@ export function resolvePath(
 
     return resolvedFilePath;
   } else {
-    throw new EtaFileResolutionError(
-      `Template '${templatePath}' is not in the views directory`,
-    );
+    throw new EtaFileResolutionError(`Template '${templatePath}' is not in the views directory`);
   }
 }
 

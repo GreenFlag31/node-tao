@@ -1,10 +1,11 @@
-import { ParseErr } from "./err.ts";
-import { trimWS } from "./utils.ts";
+import { ParseErr } from "./err";
+import { trimWS } from "./utils";
 
 /* TYPES */
 
-import type { Eta } from "./core.ts";
+import type { Eta } from "./core";
 
+// Raw, execute, interpolate
 export type TagType = "r" | "e" | "i" | "";
 
 export interface TemplateObject {
@@ -17,8 +18,7 @@ export type AstObject = string | TemplateObject;
 
 /* END TYPES */
 
-const templateLitReg =
-  /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
+const templateLitReg = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
 
 const singleQuoteReg = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
 
@@ -44,6 +44,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
   const parseOptions = config.parse;
 
   if (config.plugins) {
+    // c'est un tableau vide!
     for (let i = 0; i < config.plugins.length; i++) {
       const plugin = config.plugins[i];
       if (plugin.processTemplate) {
@@ -75,7 +76,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
         strng,
         config,
         trimLeftOfNextStr, // this will only be false on the first str, the next ones will be null or undefined
-        shouldTrimRightOfString,
+        shouldTrimRightOfString
       );
 
       if (strng) {
@@ -89,13 +90,9 @@ export function parse(this: Eta, str: string): Array<AstObject> {
     }
   }
 
-  const prefixes = [
-    parseOptions.exec,
-    parseOptions.interpolate,
-    parseOptions.raw,
-  ].reduce(function (
+  const prefixes = [parseOptions.exec, parseOptions.interpolate, parseOptions.raw].reduce(function (
     accumulator,
-    prefix,
+    prefix
   ) {
     if (accumulator && prefix) {
       return accumulator + "|" + escapeRegExp(prefix);
@@ -106,16 +103,17 @@ export function parse(this: Eta, str: string): Array<AstObject> {
       // prefix and accumulator are both falsy
       return accumulator;
     }
-  }, "");
+  },
+  "");
 
   const parseOpenReg = new RegExp(
     escapeRegExp(config.tags[0]) + "(-|_)?\\s*(" + prefixes + ")?\\s*",
-    "g",
+    "g"
   );
 
   const parseCloseReg = new RegExp(
     "'|\"|`|\\/\\*|(\\s*(-|_)?" + escapeRegExp(config.tags[1]) + ")",
-    "g",
+    "g"
   );
 
   let m;
@@ -142,13 +140,14 @@ export function parse(this: Eta, str: string): Array<AstObject> {
 
         trimLeftOfNextStr = closeTag[2];
 
-        const currentType: TagType = prefix === parseOptions.exec
-          ? "e"
-          : prefix === parseOptions.raw
-          ? "r"
-          : prefix === parseOptions.interpolate
-          ? "i"
-          : "";
+        const currentType: TagType =
+          prefix === parseOptions.exec
+            ? "e"
+            : prefix === parseOptions.raw
+            ? "r"
+            : prefix === parseOptions.interpolate
+            ? "i"
+            : "";
 
         currentObj = { t: currentType, val: content };
         break;
