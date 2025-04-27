@@ -1,10 +1,73 @@
-import type { EtaConfig } from "./config";
+import type { EtaConfig } from "./config copy";
+import { escMap } from "./const";
+import { Parse, TagType } from "./interfaces";
+import { escapeRegExp } from "./parse copy";
+
+function debugAtCompilationStart(debug: boolean, value: string) {
+  if (!debug) return "";
+
+  return `, line: 1, templateStr: "${convertToCR(value)}"`;
+}
+
+function convertToCR(value: string) {
+  return value.replace(/\\|'/g, "\\$&").replace(/\r\n|\n|\r/g, "\\n");
+}
+
+function getCurrentPrefixType(prefix: string, parse: Parse): TagType {
+  const parseOptions: Record<string, TagType> = {
+    [parse.exec]: "execute",
+    [parse.raw]: "raw",
+    [parse.interpolate]: "interpolate",
+  };
+
+  return parseOptions[prefix] ?? "";
+}
+
+function compileContent(type: TagType, content: string, config: EtaConfig) {
+  const { autoEscape, autoFilter } = config;
+
+  if (type === "raw") {
+    if (autoFilter) {
+      content = `__eta.f(${content})`;
+    }
+
+    return `__eta.res+=${content}\n`;
+  }
+
+  if (type === "interpolate") {
+    if (autoFilter) {
+      content = `__eta.f(${content})`;
+    }
+
+    if (autoEscape) {
+      content = `__eta.e(${content})`;
+    }
+
+    return `__eta.res+=${content}\n`;
+  }
+
+  if (type === "execute") {
+    return `${content}\n`;
+  }
+}
+
+function buildPrefixRegex(parseOptions: Parse) {
+  const options: string[] = [];
+
+  for (const prefix of Object.values(parseOptions)) {
+    if (!prefix) continue;
+
+    const prefixEscaped = escapeRegExp(prefix);
+    options.push(prefixEscaped);
+  }
+
+  return options.join("|");
+}
 
 /**
  * Takes a string within a template and trims it, based on the preceding tag's whitespace control and `config.autoTrim`
  */
-
-export function trimWS(
+function trimWS(
   str: string,
   config: EtaConfig,
   wsLeft: string | false,
@@ -57,30 +120,17 @@ export function trimWS(
   return str;
 }
 
-/**
- * A map of special HTML characters to their XML-escaped equivalents
- */
-
-const escMap: { [key: string]: string } = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
 function replaceChar(s: string): string {
   return escMap[s];
 }
 
 /**
  * XML-escapes an input value after converting it to a string
- *
  * @param str - Input value (usually a string)
  * @returns XML-escaped string
  */
 
-export function XMLEscape(str: unknown): string {
+function XMLEscape(str: unknown): string {
   // To deal with XSS. Based on Escape implementations of Mustache.JS and Marko, then customized.
   const newStr = String(str);
   if (/[&<>"']/.test(newStr)) {
@@ -89,3 +139,13 @@ export function XMLEscape(str: unknown): string {
     return newStr;
   }
 }
+
+export {
+  trimWS,
+  XMLEscape,
+  convertToCR,
+  debugAtCompilationStart,
+  getCurrentPrefixType,
+  compileContent,
+  buildPrefixRegex,
+};

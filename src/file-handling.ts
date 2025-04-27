@@ -5,6 +5,7 @@ import * as fs from "node:fs";
 /* TYPES */
 import type { Eta as EtaCore } from "./core";
 import type { Options } from "./config";
+import { log } from "node:console";
 /* END TYPES */
 
 export function readFile(this: EtaCore, path: string): string {

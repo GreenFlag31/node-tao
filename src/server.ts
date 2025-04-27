@@ -1,24 +1,32 @@
-import { time, timeEnd } from "node:console";
 import path from "node:path";
-import { Eta } from ".";
+import { Eta } from "./index copy";
+import { Eta as EtaOriginal } from "./index";
 import express from "express";
+import { log, time, timeEnd } from "node:console";
 
 const app = express();
 const PORT = 3000;
-const eta = new Eta({ views: path.join(__dirname, "templates") });
 
-app.get("/", async (req, res) => {
-  const renderedTemplate = await eta.renderAsync("./simple", {
-    name: `ASYNC CONTENT BELOW!
+const templatesPath = path.join(__dirname, "templates");
+const eta = new Eta({ views: templatesPath });
+const etaOrigin = new EtaOriginal({ views: templatesPath });
 
-
-
-HI FROM ASYNC`,
+app.get("/", (req, res) => {
+  const absolutePathTest = path.join(templatesPath, "./simple");
+  const renderedTemplate = eta.render("simple", {
+    name: `Ben`,
   });
 
-  // await eta.renderStringAsync("Hi <%= it.name %>", { name: "Ada Lovelace" })
   res.status(200).send(renderedTemplate);
 });
+
+function test() {
+  const renderedTemplate = etaOrigin.render("layout", {
+    name: `Ben`,
+  });
+}
+
+test();
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
