@@ -23,6 +23,6 @@ export interface Parse {
   raw: string;
 }
 
-export type TemplateFunction = (data?: object, options?: Partial<Options>) => string;
+export type TemplateFunction = (data: object, isAsync: boolean) => string;
 
 export type AstObject = string | TemplateData;

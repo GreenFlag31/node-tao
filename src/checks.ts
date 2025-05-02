@@ -1,15 +1,6 @@
-// This is a new file, not contained in the original project.
-// Having small functions does not only improves readability and
-// reduces bugs, it's also make them testable.
 import path from "node:path";
 import { EtaFileResolutionError } from "./err";
-import { DEFAULT_EXTENSION } from "./const";
-
-function checkIfViewsExists(views: string | undefined) {
-  if (!views) {
-    throw new EtaFileResolutionError("Views directory is not defined");
-  }
-}
+import { DEFAULT_EXTENSION, DYNAMICAL_TEMPLATE_PREFIX } from "./const";
 
 function getPathWithExtension(filePath: string, defaultExtension = DEFAULT_EXTENSION) {
   const pathContainsExtension = path.extname(filePath);
@@ -18,12 +9,16 @@ function getPathWithExtension(filePath: string, defaultExtension = DEFAULT_EXTEN
   return filePath + defaultExtension;
 }
 
-function getFullPath(views: string, baseFilePath: string | undefined, templatePath: string) {
-  if (baseFilePath) {
-    return getPathWithExtension(baseFilePath);
+function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {
+  if (isAbsolute) {
+    return getPathWithExtension(templatePath);
   }
 
   return path.join(views, templatePath);
+}
+
+function isTemplateDynamicallyDefined(template: string) {
+  return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
 }
 
 /**
@@ -34,8 +29,8 @@ function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFil
 }
 
 export {
-  checkIfViewsExists,
   getPathWithExtension,
   getFullPath,
   isTemplateFileInsideGivenDirectory,
+  isTemplateDynamicallyDefined,
 };

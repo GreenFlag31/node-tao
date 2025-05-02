@@ -1,5 +1,6 @@
 import type { EtaConfig } from "./config copy";
-import { escMap } from "./const";
+import type { EtaConfig as OriginalConfig } from "./config";
+import { escMap, TEMPLATE_VARNAME } from "./const";
 import { Parse, TagType } from "./interfaces";
 import { escapeRegExp } from "./parse copy";
 
@@ -28,10 +29,10 @@ function compileContent(type: TagType, content: string, config: EtaConfig) {
 
   if (type === "raw") {
     if (autoFilter) {
-      content = `__eta.f(${content})`;
+      content = `__eta.f(${content});`;
     }
 
-    return `__eta.res+=${content}\n`;
+    return `__eta.res+=${content};\n`;
   }
 
   if (type === "interpolate") {
@@ -40,14 +41,14 @@ function compileContent(type: TagType, content: string, config: EtaConfig) {
     }
 
     if (autoEscape) {
-      content = `__eta.e(${content})`;
+      content = `__eta.e(${TEMPLATE_VARNAME}.${content})`;
     }
 
-    return `__eta.res+=${content}\n`;
+    return `__eta.res+=${content};\n`;
   }
 
   if (type === "execute") {
-    return `${content}\n`;
+    return `${content};\n`;
   }
 }
 
@@ -69,7 +70,7 @@ function buildPrefixRegex(parseOptions: Parse) {
  */
 function trimWS(
   str: string,
-  config: EtaConfig,
+  config: OriginalConfig,
   wsLeft: string | false,
   wsRight?: string | false
 ): string {
@@ -120,24 +121,22 @@ function trimWS(
   return str;
 }
 
-function replaceChar(s: string): string {
-  return escMap[s];
+function replaceChar(input: string): string {
+  return escMap[input];
 }
 
 /**
  * XML-escapes an input value after converting it to a string
- * @param str - Input value (usually a string)
+ * @param value - Input value (usually a string)
  * @returns XML-escaped string
  */
-
-function XMLEscape(str: unknown): string {
-  // To deal with XSS. Based on Escape implementations of Mustache.JS and Marko, then customized.
-  const newStr = String(str);
+function XMLEscape(input: unknown): string {
+  const newStr = String(input);
   if (/[&<>"']/.test(newStr)) {
     return newStr.replace(/[&<>"']/g, replaceChar);
-  } else {
-    return newStr;
   }
+
+  return newStr;
 }
 
 export {

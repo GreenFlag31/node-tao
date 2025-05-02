@@ -1,4 +1,6 @@
 const DEFAULT_EXTENSION = ".eta";
+const TEMPLATE_VARNAME = "nte";
+const DYNAMICAL_TEMPLATE_PREFIX = "@";
 
 const templateLitReg = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
 const singleQuoteReg = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
@@ -17,4 +19,13 @@ const escMap: { [key: string]: string } = {
 
 const AsyncFunction = async function () {}.constructor;
 
-export { DEFAULT_EXTENSION, templateLitReg, singleQuoteReg, doubleQuoteReg, escMap, AsyncFunction };
+export {
+  DEFAULT_EXTENSION,
+  templateLitReg,
+  singleQuoteReg,
+  doubleQuoteReg,
+  escMap,
+  AsyncFunction,
+  TEMPLATE_VARNAME,
+  DYNAMICAL_TEMPLATE_PREFIX,
+};
