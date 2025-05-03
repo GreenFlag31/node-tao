@@ -1,10 +1,9 @@
-import { Options } from "./config copy";
-
 export interface Data {
   [key: string]: unknown;
 }
 
-export type TagType = "raw" | "execute" | "interpolate" | "";
+// le dernier cas est vraiment utile? =>  | "";
+export type TagType = 'raw' | 'execute' | 'interpolate';
 
 export interface TemplateData {
   type: TagType;
@@ -25,4 +24,19 @@ export interface Parse {
 
 export type TemplateFunction = (data: object, isAsync: boolean) => string;
 
+export interface Tags {
+  opening: string;
+  closing: string;
+}
+
+/**
+ * HTML content or template data.
+ */
 export type AstObject = string | TemplateData;
+
+export interface Debug {
+  originalFileName: string;
+  fileContent: string;
+  message: string;
+  lineNumber: number;
+}

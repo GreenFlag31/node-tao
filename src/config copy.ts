@@ -1,10 +1,5 @@
-import { Parse } from "./interfaces";
-import { XMLEscape } from "./utils";
-
-export interface Options {
-  /** Compile to async function */
-  async: boolean;
-}
+import { Parse, Tags } from './interfaces';
+import { XMLEscape } from './utils';
 
 export interface EtaConfig {
   /**
@@ -53,22 +48,26 @@ export interface EtaConfig {
     processTemplate?: Function;
   }>;
 
-  /** Delimiters: by default `['<%', '%>']` */
-  tags?: [string, string];
+  /**
+   * Default opening '<%'
+   * Default closing '%>'
+   */
+  tags?: Tags;
 
-  /** Name of the data object. Default `it` */
-  varName?: string;
-
-  /** Directory that contains templates */
+  /**
+   * Directory that contains templates
+   * Default to process.cwd()
+   * @default process.cwd()
+   */
   views?: string;
 
-  /** Control template file extension defaults. Default `.eta` */
+  /**
+   * Control template file extension defaults.
+   * @default '.eta'
+   */
   defaultExtension?: string;
 }
 
-/* END TYPES */
-
-/** Eta's base (global) configuration */
 const defaultConfig: Required<EtaConfig> = {
   autoEscape: true,
   autoFilter: false,
@@ -78,16 +77,18 @@ const defaultConfig: Required<EtaConfig> = {
   escapeFunction: XMLEscape,
   // default filter function (not used unless enables) just stringifies the input
   filterFunction: (val) => String(val),
-  functionHeader: "",
+  functionHeader: '',
   parse: {
-    exec: "",
-    interpolate: "=",
-    raw: "~",
+    exec: '',
+    interpolate: '=',
+    raw: '~',
   },
   plugins: [],
-  tags: ["<%", "%>"],
-  varName: "it",
-  defaultExtension: ".eta",
+  tags: {
+    opening: '<%',
+    closing: '%>',
+  },
+  defaultExtension: '.eta',
 };
 
 export { defaultConfig };

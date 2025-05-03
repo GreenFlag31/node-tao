@@ -1,24 +1,3 @@
-// {
-//   "compilerOptions": {
-//     "strict": true,
-//     "lib": ["ES2022", "DOM"],
-//     "target": "ESNext",
-//     "module": "ESNext",
-//     "moduleResolution": "NodeNext",
-//     "allowImportingTsExtensions": true,
-//     "forceConsistentCasingInFileNames": true,
-//     "skipLibCheck": true,
-//     "declaration": true,
-//     "declarationMap": true,
-//     "declarationDir": "dist/types",
-//     "outDir": "dist",
-//     "noUnusedLocals": true,
-//     "noUnusedParameters": true,
-//     "esModuleInterop": true
-//   },
-//   "files": ["src/index.ts", "src/browser.ts"]
-// }
-
 {
   "include": ["./src/**/*"],
   "exclude": ["node_modules"],

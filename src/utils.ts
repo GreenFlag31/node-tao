@@ -1,53 +1,53 @@
-import type { EtaConfig } from "./config copy";
-import type { EtaConfig as OriginalConfig } from "./config";
-import { escMap, TEMPLATE_VARNAME } from "./const";
-import { Parse, TagType } from "./interfaces";
-import { escapeRegExp } from "./parse copy";
+import type { EtaConfig } from './config copy';
+import type { EtaConfig as OriginalConfig } from './config';
+import { escMap, TEMPLATE_VARNAME, TP_VARNAME_ANONYMOUS_FN } from './const';
+import { Parse, TagType } from './interfaces';
+import { escapeRegExp } from './parse copy';
 
 function debugAtCompilationStart(debug: boolean, value: string) {
-  if (!debug) return "";
+  if (!debug) return '';
 
   return `, line: 1, templateStr: "${convertToCR(value)}"`;
 }
 
 function convertToCR(value: string) {
-  return value.replace(/\\|'/g, "\\$&").replace(/\r\n|\n|\r/g, "\\n");
+  return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 }
 
 function getCurrentPrefixType(prefix: string, parse: Parse): TagType {
   const parseOptions: Record<string, TagType> = {
-    [parse.exec]: "execute",
-    [parse.raw]: "raw",
-    [parse.interpolate]: "interpolate",
+    [parse.exec]: 'execute',
+    [parse.raw]: 'raw',
+    [parse.interpolate]: 'interpolate',
   };
 
-  return parseOptions[prefix] ?? "";
+  return parseOptions[prefix] ?? '';
 }
 
 function compileContent(type: TagType, content: string, config: EtaConfig) {
   const { autoEscape, autoFilter } = config;
 
-  if (type === "raw") {
+  if (type === 'raw') {
     if (autoFilter) {
-      content = `__eta.f(${content});`;
+      content = `${TP_VARNAME_ANONYMOUS_FN}.f(${content});`;
     }
 
-    return `__eta.res+=${content};\n`;
+    return `${TP_VARNAME_ANONYMOUS_FN}.res+=${content};\n`;
   }
 
-  if (type === "interpolate") {
+  if (type === 'interpolate') {
     if (autoFilter) {
-      content = `__eta.f(${content})`;
+      content = `${TP_VARNAME_ANONYMOUS_FN}.f(${content})`;
     }
 
     if (autoEscape) {
-      content = `__eta.e(${TEMPLATE_VARNAME}.${content})`;
+      content = `${TP_VARNAME_ANONYMOUS_FN}.e(${TEMPLATE_VARNAME}.${content})`;
     }
 
-    return `__eta.res+=${content};\n`;
+    return `${TP_VARNAME_ANONYMOUS_FN}.res+=${content};\n`;
   }
 
-  if (type === "execute") {
+  if (type === 'execute') {
     return `${content};\n`;
   }
 }
@@ -62,7 +62,7 @@ function buildPrefixRegex(parseOptions: Parse) {
     options.push(prefixEscaped);
   }
 
-  return options.join("|");
+  return options.join('|');
 }
 
 /**
@@ -98,24 +98,24 @@ function trimWS(
     return str;
   }
 
-  if (leftTrim === "slurp" && rightTrim === "slurp") {
+  if (leftTrim === 'slurp' && rightTrim === 'slurp') {
     return str.trim();
   }
 
-  if (leftTrim === "_" || leftTrim === "slurp") {
+  if (leftTrim === '_' || leftTrim === 'slurp') {
     // full slurp
     str = str.trimStart();
-  } else if (leftTrim === "-" || leftTrim === "nl") {
+  } else if (leftTrim === '-' || leftTrim === 'nl') {
     // nl trim
-    str = str.replace(/^(?:\r\n|\n|\r)/, "");
+    str = str.replace(/^(?:\r\n|\n|\r)/, '');
   }
 
-  if (rightTrim === "_" || rightTrim === "slurp") {
+  if (rightTrim === '_' || rightTrim === 'slurp') {
     // full slurp
     str = str.trimEnd();
-  } else if (rightTrim === "-" || rightTrim === "nl") {
+  } else if (rightTrim === '-' || rightTrim === 'nl') {
     // nl trim
-    str = str.replace(/(?:\r\n|\n|\r)$/, "");
+    str = str.replace(/(?:\r\n|\n|\r)$/, '');
   }
 
   return str;
