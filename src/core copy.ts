@@ -1,7 +1,7 @@
 import { defaultConfig } from './config copy';
-import { escapeRegExp, getLineNo } from './parse copy';
-import { buildParseError, EtaFileResolutionError, EtaParseError, RuntimeErr } from './err copy';
-import type { EtaConfig } from './config copy';
+import { escapeRegExp } from './parse copy';
+import { buildParseError, EtaFileResolutionError, EtaParseError } from './err copy';
+import type { DefinitiveConfig, EtaConfig } from './config copy';
 import {
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
@@ -9,16 +9,22 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   isTemplateFileInsideGivenDirectory,
+  templateContainsInclude,
+  templateContainsIncludeAsync,
+  templateContainsLayout,
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
 import fs from 'node:fs';
-import { log, time, timeEnd } from 'node:console';
+import { log } from 'node:console';
 import {
+  buildLayoutFunction,
   buildPrefixRegex,
-  compileContent,
+  compileBody,
   convertToCR,
-  debugAtCompilationStart,
   getCurrentPrefixType,
+  includeAsyncFn,
+  includeFn,
+  includeLayoutContent,
 } from './utils';
 import {
   templateLitReg,
@@ -26,23 +32,22 @@ import {
   doubleQuoteReg,
   AsyncFunction,
   TEMPLATE_VARNAME,
-  TP_VARNAME_ANONYMOUS_FN,
+  TP_VARNAME_WITH_PREFIX,
 } from './const';
 import { AstObject, TagType, TemplateFunction, TemplateData, Data, Debug } from './interfaces';
 import assert from 'node:assert';
-import { Cacher } from './storage copy';
+import { Store } from './storage copy';
 import { findOriginalLineNumberWithMessage } from './error-utils';
+import path from 'node:path';
 
 export class Eta {
-  RuntimeErr = RuntimeErr;
   // renderAsync = renderAsync;
   // renderString = renderString;
   // renderStringAsync = renderStringAsync;
 
-  private config: Required<EtaConfig>;
+  private config: DefinitiveConfig;
   private templatePaths: string[] = [];
-  private templatesSync = new Cacher();
-  private templatesAsync = new Cacher();
+  private templateStore = new Store();
 
   private compiledAST: AstObject[] = [];
   private compiledAnonymousFnContent = '';
@@ -51,22 +56,37 @@ export class Eta {
     originalFileName: '',
     fileContent: '',
     message: '',
-    lineNumber: 0,
+    lineNumber: 1,
   };
 
-  constructor(customConfig: EtaConfig) {
-    // + everything should be defaulted at init
-    this.config = Object.freeze({ ...defaultConfig, ...customConfig });
-    const { views, defaultExtension, tags, parse } = this.config;
+  // + everything should be defaulted at init
+  constructor(customConfig: EtaConfig = {}) {
+    this.config = Object.freeze({ ...defaultConfig, ...customConfig } as DefinitiveConfig);
+    const { views, extension, tags, parse } = this.config;
 
     checkOpeningAndClosingTag(tags);
     checkPrefixTemplateTags(parse);
 
-    this.templatePaths = getFilesFromDirectory(views, defaultExtension);
+    this.templatePaths = getFilesFromDirectory(views, extension);
   }
 
-  private handleCache(template: string, templateStore: Cacher) {
-    const cachedTemplate = templateStore.get(template);
+  /**
+   * Get the current config.
+   */
+  get currentConfig() {
+    return this.config;
+  }
+
+  /**
+   * Get an array of absolute path of the mapped files
+   * according to the view directory provided.
+   */
+  get mappedFiles() {
+    return this.templatePaths;
+  }
+
+  private handleCache(template: string, cache: boolean) {
+    const cachedTemplate = this.templateStore.get(template);
 
     if (isTemplateDynamicallyDefined(template)) {
       if (!cachedTemplate) {
@@ -78,7 +98,7 @@ export class Eta {
       return cachedTemplate;
     }
 
-    if (this.config.cache && cachedTemplate) {
+    if (cache && cachedTemplate) {
       return cachedTemplate;
     }
 
@@ -114,45 +134,28 @@ export class Eta {
   }
 
   private compile(content: string, isAsync: boolean) {
-    const { debug, functionHeader } = this.config;
+    const { functionHeader } = this.config;
 
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
-    const compiledContent = this.compileBody(compiledData);
+    const isLayout = templateContainsLayout(content);
+    const isInclude = templateContainsInclude(content);
+    const isIncludeAsync = templateContainsIncludeAsync(content);
 
     const result = `${functionHeader}
-  const include = (templatePath, data, isAbsolutePath) => this.render(templatePath, data, isAbsolutePath);
-  const includeAsync = (templatePath, data, isAbsolutePath) => this.renderAsync(templatePath, data, isAbsolutePath);
+  ${includeFn(isInclude)}
+  ${includeAsyncFn(isIncludeAsync)}
 
+
+  const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
   
-  const ${TP_VARNAME_ANONYMOUS_FN} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction${debugAtCompilationStart(
-      debug,
-      content
-    )}};
-  
-  function layout(path, data, isAbsolutePath) {
-    ${TP_VARNAME_ANONYMOUS_FN}.layoutPath = path;
-    ${TP_VARNAME_ANONYMOUS_FN}.layoutData = data;
-    ${TP_VARNAME_ANONYMOUS_FN}.layoutAbsolute = isAbsolutePath;
-  }
+  ${buildLayoutFunction(isLayout)}
     
-  ${debug ? 'try {' : ''}
-  ${compiledContent}
+  ${compileBody(compiledData, this.config)}
 
-  if (${TP_VARNAME_ANONYMOUS_FN}.layoutPath) {
-    ${TP_VARNAME_ANONYMOUS_FN}.res = ${
-      isAsync ? 'await includeAsync' : 'include'
-    }(${TP_VARNAME_ANONYMOUS_FN}.layoutPath, {...${TEMPLATE_VARNAME}, body: ${TP_VARNAME_ANONYMOUS_FN}.res, ...${TP_VARNAME_ANONYMOUS_FN}.layoutData},
-    ${TP_VARNAME_ANONYMOUS_FN}.layoutAbsolute);
-  }
+  ${includeLayoutContent(isLayout, isAsync)}
 
-  ${
-    debug
-      ? '} catch (e) { this.RuntimeErr(e, ${TP_VARNAME_ANONYMOUS_FN}.templateStr, ${TP_VARNAME_ANONYMOUS_FN}.line, options.filepath) }'
-      : ''
-  }
-
-  return ${TP_VARNAME_ANONYMOUS_FN}.res;
+  return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
 
     this.compiledAnonymousFnContent = result;
@@ -160,7 +163,7 @@ export class Eta {
   }
 
   private parse(expression: string): AstObject[] {
-    const { parse, tags, debug } = this.config;
+    const { parse, tags } = this.config;
     const { closing, opening } = tags;
 
     const compiledData: AstObject[] = [];
@@ -272,10 +275,6 @@ export class Eta {
         throw new EtaParseError(error);
       }
 
-      if (debug) {
-        templateData.lineNo = getLineNo(expression, openingResult.index);
-      }
-
       compiledData.push(templateData);
     }
 
@@ -285,52 +284,35 @@ export class Eta {
     return compiledData;
   }
 
-  private compileBody(templateValues: AstObject[]) {
-    // const { debug } = this.config;
-    let result = '';
-
-    for (const value of templateValues) {
-      if (typeof value === 'string') {
-        // HTML content
-        result += `__${TEMPLATE_VARNAME}.res+='${value}';\n`;
-        continue;
-      }
-
-      const { type, lineNo, content = '' } = value;
-
-      // if (debug) {
-      //   result += `__eta.line=${lineNo};\n`;
-      // }
-
-      result += compileContent(type, content, this.config);
-    }
-
-    return result;
-  }
-
   // ++ vérifier après que les fonctions resolvePath && readFile
   // (assert) sont définies par l'utilisateur si écrasées
-  render(templatePath: string, data: Data, isAbsolutePath = false) {
+  render(templatePath: string, data: Data, cache = false) {
     assert(typeof templatePath === 'string', 'Template provided is not a string');
-    // time('Template rendered in');
-    const isAsync = false;
-    this.debug.originalFileName = getPathWithExtension(templatePath, this.config.defaultExtension);
 
-    const templateCached = this.handleCache(templatePath, this.templatesSync);
-    if (templateCached) {
-      return templateCached.call(this, data, isAsync);
-    }
+    const isAbsolutePath = path.isAbsolute(templatePath);
+    const isAsync = false;
+    this.debug.originalFileName = getPathWithExtension(templatePath, this.config.extension);
 
     const resolvedPath = this.resolvePath(templatePath, isAbsolutePath);
-    const templateFn = this.readFileAndCompile(resolvedPath, isAsync);
+    const templateCached = this.handleCache(resolvedPath, cache);
 
+    if (templateCached) {
+      log(`${templatePath} cache hit`);
+      return this.execute(templateCached, data, isAsync);
+    }
+
+    const templateFn = this.readFileAndCompile(resolvedPath, isAsync, cache);
+    return this.execute(templateFn, data, isAsync);
+  }
+
+  private execute(templateFn: TemplateFunction, data: Data, isAsync: boolean) {
     try {
-      // call the new Function()
-      const result = templateFn.call(this, data, isAsync);
-      // timeEnd('Template rendered in');
-      return result;
+      const html = templateFn.call(this, data, isAsync);
+      return html;
     } catch (error: any) {
-      this.handleErrorMessage(error);
+      const errorData = this.handleErrorMessage(error);
+      // by default, no error should be returned
+      log(errorData);
     }
   }
 
@@ -341,13 +323,15 @@ export class Eta {
       this.compiledAnonymousFnContent
     );
     this.debug = { ...this.debug, message, lineNumber };
-    log(this.debug);
+    return this.debug;
   }
 
   private resolvePath(templatePath: string, isAbsolute: boolean) {
-    const { views, defaultExtension } = this.config;
+    // Do not resolve dynamically loaded template
+    if (isTemplateDynamicallyDefined(templatePath)) return templatePath;
 
-    templatePath = getPathWithExtension(templatePath, defaultExtension);
+    const { views, extension } = this.config;
+    templatePath = getPathWithExtension(templatePath, extension);
     const resolvedFilePath = getFullPath(views, templatePath, isAbsolute);
 
     const templateExists = isTemplateFileInsideGivenDirectory(this.templatePaths, resolvedFilePath);
@@ -357,15 +341,13 @@ export class Eta {
     return resolvedFilePath;
   }
 
-  private readFileAndCompile(resolvedPath: string, isAsync: boolean) {
-    const templateStore = isAsync ? this.templatesAsync : this.templatesSync;
-
+  private readFileAndCompile(resolvedPath: string, isAsync: boolean, cache: boolean) {
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
     const templateFn = this.createCompilationFunction(content, isAsync);
 
-    if (this.config.cache) {
-      templateStore.define(resolvedPath, templateFn);
+    if (cache) {
+      this.templateStore.define(resolvedPath, templateFn);
     }
 
     return templateFn;
@@ -387,9 +369,12 @@ export class Eta {
 
   loadTemplate(name: string, template: string, isAsync = false) {
     assert(typeof template === 'string', 'Provided template is not a string');
-    assert(name.startsWith('@'), "Dynamically loaded template should start with a '@'");
+    assert(
+      isTemplateDynamicallyDefined(name),
+      "Dynamically loaded template should start with a '@'"
+    );
 
-    const templateStore = isAsync ? this.templatesAsync : this.templatesSync;
-    templateStore.define(name, this.createCompilationFunction(template, isAsync));
+    const templateFn = this.createCompilationFunction(template, isAsync);
+    this.templateStore.define(name, templateFn);
   }
 }

@@ -1,14 +1,12 @@
 import path from 'node:path';
 import { DEFAULT_EXTENSION, DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
-import { log } from 'node:console';
-import assert from 'node:assert';
 
-function getPathWithExtension(filePath: string, defaultExtension = DEFAULT_EXTENSION) {
+function getPathWithExtension(filePath: string, extension = DEFAULT_EXTENSION) {
   const pathContainsExtension = path.extname(filePath);
   if (pathContainsExtension) return filePath;
 
-  return filePath + defaultExtension;
+  return filePath + extension;
 }
 
 function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {
@@ -21,6 +19,21 @@ function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {
 
 function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
+}
+
+function templateContainsLayout(content: string) {
+  const layoutToken = new RegExp(/layout\(.*\)/);
+  return layoutToken.test(content);
+}
+
+function templateContainsInclude(content: string) {
+  const layoutToken = new RegExp(/include\(.*\)/);
+  return layoutToken.test(content);
+}
+
+function templateContainsIncludeAsync(content: string) {
+  const layoutToken = new RegExp(/includeAsync\(.*\)/);
+  return layoutToken.test(content);
 }
 
 /**
@@ -38,18 +51,17 @@ function checkOpeningAndClosingTag(tags: Tags) {
 }
 
 function checkPrefixTemplateTags(parse: Parse) {
-  const parseValues = Object.values(parse);
-  const parseKeys = Object.keys(parse);
+  const parseValues = Object.entries(parse);
 
   for (let i = 0; i < parseValues.length; i++) {
-    const value = parseValues[i];
+    const [key, value] = parseValues[i];
 
     for (let j = i + 1; j < parseValues.length; j++) {
-      const nextValue = parseValues[j];
+      const [nextKey, nextValue] = parseValues[j];
 
       if (value === nextValue) {
         throw new Error(
-          `Cannot have the same parse value at '${parseKeys[i]}' and '${parseKeys[j]}' with value '${value}'`
+          `Cannot have the same parse value at '${key}' and '${nextKey}' with value '${value}'`
         );
       }
     }
@@ -63,4 +75,7 @@ export {
   isTemplateDynamicallyDefined,
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
+  templateContainsLayout,
+  templateContainsInclude,
+  templateContainsIncludeAsync,
 };

@@ -12,9 +12,21 @@ const eta = new Eta({ views: templatesPath });
 const etaOrigin = new EtaOriginal({ views: templatesPath, debug: true });
 
 app.get('/', (req, res) => {
-  const renderedTemplate = eta.render('simple', {
-    name: `Ben`,
-  });
+  const data = {
+    htmlstuff: '<b>Hello, world!</b>',
+    obj: {
+      firstchild: 'value1',
+      secondchild: 'value2',
+      thirdchild: ['valA', 'valB', 'valC'],
+      fourthchild: 'value4',
+    },
+  };
+
+  const test = {
+    name: `ben`,
+  };
+
+  const renderedTemplate = eta.render('simple', test);
 
   res.status(200).send(renderedTemplate);
 });

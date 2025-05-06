@@ -1,5 +1,5 @@
-import { globSync } from "glob";
-import { EtaFileResolutionError } from "./err";
+import { globSync } from 'glob';
+import { EtaFileResolutionError } from './err';
 
 /**
  * Perform once.
@@ -10,6 +10,7 @@ function getFilesFromDirectory(directory: string, extension: string) {
   const files = globSync(`${directory}/**/*${extension}`, {
     absolute: true,
     nodir: true,
+    ignore: ['node_modules/**'],
   });
 
   if (files.length === 0) {

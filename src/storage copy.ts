@@ -1,21 +1,21 @@
-import { TemplateFunction } from "./interfaces";
+import { TemplateFunction } from './interfaces';
 
-export class Cacher {
-  private cache: Record<string, TemplateFunction> = {};
+export class Store {
+  private store: Record<string, TemplateFunction> = {};
 
   define(key: string, val: TemplateFunction) {
-    this.cache[key] = val;
+    this.store[key] = val;
   }
   get(key: string) {
-    return this.cache[key];
+    return this.store[key];
   }
   remove(key: string) {
-    delete this.cache[key];
+    delete this.store[key];
   }
   reset() {
-    this.cache = {};
+    this.store = {};
   }
   load(cached: Record<string, TemplateFunction>) {
-    this.cache = { ...this.cache, ...cached };
+    this.store = { ...this.store, ...cached };
   }
 }

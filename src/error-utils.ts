@@ -40,13 +40,13 @@ function extractContentFromAnonymousFunction(compiledAnonymousFnContent: string,
 }
 
 function getOriginalLineNumber(compiledJoined: string, compiledAST: AstObject[]) {
-  const countBodyContent = compiledJoined.match(/__nte\.res\+=/g) || [];
+  const countBodyContent = compiledJoined.match(/__it\.res\+=/g) || [];
   const extract = compiledAST.slice(0, countBodyContent.length);
+  let lineNumber = 1;
 
-  let lineNumber = 0;
   for (const data of extract) {
     if (typeof data === 'string') {
-      lineNumber += data.split('\\n').length;
+      lineNumber += (data.match(/\\n/g) || []).length;
     }
   }
 

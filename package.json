@@ -23,7 +23,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=6.0.0"
+    "node": ">=17.0.0"
   },
   "scripts": {
     "build:node": "microbundle src/index.ts --target node --format esm && microbundle src/index.ts --target node --format umd",

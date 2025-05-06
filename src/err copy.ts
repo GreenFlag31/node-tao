@@ -1,35 +1,35 @@
 export class EtaError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "Eta Error";
+    this.name = 'Eta Error';
   }
 }
 
 export class EtaParseError extends EtaError {
   constructor(message: string) {
     super(message);
-    this.name = "EtaParser Error";
+    this.name = 'EtaParser Error';
   }
 }
 
 export class EtaRuntimeError extends EtaError {
   constructor(message: string) {
     super(message);
-    this.name = "EtaRuntime Error";
+    this.name = 'EtaRuntime Error';
   }
 }
 
 export class EtaFileResolutionError extends EtaError {
   constructor(message: string) {
     super(message);
-    this.name = "EtaFileResolution Error";
+    this.name = 'EtaFileResolution Error';
   }
 }
 
 export class EtaNameResolutionError extends EtaError {
   constructor(message: string) {
     super(message);
-    this.name = "EtaNameResolution Error";
+    this.name = 'EtaNameResolution Error';
   }
 }
 
@@ -46,42 +46,17 @@ export function buildParseError(errorMessage: string, str: string, index: number
   const colNo = whitespace[previousLineNo].length + 1;
 
   error +=
-    " at line " +
+    ' at line ' +
     lineNo +
-    " col " +
+    ' col ' +
     colNo +
-    ":\n\n" +
-    "  " +
+    ':\n\n' +
+    '  ' +
     str.split(/\n/)[previousLineNo] +
-    "\n" +
-    "  " +
-    Array(colNo).join(" ") +
-    "^";
+    '\n' +
+    '  ' +
+    Array(colNo).join(' ') +
+    '^';
 
   return error;
-}
-
-export function RuntimeErr(originalError: Error, str: string, lineNo: number, path: string): never {
-  // code gratefully taken from https://github.com/mde/ejs and adapted
-
-  const lines = str.split("\n");
-  const start = Math.max(lineNo - 3, 0);
-  const end = Math.min(lines.length, lineNo + 3);
-  const filename = path;
-  // Error context
-  const context = lines
-    .slice(start, end)
-    .map(function (line, i) {
-      const curr = i + start + 1;
-      return (curr == lineNo ? " >> " : "    ") + curr + "| " + line;
-    })
-    .join("\n");
-
-  const header = filename ? filename + ":" + lineNo + "\n" : "line " + lineNo + "\n";
-
-  const err = new EtaRuntimeError(header + context + "\n\n" + originalError.message);
-
-  err.name = originalError.name; // the original name (e.g. ReferenceError) may be useful
-
-  throw err;
 }

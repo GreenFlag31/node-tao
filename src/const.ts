@@ -1,6 +1,6 @@
 const DEFAULT_EXTENSION = '.eta';
-const TEMPLATE_VARNAME = 'nte';
-const TP_VARNAME_ANONYMOUS_FN = `__${TEMPLATE_VARNAME}`;
+const TEMPLATE_VARNAME = 'it';
+const TP_VARNAME_WITH_PREFIX = `__${TEMPLATE_VARNAME}`;
 const DYNAMICAL_TEMPLATE_PREFIX = '@';
 
 const templateLitReg = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
@@ -29,5 +29,5 @@ export {
   AsyncFunction,
   TEMPLATE_VARNAME,
   DYNAMICAL_TEMPLATE_PREFIX,
-  TP_VARNAME_ANONYMOUS_FN,
+  TP_VARNAME_WITH_PREFIX,
 };
