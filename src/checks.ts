@@ -1,12 +1,13 @@
 import path from 'node:path';
 import { DEFAULT_EXTENSION, DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
+import { log } from 'node:console';
 
 function getPathWithExtension(filePath: string, extension = DEFAULT_EXTENSION) {
   const pathContainsExtension = path.extname(filePath);
   if (pathContainsExtension) return filePath;
 
-  return filePath + extension;
+  return `${filePath}.${extension}`;
 }
 
 function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {

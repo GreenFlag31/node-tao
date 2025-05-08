@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>An error occurred</title>
+    <link rel="stylesheet" href="error.css" />
+    <script src="error.js" defer></script>
+  </head>
+
+  <body>
+    <div class="general-container">
+      <section class="error-container">
+        <div class="error">
+          <div class="header">
+            <h2>An error occurred</h2>
+          </div>
+
+          <div class="error-message">
+            <p><%= it.message %> at line <%= it.lineNumber %></p>
+          </div>
+
+          <div class="content">
+            <div class="filename">
+              <p><%= it.originalFileName %></p>
+            </div>
+
+            <div class="source-code-container">
+              <% for (let i = 0; i < it.fileContent.length; i++) { %>
+
+              <div class="error-line-container">
+                <span class="<%= i === it.lineNumber - 1 ? 'line-number active' : 'line-number' %>"
+                  ><%= i + 1 %></span
+                >
+                <span class="<%= i === it.lineNumber - 1 ? 'html error-line' : 'html' %>">
+                  <%= it.fileContent[i] %>
+                </span>
+              </div>
+
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

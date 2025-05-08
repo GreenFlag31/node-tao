@@ -13,12 +13,6 @@ function getFilesFromDirectory(directory: string, extension: string) {
     ignore: ['node_modules/**'],
   });
 
-  if (files.length === 0) {
-    throw new EtaFileResolutionError(
-      `No template files found in ${directory} with extension ${extension}`
-    );
-  }
-
   return files;
 }
 

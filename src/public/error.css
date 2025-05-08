@@ -1,0 +1,83 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+body {
+  background: #f4f4f4;
+}
+
+.general-container {
+  display: flex;
+}
+
+.error-container {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: #fff;
+}
+
+.error-message {
+  margin-top: 2rem;
+}
+
+.error-container .content {
+  margin-top: 0.3rem;
+}
+
+.error-container .filename {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filename p {
+  color: #000;
+  font-style: italic;
+  font-weight: normal;
+}
+
+.error h2 {
+  color: red;
+  text-align: center;
+}
+
+.source-code-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.source-code-container span {
+  padding: 0.2rem;
+  font-family: system-ui;
+}
+
+.error-line-container {
+  display: flex;
+}
+
+.error-line-container .line-number {
+  background: #000;
+  color: #adadad;
+  flex: 1 1 7%;
+  text-align: right;
+}
+
+.line-number.active {
+  color: #fff;
+}
+
+.error-line-container .html {
+  width: 100%;
+}
+.error-line {
+  background: #d8d8d8;
+}

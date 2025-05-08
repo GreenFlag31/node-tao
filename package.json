@@ -41,7 +41,7 @@
     "test:prod": "npm run lint && npm run test -- --no-cache",
     "test:watch": "jest --coverage --watch",
     "build-own": "rimraf dist && tsc && cpx \"src/templates/**/*\" dist/templates",
-    "startNodemon": "nodemon --ext ts,eta,json,css --watch src --watch package.json --exec \"tsc && cpx src/templates/**/* dist/templates && node dist/server.js\""
+    "startNodemon": "nodemon --ext ts,eta,js,json,css,html --watch src --watch package.json --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/public/**/* dist/public && node dist/server.js\""
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.4",

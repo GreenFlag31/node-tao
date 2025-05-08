@@ -7,26 +7,37 @@ import { log, time, timeEnd } from 'node:console';
 const app = express();
 const PORT = 3000;
 
-const templatesPath = path.join(__dirname, 'templates');
-const eta = new Eta({ views: templatesPath });
+const templatesPath = path.join(__dirname, 'public');
 const etaOrigin = new EtaOriginal({ views: templatesPath, debug: true });
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
+const eta = new Eta({ views: templatesPath, extension: 'html' });
 app.get('/', (req, res) => {
-  const data = {
-    htmlstuff: '<b>Hello, world!</b>',
-    obj: {
-      firstchild: 'value1',
-      secondchild: 'value2',
-      thirdchild: ['valA', 'valB', 'valC'],
-      fourthchild: 'value4',
-    },
-  };
-
   const test = {
     name: `ben`,
   };
 
-  const renderedTemplate = eta.render('simple', test);
+  const error = {
+    originalFileName: 'simple.eta',
+    fileContent: [
+      '<!DOCTYPE html>\r',
+      '<html lang="en">\r',
+      '<head>\r',
+      '  <meta charset="UTF-8" />\r',
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\r',
+      '  <title>Title</title>\r',
+      '</head>\r',
+      '<body>\r',
+      '<h1>Hi <%= itsqsq.name %></h1>\r',
+      '</body>\r',
+      '</html>',
+    ],
+    message: 'ReferenceError: itsqsq is not defined',
+    lineNumber: 9,
+  };
+
+  const renderedTemplate = eta.render('error', error);
 
   res.status(200).send(renderedTemplate);
 });

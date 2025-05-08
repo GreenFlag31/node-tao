@@ -99,6 +99,7 @@ export class Eta {
     }
 
     if (cache && cachedTemplate) {
+      log('cache hit');
       return cachedTemplate;
     }
 
@@ -143,19 +144,19 @@ export class Eta {
     const isIncludeAsync = templateContainsIncludeAsync(content);
 
     const result = `${functionHeader}
-  ${includeFn(isInclude)}
-  ${includeAsyncFn(isIncludeAsync)}
+    ${includeFn(isInclude, isLayout)}
+    ${includeAsyncFn(isIncludeAsync, isLayout)}
 
 
-  const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
-  
-  ${buildLayoutFunction(isLayout)}
+    const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
     
-  ${compileBody(compiledData, this.config)}
+    ${buildLayoutFunction(isLayout)}
+      
+    ${compileBody(compiledData, this.config)}
 
-  ${includeLayoutContent(isLayout, isAsync)}
+    ${includeLayoutContent(isLayout, isAsync)}
 
-  return ${TP_VARNAME_WITH_PREFIX}.res;
+    return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
 
     this.compiledAnonymousFnContent = result;
@@ -287,11 +288,17 @@ export class Eta {
   // ++ vérifier après que les fonctions resolvePath && readFile
   // (assert) sont définies par l'utilisateur si écrasées
   render(templatePath: string, data: Data, cache = false) {
-    assert(typeof templatePath === 'string', 'Template provided is not a string');
+    const isAsync = false;
+    const { views, extension } = this.config;
+
+    assert(typeof templatePath === 'string', 'Template provided should be a string');
+    assert(
+      this.templatePaths.length > 0,
+      `No template files found in ${views} with extension ${extension}`
+    );
 
     const isAbsolutePath = path.isAbsolute(templatePath);
-    const isAsync = false;
-    this.debug.originalFileName = getPathWithExtension(templatePath, this.config.extension);
+    this.debug.originalFileName = getPathWithExtension(templatePath, extension);
 
     const resolvedPath = this.resolvePath(templatePath, isAbsolutePath);
     const templateCached = this.handleCache(resolvedPath, cache);
@@ -317,12 +324,13 @@ export class Eta {
   }
 
   private handleErrorMessage(error: any) {
-    const [message, lineNumber] = findOriginalLineNumberWithMessage(
+    const [message, fileContent, lineNumber] = findOriginalLineNumberWithMessage(
       error,
       this.compiledAST,
-      this.compiledAnonymousFnContent
+      this.compiledAnonymousFnContent,
+      this.debug.fileContent
     );
-    this.debug = { ...this.debug, message, lineNumber };
+    this.debug = { ...this.debug, message, lineNumber, fileContent };
     return this.debug;
   }
 

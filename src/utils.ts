@@ -24,14 +24,14 @@ function includeLayoutContent(isLayout: boolean, isAsync: boolean) {
   }`;
 }
 
-function includeFn(isInclude: boolean) {
-  if (!isInclude) return '';
+function includeFn(isInclude: boolean, isLayout: boolean) {
+  if (!isInclude && !isLayout) return '';
 
   return `const include = (templatePath, data, cache) => this.render(templatePath, data, cache);`;
 }
 
-function includeAsyncFn(isIncludeAsync: boolean) {
-  if (!isIncludeAsync) return '';
+function includeAsyncFn(isIncludeAsync: boolean, isLayout: boolean) {
+  if (!isIncludeAsync && !isLayout) return '';
 
   return `const includeAsync = (templatePath, data, cache) => this.renderAsync(templatePath, data, cache);`;
 }

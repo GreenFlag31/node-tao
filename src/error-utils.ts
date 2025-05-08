@@ -3,7 +3,8 @@ import { AstObject } from './interfaces';
 function findOriginalLineNumberWithMessage(
   error: string,
   compiledAST: AstObject[],
-  compiledAnonymousFnContent: string
+  compiledAnonymousFnContent: string,
+  originalFileContent: string
 ) {
   const [message, source] = getErrorMessageAndSource(error);
   const lineFromAnonymousFn = getLineFromAnonymousFunction(source);
@@ -12,8 +13,9 @@ function findOriginalLineNumberWithMessage(
     lineFromAnonymousFn
   );
   const lineNumber = getOriginalLineNumber(compiledContent, compiledAST);
+  const [fileContent, line] = trimEmptySpaceAndDecrementLine(originalFileContent, lineNumber);
 
-  return [message, lineNumber];
+  return [message, fileContent, line];
 }
 
 function getErrorMessageAndSource(error: any) {
@@ -51,6 +53,26 @@ function getOriginalLineNumber(compiledJoined: string, compiledAST: AstObject[])
   }
 
   return lineNumber;
+}
+
+function trimEmptySpaceAndDecrementLine(fileContent: string, lineNumber: number) {
+  const fileSplittedByNewLine = fileContent.split('\n');
+  const fileContentWithoutEmptySpace: string[] = [];
+  let offset = 0;
+
+  for (let i = 0; i < fileSplittedByNewLine.length; i++) {
+    const line = fileSplittedByNewLine[i];
+
+    if (!line.trim()) {
+      if (i < lineNumber - 1) offset += 1;
+      continue;
+    }
+
+    fileContentWithoutEmptySpace.push(line);
+  }
+
+  const line = lineNumber - offset;
+  return [fileContentWithoutEmptySpace, line];
 }
 
 export {
