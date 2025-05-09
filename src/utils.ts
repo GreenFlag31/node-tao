@@ -1,5 +1,4 @@
 import type { DefinitiveConfig } from './config copy';
-import type { EtaConfig as OriginalConfig } from './config';
 import { escMap, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Parse, TagType } from './interfaces';
 import { escapeRegExp } from './parse copy';
@@ -7,10 +6,9 @@ import { escapeRegExp } from './parse copy';
 function buildLayoutFunction(isLayout: boolean) {
   if (!isLayout) return '';
 
-  return `function layout(path, data, cache) {
+  return `function layout(path, data) {
     ${TP_VARNAME_WITH_PREFIX}.layoutPath = path;
     ${TP_VARNAME_WITH_PREFIX}.layoutData = data;
-    ${TP_VARNAME_WITH_PREFIX}.layoutCache = cache;
   }`;
 }
 
@@ -19,21 +17,20 @@ function includeLayoutContent(isLayout: boolean, isAsync: boolean) {
   const include = isAsync ? 'await includeAsync' : 'include';
 
   return `if (${TP_VARNAME_WITH_PREFIX}.layoutPath) {
-    ${TP_VARNAME_WITH_PREFIX}.res = ${include}(${TP_VARNAME_WITH_PREFIX}.layoutPath, {...${TEMPLATE_VARNAME}, body: ${TP_VARNAME_WITH_PREFIX}.res, ...${TP_VARNAME_WITH_PREFIX}.layoutData},
-    ${TP_VARNAME_WITH_PREFIX}.layoutCache);
+    ${TP_VARNAME_WITH_PREFIX}.res = ${include}(${TP_VARNAME_WITH_PREFIX}.layoutPath, {...${TEMPLATE_VARNAME}, body: ${TP_VARNAME_WITH_PREFIX}.res, ...${TP_VARNAME_WITH_PREFIX}.layoutData});
   }`;
 }
 
 function includeFn(isInclude: boolean, isLayout: boolean) {
   if (!isInclude && !isLayout) return '';
 
-  return `const include = (templatePath, data, cache) => this.render(templatePath, data, cache);`;
+  return `const include = (templatePath, data) => this.render(templatePath, data);`;
 }
 
 function includeAsyncFn(isIncludeAsync: boolean, isLayout: boolean) {
   if (!isIncludeAsync && !isLayout) return '';
 
-  return `const includeAsync = (templatePath, data, cache) => this.renderAsync(templatePath, data, cache);`;
+  return `const includeAsync = (templatePath, data) => this.renderAsync(templatePath, data);`;
 }
 
 function convertToCR(value: string) {
@@ -108,62 +105,6 @@ function buildPrefixRegex(parseOptions: Parse) {
   return options.join('|');
 }
 
-/**
- * Takes a string within a template and trims it, based on the preceding tag's whitespace control and `config.autoTrim`
- */
-function trimWS(
-  str: string,
-  config: OriginalConfig,
-  wsLeft: string | false,
-  wsRight?: string | false
-): string {
-  let leftTrim;
-  let rightTrim;
-
-  if (Array.isArray(config.autoTrim)) {
-    // Slightly confusing,
-    // but _}} will trim the left side of the following string
-    leftTrim = config.autoTrim[1];
-    rightTrim = config.autoTrim[0];
-  } else {
-    leftTrim = rightTrim = config.autoTrim;
-  }
-
-  if (wsLeft || wsLeft === false) {
-    leftTrim = wsLeft;
-  }
-
-  if (wsRight || wsRight === false) {
-    rightTrim = wsRight;
-  }
-
-  if (!rightTrim && !leftTrim) {
-    return str;
-  }
-
-  if (leftTrim === 'slurp' && rightTrim === 'slurp') {
-    return str.trim();
-  }
-
-  if (leftTrim === '_' || leftTrim === 'slurp') {
-    // full slurp
-    str = str.trimStart();
-  } else if (leftTrim === '-' || leftTrim === 'nl') {
-    // nl trim
-    str = str.replace(/^(?:\r\n|\n|\r)/, '');
-  }
-
-  if (rightTrim === '_' || rightTrim === 'slurp') {
-    // full slurp
-    str = str.trimEnd();
-  } else if (rightTrim === '-' || rightTrim === 'nl') {
-    // nl trim
-    str = str.replace(/(?:\r\n|\n|\r)$/, '');
-  }
-
-  return str;
-}
-
 function replaceChar(input: string): string {
   return escMap[input];
 }
@@ -183,7 +124,6 @@ function XMLEscape(input: unknown): string {
 }
 
 export {
-  trimWS,
   XMLEscape,
   convertToCR,
   getCurrentPrefixType,

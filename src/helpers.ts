@@ -1,5 +1,4 @@
 import { globSync } from 'glob';
-import { EtaFileResolutionError } from './err';
 
 /**
  * Perform once.

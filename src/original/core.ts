@@ -1,14 +1,14 @@
-import { Cacher } from "./storage";
-import { compile } from "./compile";
-import { compileBody, compileToString } from "./compile-string";
-import { defaultConfig } from "./config";
-import { parse } from "./parse";
-import { render, renderAsync, renderString, renderStringAsync } from "./render";
-import { EtaError, RuntimeErr } from "./err";
-import { TemplateFunction } from "./compile";
+import { Cacher } from './storage';
+import { compile } from './compile';
+import { compileBody, compileToString } from './compile-string';
+import { defaultConfig } from './config';
+import { parse } from './parse';
+import { render, renderAsync, renderString, renderStringAsync } from './render';
+import { EtaError, RuntimeErr } from './err';
+import { TemplateFunction } from './compile';
 
 /* TYPES */
-import type { EtaConfig, Options } from "./config";
+import type { EtaConfig, Options } from './config';
 /* END TYPES */
 
 export class Eta {
@@ -56,14 +56,14 @@ export class Eta {
     template: string | TemplateFunction, // template string or template function
     options?: { async: boolean }
   ): void {
-    if (typeof template === "string") {
+    if (typeof template === 'string') {
       const templates = options && options.async ? this.templatesAsync : this.templatesSync;
 
       templates.define(name, this.compile(template, options));
     } else {
       let templates = this.templatesSync;
 
-      if (template.constructor.name === "AsyncFunction" || (options && options.async)) {
+      if (template.constructor.name === 'AsyncFunction' || (options && options.async)) {
         templates = this.templatesAsync;
       }
 

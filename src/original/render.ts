@@ -1,15 +1,15 @@
-import { EtaNameResolutionError } from "./err";
+import { EtaNameResolutionError } from './err';
 
 /* TYPES */
-import type { Options } from "./config";
-import type { TemplateFunction } from "./compile";
-import type { Eta } from "./core";
+import type { Options } from './config';
+import type { TemplateFunction } from './compile';
+import type { Eta } from './core';
 /* END TYPES */
 
 function handleCache(this: Eta, template: string, options: Partial<Options>): TemplateFunction {
   const templateStore = options && options.async ? this.templatesAsync : this.templatesSync;
 
-  if (this.resolvePath && this.readFile && !template.startsWith("@")) {
+  if (this.resolvePath && this.readFile && !template.startsWith('@')) {
     const templatePath = options.filepath as string;
 
     const cachedTemplate = templateStore.get(templatePath);
@@ -46,8 +46,8 @@ export function render<T extends object>(
   let templateFn: TemplateFunction;
   const options = { ...meta, async: false };
 
-  if (typeof template === "string") {
-    if (this.resolvePath && this.readFile && !template.startsWith("@")) {
+  if (typeof template === 'string') {
+    if (this.resolvePath && this.readFile && !template.startsWith('@')) {
       options.filepath = this.resolvePath(template, options);
     }
 
@@ -70,8 +70,8 @@ export function renderAsync<T extends object>(
   let templateFn: TemplateFunction;
   const options = { ...meta, async: true };
 
-  if (typeof template === "string") {
-    if (this.resolvePath && this.readFile && !template.startsWith("@")) {
+  if (typeof template === 'string') {
+    if (this.resolvePath && this.readFile && !template.startsWith('@')) {
       options.filepath = this.resolvePath(template, options);
     }
 

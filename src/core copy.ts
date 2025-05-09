@@ -4,11 +4,11 @@ import { buildParseError, EtaFileResolutionError, EtaParseError } from './err co
 import type { DefinitiveConfig, EtaConfig } from './config copy';
 import {
   checkOpeningAndClosingTag,
+  checkAccessPermission,
   checkPrefixTemplateTags,
   getFullPath,
   getPathWithExtension,
   isTemplateDynamicallyDefined,
-  isTemplateFileInsideGivenDirectory,
   templateContainsInclude,
   templateContainsIncludeAsync,
   templateContainsLayout,
@@ -47,7 +47,7 @@ export class Eta {
 
   private config: DefinitiveConfig;
   private templatePaths: string[] = [];
-  private templateStore = new Store();
+  public templateStore = new Store();
 
   private compiledAST: AstObject[] = [];
   private compiledAnonymousFnContent = '';
@@ -85,7 +85,7 @@ export class Eta {
     return this.templatePaths;
   }
 
-  private handleCache(template: string, cache: boolean) {
+  private handleCache(template: string) {
     const cachedTemplate = this.templateStore.get(template);
 
     if (isTemplateDynamicallyDefined(template)) {
@@ -98,8 +98,7 @@ export class Eta {
       return cachedTemplate;
     }
 
-    if (cache && cachedTemplate) {
-      log('cache hit');
+    if (this.config.cache && cachedTemplate) {
       return cachedTemplate;
     }
 
@@ -285,13 +284,11 @@ export class Eta {
     return compiledData;
   }
 
-  // ++ vérifier après que les fonctions resolvePath && readFile
-  // (assert) sont définies par l'utilisateur si écrasées
-  render(templatePath: string, data: Data, cache = false) {
+  render(templatePath: string, data: Data) {
     const isAsync = false;
     const { views, extension } = this.config;
 
-    assert(typeof templatePath === 'string', 'Template provided should be a string');
+    assert(typeof templatePath === 'string', 'Template provided should be of type string');
     assert(
       this.templatePaths.length > 0,
       `No template files found in ${views} with extension ${extension}`
@@ -301,14 +298,17 @@ export class Eta {
     this.debug.originalFileName = getPathWithExtension(templatePath, extension);
 
     const resolvedPath = this.resolvePath(templatePath, isAbsolutePath);
-    const templateCached = this.handleCache(resolvedPath, cache);
+    const hasAccess = checkAccessPermission(this.templatePaths, resolvedPath);
+    if (!hasAccess) return '<h1>An error occurred</h1>';
+
+    const templateCached = this.handleCache(resolvedPath);
 
     if (templateCached) {
       log(`${templatePath} cache hit`);
       return this.execute(templateCached, data, isAsync);
     }
 
-    const templateFn = this.readFileAndCompile(resolvedPath, isAsync, cache);
+    const templateFn = this.readFileAndCompile(resolvedPath, isAsync);
     return this.execute(templateFn, data, isAsync);
   }
 
@@ -342,19 +342,15 @@ export class Eta {
     templatePath = getPathWithExtension(templatePath, extension);
     const resolvedFilePath = getFullPath(views, templatePath, isAbsolute);
 
-    const templateExists = isTemplateFileInsideGivenDirectory(this.templatePaths, resolvedFilePath);
-    assert(templateExists, 'An error occurred');
-
-    // log(resolvedFilePath);
     return resolvedFilePath;
   }
 
-  private readFileAndCompile(resolvedPath: string, isAsync: boolean, cache: boolean) {
+  private readFileAndCompile(resolvedPath: string, isAsync: boolean) {
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
     const templateFn = this.createCompilationFunction(content, isAsync);
 
-    if (cache) {
+    if (this.config.cache) {
       this.templateStore.define(resolvedPath, templateFn);
     }
 

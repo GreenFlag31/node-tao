@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>An error occurred</title>
     <link rel="stylesheet" href="error.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='white' stroke='red' stroke-width='10'/%3E%3Cline x1='30' y1='30' x2='70' y2='70' stroke='red' stroke-width='10'/%3E%3Cline x1='70' y1='30' x2='30' y2='70' stroke='red' stroke-width='10'/%3E%3C/svg%3E"
+      type="image/svg+xml"
+    />
+
     <script src="error.js" defer></script>
   </head>
 
@@ -17,22 +23,19 @@
           </div>
 
           <div class="error-message">
-            <p><%= it.message %> at line <%= it.lineNumber %></p>
+            <p><%= it.message %> at line <%= it.lineNumber %> in <%= it.originalFileName %></p>
           </div>
 
           <div class="content">
-            <div class="filename">
-              <p><%= it.originalFileName %></p>
-            </div>
-
             <div class="source-code-container">
               <% for (let i = 0; i < it.fileContent.length; i++) { %>
 
               <div class="error-line-container">
-                <span class="<%= i === it.lineNumber - 1 ? 'line-number active' : 'line-number' %>"
-                  ><%= i + 1 %></span
-                >
-                <span class="<%= i === it.lineNumber - 1 ? 'html error-line' : 'html' %>">
+                <% const errorLine = i === it.lineNumber - 1 %>
+                <span class="<%= errorLine ? 'line-number active' : 'line-number' %>"
+                  ><%= i + 1 %>
+                </span>
+                <span class="<%= errorLine ? 'html error-line' : 'html' %>">
                   <%= it.fileContent[i] %>
                 </span>
               </div>

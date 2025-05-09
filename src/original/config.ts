@@ -1,8 +1,6 @@
-import { XMLEscape } from "./utils";
+import { XMLEscape } from './utils';
 
-/* TYPES */
-
-type trimConfig = "nl" | "slurp" | false;
+type trimConfig = 'nl' | 'slurp' | false;
 
 export interface Options {
   /** Compile to async function */
@@ -84,25 +82,25 @@ export interface EtaConfig {
 const defaultConfig: EtaConfig = {
   autoEscape: true,
   autoFilter: false,
-  autoTrim: [false, "nl"],
+  autoTrim: [false, 'nl'],
   cache: false,
   cacheFilepaths: true,
   debug: false,
   escapeFunction: XMLEscape,
   // default filter function (not used unless enables) just stringifies the input
   filterFunction: (val) => String(val),
-  functionHeader: "",
+  functionHeader: '',
   parse: {
-    exec: "",
-    interpolate: "=",
-    raw: "~",
+    exec: '',
+    interpolate: '=',
+    raw: '~',
   },
   plugins: [],
   rmWhitespace: false,
-  tags: ["<%", "%>"],
+  tags: ['<%', '%>'],
   useWith: false,
-  varName: "it",
-  defaultExtension: ".eta",
+  varName: 'it',
+  defaultExtension: '.eta',
 };
 
 export { defaultConfig };

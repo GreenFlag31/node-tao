@@ -1,8 +1,8 @@
 /* TYPES */
 
-import type { AstObject } from "./parse";
-import type { Eta } from "./core";
-import { Options } from "./config";
+import { Options } from './config';
+import { Eta } from './core';
+import type { AstObject } from './parse';
 
 /* END TYPES */
 
@@ -26,26 +26,26 @@ let includeAsync = (template, data) => this.renderAsync(template, data, options)
 let __eta = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction${
     config.debug
       ? ', line: 1, templateStr: "' +
-        str.replace(/\\|"/g, "\\$&").replace(/\r\n|\n|\r/g, "\\n") +
+        str.replace(/\\|"/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n') +
         '"'
-      : ""
+      : ''
   }};
 
 function layout(path, data) {
   __eta.layout = path;
   __eta.layoutData = data;
-}${config.debug ? "try {" : ""}${config.useWith ? "with(" + config.varName + "||{}){" : ""}
+}${config.debug ? 'try {' : ''}${config.useWith ? 'with(' + config.varName + '||{}){' : ''}
 
 ${compileBody.call(this, buffer)}
 if (__eta.layout) {
-  __eta.res = ${isAsync ? "await includeAsync" : "include"} (__eta.layout, {...${
+  __eta.res = ${isAsync ? 'await includeAsync' : 'include'} (__eta.layout, {...${
     config.varName
   }, body: __eta.res, ...__eta.layoutData});
 }
-${config.useWith ? "}" : ""}${
+${config.useWith ? '}' : ''}${
     config.debug
-      ? "} catch (e) { this.RuntimeErr(e, __eta.templateStr, __eta.line, options.filepath) }"
-      : ""
+      ? '} catch (e) { this.RuntimeErr(e, __eta.templateStr, __eta.line, options.filepath) }'
+      : ''
   }
 return __eta.res;
 `;
@@ -79,44 +79,44 @@ export function compileBody(this: Eta, buff: Array<AstObject>): string {
 
   let i = 0;
   const buffLength = buff.length;
-  let returnStr = "";
+  let returnStr = '';
 
   for (i; i < buffLength; i++) {
     const currentBlock = buff[i];
-    if (typeof currentBlock === "string") {
+    if (typeof currentBlock === 'string') {
       const str = currentBlock;
 
       // we know string exists
       returnStr += "__eta.res+='" + str + "'\n";
     } else {
       const type = currentBlock.t; // "r", "e", or "i"
-      let content = currentBlock.val || "";
+      let content = currentBlock.val || '';
 
-      if (config.debug) returnStr += "__eta.line=" + currentBlock.lineNo + "\n";
+      if (config.debug) returnStr += '__eta.line=' + currentBlock.lineNo + '\n';
 
-      if (type === "r") {
+      if (type === 'r') {
         // raw
 
         if (config.autoFilter) {
-          content = "__eta.f(" + content + ")";
+          content = '__eta.f(' + content + ')';
         }
 
-        returnStr += "__eta.res+=" + content + "\n";
-      } else if (type === "i") {
+        returnStr += '__eta.res+=' + content + '\n';
+      } else if (type === 'i') {
         // interpolate
 
         if (config.autoFilter) {
-          content = "__eta.f(" + content + ")";
+          content = '__eta.f(' + content + ')';
         }
 
         if (config.autoEscape) {
-          content = "__eta.e(" + content + ")";
+          content = '__eta.e(' + content + ')';
         }
 
-        returnStr += "__eta.res+=" + content + "\n";
-      } else if (type === "e") {
+        returnStr += '__eta.res+=' + content + '\n';
+      } else if (type === 'e') {
         // execute
-        returnStr += content + "\n";
+        returnStr += content + '\n';
       }
     }
   }

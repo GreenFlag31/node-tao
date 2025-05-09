@@ -1,20 +1,20 @@
 import path from 'node:path';
 import { Eta } from './index copy';
-import { Eta as EtaOriginal } from './index';
+import { Eta as EtaOriginal } from './original/index';
 import express from 'express';
 import { log, time, timeEnd } from 'node:console';
 
 const app = express();
 const PORT = 3000;
 
-const templatesPath = path.join(__dirname, 'public');
+const templatesPath = path.join(__dirname, 'templates');
 const etaOrigin = new EtaOriginal({ views: templatesPath, debug: true });
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-const eta = new Eta({ views: templatesPath, extension: 'html' });
+const eta = new Eta({ views: templatesPath, extension: 'eta' });
 app.get('/', (req, res) => {
-  const test = {
+  let simple = {
     name: `ben`,
   };
 
@@ -37,7 +37,7 @@ app.get('/', (req, res) => {
     lineNumber: 9,
   };
 
-  const renderedTemplate = eta.render('error', error);
+  const renderedTemplate = eta.render('simple', simple);
 
   res.status(200).send(renderedTemplate);
 });

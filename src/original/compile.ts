@@ -1,8 +1,6 @@
-import { EtaParseError } from "./err";
-
-/* TYPES */
-import type { Eta } from "./core";
-import type { EtaConfig, Options } from "./config";
+import { EtaParseError } from './err';
+import { Eta } from './core';
+import { EtaConfig, Options } from '.';
 
 export type TemplateFunction = (this: Eta, data?: object, options?: Partial<Options>) => string;
 /* END TYPES */
@@ -28,19 +26,19 @@ export function compile(this: Eta, str: string, options?: Partial<Options>): Tem
   try {
     return new ctor(
       config.varName,
-      "options",
+      'options',
       this.compileToString.call(this, str, options)
     ) as TemplateFunction; // eslint-disable-line no-new-func
   } catch (e) {
     if (e instanceof SyntaxError) {
       throw new EtaParseError(
-        "Bad template syntax\n\n" +
+        'Bad template syntax\n\n' +
           e.message +
-          "\n" +
-          Array(e.message.length + 1).join("=") +
-          "\n" +
+          '\n' +
+          Array(e.message.length + 1).join('=') +
+          '\n' +
           this.compileToString.call(this, str, options) +
-          "\n" // This will put an extra newline before the callstack for extra readability
+          '\n' // This will put an extra newline before the callstack for extra readability
       );
     } else {
       throw e;

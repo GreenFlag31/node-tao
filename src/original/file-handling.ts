@@ -1,21 +1,17 @@
-import { EtaFileResolutionError } from "./err";
-import * as path from "node:path";
-import * as fs from "node:fs";
-
-/* TYPES */
-import type { Eta as EtaCore } from "./core";
-import type { Options } from "./config";
-import { log } from "node:console";
-/* END TYPES */
+import { EtaFileResolutionError } from './err';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import type { Eta as EtaCore } from './core';
+import type { Options } from './config';
 
 export function readFile(this: EtaCore, path: string): string {
-  let res = "";
+  let res = '';
 
   try {
-    res = fs.readFileSync(path, "utf8");
+    res = fs.readFileSync(path, 'utf8');
     // eslint-disable-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    if (err?.code === "ENOENT") {
+    if (err?.code === 'ENOENT') {
       throw new EtaFileResolutionError(`Could not find template: ${path}`);
     } else {
       throw err;
@@ -30,17 +26,17 @@ export function resolvePath(
   templatePath: string,
   options?: Partial<Options>
 ): string {
-  let resolvedFilePath = "";
+  let resolvedFilePath = '';
 
   const views = this.config.views;
 
   if (!views) {
-    throw new EtaFileResolutionError("Views directory is not defined");
+    throw new EtaFileResolutionError('Views directory is not defined');
   }
 
   const baseFilePath = options && options.filepath;
   const defaultExtension =
-    this.config.defaultExtension === undefined ? ".eta" : this.config.defaultExtension;
+    this.config.defaultExtension === undefined ? '.eta' : this.config.defaultExtension;
 
   // how we index cached template paths
   const cacheIndex = JSON.stringify({
@@ -49,7 +45,7 @@ export function resolvePath(
     views: this.config.views,
   });
 
-  templatePath += path.extname(templatePath) ? "" : defaultExtension;
+  templatePath += path.extname(templatePath) ? '' : defaultExtension;
 
   // if the file was included from another template
   if (baseFilePath) {
@@ -62,7 +58,7 @@ export function resolvePath(
     const absolutePathTest = absolutePathRegExp.exec(templatePath);
 
     if (absolutePathTest && absolutePathTest.length) {
-      const formattedPath = templatePath.replace(/^\/*|^\\*/, "");
+      const formattedPath = templatePath.replace(/^\/*|^\\*/, '');
       resolvedFilePath = path.join(views, formattedPath);
     } else {
       resolvedFilePath = path.join(path.dirname(baseFilePath), templatePath);
@@ -85,7 +81,7 @@ export function resolvePath(
 
 function dirIsChild(parent: string, dir: string) {
   const relative = path.relative(parent, dir);
-  return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
 const absolutePathRegExp = /^\\|^\//;

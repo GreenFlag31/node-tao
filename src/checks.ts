@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { DEFAULT_EXTENSION, DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
-import { log } from 'node:console';
 
 function getPathWithExtension(filePath: string, extension = DEFAULT_EXTENSION) {
   const pathContainsExtension = path.extname(filePath);
@@ -44,6 +43,17 @@ function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFil
   return templatePaths.some((path) => path.endsWith(templateFile));
 }
 
+function checkAccessPermission(templatePaths: string[], templateFile: string) {
+  try {
+    const hasAccess = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+    if (!hasAccess) throw new Error('Access denied, template out of scope');
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
 function checkOpeningAndClosingTag(tags: Tags) {
   const { opening, closing } = tags;
   if (opening === closing) {
@@ -79,4 +89,5 @@ export {
   templateContainsLayout,
   templateContainsInclude,
   templateContainsIncludeAsync,
+  checkAccessPermission,
 };

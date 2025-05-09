@@ -1,6 +1,6 @@
 {
   "name": "eta",
-  "version": "3.5.0",
+  "version": "0.0.1",
   "description": "Lightweight, fast, and powerful embedded JS template engine",
   "keywords": [
     "handlebars",
@@ -12,8 +12,8 @@
     "partials",
     "typescript types"
   ],
-  "main": "index.js",
-  "author": "Ben Gubler <nebrelbug@gmail.com>",
+  "main": "index",
+  "author": "Manu Claeys <unam31@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eta-dev/eta.git"
@@ -26,20 +26,8 @@
     "node": ">=17.0.0"
   },
   "scripts": {
-    "build:node": "microbundle src/index.ts --target node --format esm && microbundle src/index.ts --target node --format umd",
-    "build:browser": "microbundle src/browser.ts --target web --format umd,modern --output dist/browser.js",
-    "build": "npm run build:node && npm run build:browser",
-    "commit": "git-cz",
-    "format": "prettier --write '{src,test}/**/**.ts'",
-    "lint": "eslint src/*.ts test/*.spec.ts --ext .js,.ts",
-    "prebuild": "rimraf dist",
-    "release": "npm run build && np && npx jsr publish",
     "postversion": "node ./jsr.release.js",
-    "size": "size-limit",
-    "start": "microbundle watch",
     "test": "jest",
-    "test:prod": "npm run lint && npm run test -- --no-cache",
-    "test:watch": "jest --coverage --watch",
     "build-own": "rimraf dist && tsc && cpx \"src/templates/**/*\" dist/templates",
     "startNodemon": "nodemon --ext ts,eta,js,json,css,html --watch src --watch package.json --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/public/**/* dist/public && node dist/server.js\""
   },

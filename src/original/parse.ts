@@ -1,12 +1,12 @@
-import { ParseErr } from "./err";
-import { trimWS } from "./utils";
+import { ParseErr } from './err';
+import { trimWS } from './utils';
 
 /* TYPES */
 
-import type { Eta } from "./core";
+import type { Eta } from './core';
 
 // Raw, execute, interpolate
-export type TagType = "r" | "e" | "i" | "";
+export type TagType = 'r' | 'e' | 'i' | '';
 
 export interface TemplateObject {
   t: TagType;
@@ -28,11 +28,11 @@ const doubleQuoteReg = /"(?:\\[\s\w"'\\`]|[^\n\r"\\])*?"/g;
 
 function escapeRegExp(string: string) {
   // From MDN
-  return string.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
 function getLineNo(str: string, index: number) {
-  return str.slice(0, index).split("\n").length;
+  return str.slice(0, index).split('\n').length;
 }
 
 export function parse(this: Eta, str: string): Array<AstObject> {
@@ -60,7 +60,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
     // work well with `\r` and empty lines don't work well with the `m` flag.
     // Essentially, this replaces the whitespace at the beginning and end of
     // each line and removes multiple newlines.
-    str = str.replace(/[\r\n]+/g, "\n").replace(/^\s+|\s+$/gm, "");
+    str = str.replace(/[\r\n]+/g, '\n').replace(/^\s+|\s+$/gm, '');
   }
   /* End rmWhitespace option */
 
@@ -83,7 +83,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
         // replace \ with \\, ' with \'
         // we're going to convert all CRLF to LF so it doesn't take more than one replace
 
-        strng = strng.replace(/\\|'/g, "\\$&").replace(/\r\n|\n|\r/g, "\\n");
+        strng = strng.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 
         buffer.push(strng);
       }
@@ -95,7 +95,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
     prefix
   ) {
     if (accumulator && prefix) {
-      return accumulator + "|" + escapeRegExp(prefix);
+      return accumulator + '|' + escapeRegExp(prefix);
     } else if (prefix) {
       // accumulator is falsy
       return escapeRegExp(prefix);
@@ -104,16 +104,16 @@ export function parse(this: Eta, str: string): Array<AstObject> {
       return accumulator;
     }
   },
-  "");
+  '');
 
   const parseOpenReg = new RegExp(
-    escapeRegExp(config.tags[0]) + "(-|_)?\\s*(" + prefixes + ")?\\s*",
-    "g"
+    escapeRegExp(config.tags[0]) + '(-|_)?\\s*(' + prefixes + ')?\\s*',
+    'g'
   );
 
   const parseCloseReg = new RegExp(
-    "'|\"|`|\\/\\*|(\\s*(-|_)?" + escapeRegExp(config.tags[1]) + ")",
-    "g"
+    '\'|"|`|\\/\\*|(\\s*(-|_)?' + escapeRegExp(config.tags[1]) + ')',
+    'g'
   );
 
   let m;
@@ -124,7 +124,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
     lastIndex = m[0].length + m.index;
 
     const wsLeft = m[1];
-    const prefix = m[2] || ""; // by default either ~, =, or empty
+    const prefix = m[2] || ''; // by default either ~, =, or empty
 
     pushString(precedingString, wsLeft);
 
@@ -142,22 +142,22 @@ export function parse(this: Eta, str: string): Array<AstObject> {
 
         const currentType: TagType =
           prefix === parseOptions.exec
-            ? "e"
+            ? 'e'
             : prefix === parseOptions.raw
-            ? "r"
+            ? 'r'
             : prefix === parseOptions.interpolate
-            ? "i"
-            : "";
+            ? 'i'
+            : '';
 
         currentObj = { t: currentType, val: content };
         break;
       } else {
         const char = closeTag[0];
-        if (char === "/*") {
-          const commentCloseInd = str.indexOf("*/", parseCloseReg.lastIndex);
+        if (char === '/*') {
+          const commentCloseInd = str.indexOf('*/', parseCloseReg.lastIndex);
 
           if (commentCloseInd === -1) {
-            ParseErr("unclosed comment", str, closeTag.index);
+            ParseErr('unclosed comment', str, closeTag.index);
           }
           parseCloseReg.lastIndex = commentCloseInd;
         } else if (char === "'") {
@@ -167,7 +167,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
           if (singleQuoteMatch) {
             parseCloseReg.lastIndex = singleQuoteReg.lastIndex;
           } else {
-            ParseErr("unclosed string", str, closeTag.index);
+            ParseErr('unclosed string', str, closeTag.index);
           }
         } else if (char === '"') {
           doubleQuoteReg.lastIndex = closeTag.index;
@@ -176,15 +176,15 @@ export function parse(this: Eta, str: string): Array<AstObject> {
           if (doubleQuoteMatch) {
             parseCloseReg.lastIndex = doubleQuoteReg.lastIndex;
           } else {
-            ParseErr("unclosed string", str, closeTag.index);
+            ParseErr('unclosed string', str, closeTag.index);
           }
-        } else if (char === "`") {
+        } else if (char === '`') {
           templateLitReg.lastIndex = closeTag.index;
           const templateLitMatch = templateLitReg.exec(str);
           if (templateLitMatch) {
             parseCloseReg.lastIndex = templateLitReg.lastIndex;
           } else {
-            ParseErr("unclosed string", str, closeTag.index);
+            ParseErr('unclosed string', str, closeTag.index);
           }
         }
       }
@@ -195,7 +195,7 @@ export function parse(this: Eta, str: string): Array<AstObject> {
       }
       buffer.push(currentObj);
     } else {
-      ParseErr("unclosed tag", str, m.index);
+      ParseErr('unclosed tag', str, m.index);
     }
   }
 

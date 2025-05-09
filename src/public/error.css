@@ -25,7 +25,10 @@ body {
 }
 
 .error-message {
+  display: flex;
   margin-top: 2rem;
+  color: #000;
+  font-style: italic;
 }
 
 .error-container .content {
@@ -35,12 +38,6 @@ body {
 .error-container .filename {
   display: flex;
   justify-content: flex-end;
-}
-
-.filename p {
-  color: #000;
-  font-style: italic;
-  font-weight: normal;
 }
 
 .error h2 {

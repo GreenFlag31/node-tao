@@ -81,6 +81,11 @@ export interface DefinitiveConfig {
   autoFilter: boolean;
 
   /**
+   * Enable lazy template cache.
+   */
+  cache: boolean;
+
+  /**
    * Function to XML-sanitize interpolations
    */
   escapeFunction: (str: unknown) => string;
@@ -127,6 +132,7 @@ export interface DefinitiveConfig {
 
 const defaultConfig: DefinitiveConfig = {
   autoEscape: true,
+  cache: true,
   autoFilter: false,
   views: process.cwd(),
   escapeFunction: XMLEscape,
