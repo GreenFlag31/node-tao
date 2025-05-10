@@ -1,8 +1,8 @@
 import path from 'node:path';
-import { DEFAULT_EXTENSION, DYNAMICAL_TEMPLATE_PREFIX } from './const';
+import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
 
-function getPathWithExtension(filePath: string, extension = DEFAULT_EXTENSION) {
+function getPathWithExtension(filePath: string, extension: string) {
   const pathContainsExtension = path.extname(filePath);
   if (pathContainsExtension) return filePath;
 
@@ -10,9 +10,7 @@ function getPathWithExtension(filePath: string, extension = DEFAULT_EXTENSION) {
 }
 
 function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {
-  if (isAbsolute) {
-    return getPathWithExtension(templatePath);
-  }
+  if (isAbsolute) return templatePath;
 
   return path.join(views, templatePath);
 }

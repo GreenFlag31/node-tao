@@ -1,5 +1,5 @@
 export interface Data {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // le dernier cas est vraiment utile? =>  | "";

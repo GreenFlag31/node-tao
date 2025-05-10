@@ -15,6 +15,8 @@ import {
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
 import fs from 'node:fs';
+import promise from 'node:fs/promises';
+
 import { log } from 'node:console';
 import {
   buildLayoutFunction,
@@ -284,7 +286,7 @@ export class Eta {
     return compiledData;
   }
 
-  render(templatePath: string, data: Data) {
+  render(templatePath: string, data: Data): string | undefined {
     const isAsync = false;
     const { views, extension } = this.config;
 
@@ -312,26 +314,49 @@ export class Eta {
     return this.execute(templateFn, data, isAsync);
   }
 
-  private execute(templateFn: TemplateFunction, data: Data, isAsync: boolean) {
+  private execute(templateFn: TemplateFunction, data: Data, isAsync: boolean): string | undefined {
     try {
-      const html = templateFn.call(this, data, isAsync);
+      const immutableData = structuredClone(data);
+      const html = templateFn.call(this, immutableData, isAsync);
       return html;
     } catch (error: any) {
       const errorData = this.handleErrorMessage(error);
       // by default, no error should be returned
-      log(errorData);
+      console.error(errorData);
+
+      return this.renderErrorTemplate(errorData);
     }
   }
 
   private handleErrorMessage(error: any) {
-    const [message, fileContent, lineNumber] = findOriginalLineNumberWithMessage(
-      error,
-      this.compiledAST,
-      this.compiledAnonymousFnContent,
-      this.debug.fileContent
-    );
-    this.debug = { ...this.debug, message, lineNumber, fileContent };
-    return this.debug;
+    const { fileContent, lineNumber, message, originalFileName } = this.debug;
+    const errorData = {
+      originalFileName,
+      fileContent,
+      message,
+      lineNumber,
+    };
+
+    const [finalMessage, fileContentPerLine, correctedLineNumber] =
+      findOriginalLineNumberWithMessage(
+        error,
+        this.compiledAST,
+        this.compiledAnonymousFnContent,
+        this.debug.fileContent
+      );
+
+    errorData.message = finalMessage;
+    errorData.fileContent = fileContentPerLine;
+    errorData.lineNumber = correctedLineNumber;
+    return errorData;
+  }
+
+  private renderErrorTemplate(errorData: Data): string | undefined {
+    if (!this.config.debug) return '';
+
+    const templatesPath = path.join(__dirname, 'public');
+    const eta = new Eta({ views: templatesPath, extension: 'html', debug: true });
+    return eta.render('error.html', errorData);
   }
 
   private resolvePath(templatePath: string, isAbsolute: boolean) {
@@ -365,6 +390,19 @@ export class Eta {
       log(error.code);
       if (error.code === 'ENOENT') {
         throw new EtaFileResolutionError(`Could not find template: ${path}`);
+      }
+
+      throw error;
+    }
+  }
+
+  private async asyncReadFile(path: string) {
+    try {
+      const file = await promise.readFile(path, 'utf8');
+      return file;
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        throw new Error(`Could not find template: ${path}`);
       }
 
       throw error;

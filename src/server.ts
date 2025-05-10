@@ -8,11 +8,11 @@ const app = express();
 const PORT = 3000;
 
 const templatesPath = path.join(__dirname, 'templates');
-const etaOrigin = new EtaOriginal({ views: templatesPath, debug: true });
+const etaOrigin = new EtaOriginal({ views: templatesPath });
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-const eta = new Eta({ views: templatesPath, extension: 'eta' });
+const eta = new Eta({ views: templatesPath, extension: 'eta', cache: false });
 app.get('/', (req, res) => {
   let simple = {
     name: `ben`,
@@ -43,10 +43,11 @@ app.get('/', (req, res) => {
 });
 
 function test() {
-  const renderedTemplate = eta.render('simple', {
-    name: `Ben`,
-  });
-  log(renderedTemplate);
+  for (let i = 0; i < 100; i++) {
+    const renderedTemplate = eta.render('simple', {
+      name: `Ben`,
+    });
+  }
 }
 
 // test();

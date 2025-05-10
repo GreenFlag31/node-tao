@@ -86,6 +86,11 @@ export interface DefinitiveConfig {
   cache: boolean;
 
   /**
+   * Pretty-format error messages.
+   */
+  debug?: boolean;
+
+  /**
    * Function to XML-sanitize interpolations
    */
   escapeFunction: (str: unknown) => string;
@@ -134,6 +139,7 @@ const defaultConfig: DefinitiveConfig = {
   autoEscape: true,
   cache: true,
   autoFilter: false,
+  debug: false,
   views: process.cwd(),
   escapeFunction: XMLEscape,
   // default filter function (not used unless enables) just stringifies the input
