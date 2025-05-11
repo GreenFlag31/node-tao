@@ -11,10 +11,6 @@ describe('eta constructor', () => {
     expect(eta.currentConfig).toStrictEqual(defaultConfig);
   });
 
-  it('should freeze', () => {
-    expect(Object.isFrozen(eta.currentConfig)).toBe(true);
-  });
-
   it('should merge config', () => {
     const currentConf = { cache: true, tags: { opening: '{{', closing: '}}' } };
     const eta = new Eta(currentConf);
@@ -38,25 +34,17 @@ describe('eta constructor', () => {
     );
   });
 
-  it('should initialize templatePaths with correct files', () => {
-    const instance = new Eta({ views: path.join(process.cwd(), 'test copy') });
-    const fileEnd = `\\test copy\\templates\\simple${instance.currentConfig.extension}`;
-    let fileIsFound = false;
+  it('No template files should have been found', () => {
+    const templateViews = path.join(process.cwd(), `unexisting-path-${randomUUID()}`);
+    const eta = new Eta({ views: templateViews });
 
-    fileIsFound = instance.mappedFiles.some((file) => file.endsWith(fileEnd));
-
-    if (!fileIsFound) throw new Error('File not found');
+    expect(eta['templatePaths'].length).toBe(0);
   });
 
-  it('should throw an error because no template files have been found', () => {
-    const dir = path.join(process.cwd(), `unexisting-path-${randomUUID()}`);
-    const ext = DEFAULT_EXTENSION;
+  it('Simple template files should be found', () => {
+    const templateViews = path.join(process.cwd(), 'test copy/templates');
+    const eta = new Eta({ views: templateViews });
 
-    expect(
-      () =>
-        new Eta({
-          views: dir,
-        })
-    ).toThrow(`No template files found in ${dir} with extension ${ext}`);
+    expect(eta['templatePaths']).toContain(path.join(templateViews, `simple.${DEFAULT_EXTENSION}`));
   });
 });

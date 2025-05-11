@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
+import { log } from 'node:console';
 
 function getPathWithExtension(filePath: string, extension: string) {
   const pathContainsExtension = path.extname(filePath);
@@ -77,6 +78,12 @@ function checkPrefixTemplateTags(parse: Parse) {
   }
 }
 
+function givenExtensionShouldNotStartWithADot(extension: string) {
+  if (extension.startsWith('.')) {
+    throw new Error('Please provide an extension without a dot in front');
+  }
+}
+
 export {
   getPathWithExtension,
   getFullPath,
@@ -88,4 +95,5 @@ export {
   templateContainsInclude,
   templateContainsIncludeAsync,
   checkAccessPermission,
+  givenExtensionShouldNotStartWithADot,
 };

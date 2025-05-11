@@ -1,3 +1,4 @@
+import { DEFAULT_EXTENSION } from './const';
 import { Parse, Tags } from './interfaces';
 import { XMLEscape } from './utils';
 
@@ -155,7 +156,7 @@ const defaultConfig: DefinitiveConfig = {
     opening: '<%',
     closing: '%>',
   },
-  extension: '.eta',
+  extension: DEFAULT_EXTENSION,
 };
 
 export { defaultConfig };

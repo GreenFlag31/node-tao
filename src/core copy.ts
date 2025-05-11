@@ -12,6 +12,7 @@ import {
   templateContainsInclude,
   templateContainsIncludeAsync,
   templateContainsLayout,
+  givenExtensionShouldNotStartWithADot,
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
 import fs from 'node:fs';
@@ -40,7 +41,7 @@ import { AstObject, TagType, TemplateFunction, TemplateData, Data, Debug } from 
 import assert from 'node:assert';
 import { Store } from './storage copy';
 import { findOriginalLineNumberWithMessage } from './error-utils';
-import path from 'node:path';
+import path, { resolve } from 'node:path';
 
 export class Eta {
   // renderAsync = renderAsync;
@@ -68,6 +69,7 @@ export class Eta {
 
     checkOpeningAndClosingTag(tags);
     checkPrefixTemplateTags(parse);
+    givenExtensionShouldNotStartWithADot(extension);
 
     this.templatePaths = getFilesFromDirectory(views, extension);
   }
