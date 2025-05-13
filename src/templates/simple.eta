@@ -10,6 +10,7 @@
 <body>
 
 <h1>Hi <%= it.name %></h1>
+<h1>3 + 1 = <%= hp.nPlusOne(it.num) %></h1>
 
 </body>
 

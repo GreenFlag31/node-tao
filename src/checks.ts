@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
-import { log } from 'node:console';
 
 function getPathWithExtension(filePath: string, extension: string) {
   const pathContainsExtension = path.extname(filePath);
@@ -18,11 +17,6 @@ function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {
 
 function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
-}
-
-function templateContainsLayout(content: string) {
-  const layoutToken = new RegExp(/layout\(.*\)/);
-  return layoutToken.test(content);
 }
 
 function templateContainsInclude(content: string) {
@@ -45,7 +39,12 @@ function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFil
 function checkAccessPermission(templatePaths: string[], templateFile: string) {
   try {
     const hasAccess = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
-    if (!hasAccess) throw new Error('Access denied, template out of scope');
+    if (!hasAccess) {
+      throw new Error(
+        `Access denied, non existing template or template out of scope (reading "${templateFile}")`
+      );
+    }
+
     return true;
   } catch (error) {
     console.error(error);
@@ -91,7 +90,6 @@ export {
   isTemplateDynamicallyDefined,
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
-  templateContainsLayout,
   templateContainsInclude,
   templateContainsIncludeAsync,
   checkAccessPermission,

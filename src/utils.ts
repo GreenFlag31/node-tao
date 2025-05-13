@@ -1,36 +1,15 @@
 import type { DefinitiveConfig } from './config copy';
-import { escMap, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
+import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Parse, TagType } from './interfaces';
 import { escapeRegExp } from './parse copy';
 
-function buildLayoutFunction(isLayout: boolean) {
-  if (!isLayout) return '';
+function includeFn(isInclude: boolean, isIncludeAsync: boolean) {
+  if (!isInclude && !isIncludeAsync) return '';
 
-  return `function layout(path, data) {
-    ${TP_VARNAME_WITH_PREFIX}.layoutPath = path;
-    ${TP_VARNAME_WITH_PREFIX}.layoutData = data;
-  }`;
-}
+  const variable = isInclude ? 'include' : 'includeAsync';
+  const render = isInclude ? 'render' : 'renderAsync';
 
-function includeLayoutContent(isLayout: boolean, isAsync: boolean) {
-  if (!isLayout) return '';
-  const include = isAsync ? 'await includeAsync' : 'include';
-
-  return `if (${TP_VARNAME_WITH_PREFIX}.layoutPath) {
-    ${TP_VARNAME_WITH_PREFIX}.res = ${include}(${TP_VARNAME_WITH_PREFIX}.layoutPath, {...${TEMPLATE_VARNAME}, body: ${TP_VARNAME_WITH_PREFIX}.res, ...${TP_VARNAME_WITH_PREFIX}.layoutData});
-  }`;
-}
-
-function includeFn(isInclude: boolean, isLayout: boolean) {
-  if (!isInclude && !isLayout) return '';
-
-  return `const include = (templatePath, data) => this.render(templatePath, data);`;
-}
-
-function includeAsyncFn(isIncludeAsync: boolean, isLayout: boolean) {
-  if (!isIncludeAsync && !isLayout) return '';
-
-  return `const includeAsync = (templatePath, data) => this.renderAsync(templatePath, data);`;
+  return `const ${variable} = (templatePath, data = ${TEMPLATE_VARNAME}, helpers = ${HELPER_VARNAME}) => this.${render}(templatePath, data, helpers);`;
 }
 
 function convertToCR(value: string) {
@@ -66,25 +45,26 @@ function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
 
 function compileContent(type: TagType, content: string, config: DefinitiveConfig) {
   const { autoEscape, autoFilter } = config;
+  const prefix = TP_VARNAME_WITH_PREFIX;
 
   if (type === 'raw') {
     if (autoFilter) {
-      content = `${TP_VARNAME_WITH_PREFIX}.f(${content});`;
+      content = `${prefix}.f(${content});`;
     }
 
-    return `${TP_VARNAME_WITH_PREFIX}.res+=${content};\n`;
+    return `${prefix}.res+=${content};\n`;
   }
 
   if (type === 'interpolate') {
     if (autoFilter) {
-      content = `${TP_VARNAME_WITH_PREFIX}.f(${content})`;
+      content = `${prefix}.f(${content})`;
     }
 
     if (autoEscape) {
-      content = `${TP_VARNAME_WITH_PREFIX}.e(${content})`;
+      content = `${prefix}.e(${content})`;
     }
 
-    return `${TP_VARNAME_WITH_PREFIX}.res+=${content};\n`;
+    return `${prefix}.res+=${content};\n`;
   }
 
   if (type === 'execute') {
@@ -129,9 +109,6 @@ export {
   getCurrentPrefixType,
   compileContent,
   buildPrefixRegex,
-  buildLayoutFunction,
   compileBody,
-  includeLayoutContent,
   includeFn,
-  includeAsyncFn,
 };

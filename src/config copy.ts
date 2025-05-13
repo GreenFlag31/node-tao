@@ -34,11 +34,6 @@ export interface EtaConfig {
    */
   filterFunction?: (val: unknown) => string;
 
-  /**
-   * Raw JS code inserted in the template function. Useful for declaring global variables for user templates
-   */
-  functionHeader?: string;
-
   /** Parsing options */
   parse?: Parse;
 
@@ -101,11 +96,6 @@ export interface DefinitiveConfig {
    */
   filterFunction: (val: unknown) => string;
 
-  /**
-   * Raw JS code inserted in the template function. Useful for declaring global variables for user templates
-   */
-  functionHeader: string;
-
   /** Parsing options */
   parse: Required<Parse>;
 
@@ -145,7 +135,6 @@ const defaultConfig: DefinitiveConfig = {
   escapeFunction: XMLEscape,
   // default filter function (not used unless enables) just stringifies the input
   filterFunction: (val) => String(val),
-  functionHeader: '',
   parse: {
     exec: '',
     interpolate: '=',

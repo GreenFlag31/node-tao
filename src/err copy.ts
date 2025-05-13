@@ -38,14 +38,12 @@ export class EtaNameResolutionError extends EtaError {
  */
 
 export function buildParseError(errorMessage: string, str: string, index: number) {
-  let error = errorMessage;
   const whitespace = str.slice(0, index).split(/\n/);
-
   const lineNo = whitespace.length;
   const previousLineNo = lineNo - 1;
   const colNo = whitespace[previousLineNo].length + 1;
 
-  error +=
+  const error =
     ' at line ' +
     lineNo +
     ' col ' +
@@ -58,5 +56,5 @@ export function buildParseError(errorMessage: string, str: string, index: number
     Array(colNo).join(' ') +
     '^';
 
-  return error;
+  return errorMessage + error;
 }

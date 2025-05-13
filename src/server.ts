@@ -11,33 +11,43 @@ const templatesPath = path.join(__dirname, 'templates');
 const etaOrigin = new EtaOriginal({ views: templatesPath });
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
+const error = {
+  originalFileName: 'simple.eta',
+  fileContent: [
+    '<!DOCTYPE html>\r',
+    '<html lang="en">\r',
+    '<head>\r',
+    '  <meta charset="UTF-8" />\r',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\r',
+    '  <title>Title</title>\r',
+    '</head>\r',
+    '<body>\r',
+    '<h1>Hi <%= itsqsq.name %></h1>\r',
+    '</body>\r',
+    '</html>',
+  ],
+  message: 'ReferenceError: itsqsq is not defined',
+  lineNumber: 9,
+};
 
-const eta = new Eta({ views: templatesPath, extension: 'eta', cache: false });
+function nPlusOne(n: number) {
+  return n + 1;
+}
+
+const eta = new Eta({ views: templatesPath, extension: 'eta', cache: true, debug: true });
 app.get('/', (req, res) => {
-  let simple = {
+  const simple = {
     name: `ben`,
+    num: 3,
+  };
+  const data = {
+    title: 'My Page',
+    heading: 'Hello Eta!',
+    content: 'This is some dynamic content rendered via a layout.',
+    partial: 'page', // page.eta
   };
 
-  const error = {
-    originalFileName: 'simple.eta',
-    fileContent: [
-      '<!DOCTYPE html>\r',
-      '<html lang="en">\r',
-      '<head>\r',
-      '  <meta charset="UTF-8" />\r',
-      '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\r',
-      '  <title>Title</title>\r',
-      '</head>\r',
-      '<body>\r',
-      '<h1>Hi <%= itsqsq.name %></h1>\r',
-      '</body>\r',
-      '</html>',
-    ],
-    message: 'ReferenceError: itsqsq is not defined',
-    lineNumber: 9,
-  };
-
-  const renderedTemplate = eta.render('simple', simple);
+  const renderedTemplate = eta.render('simple', simple, { nPlusOne });
 
   res.status(200).send(renderedTemplate);
 });

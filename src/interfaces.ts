@@ -22,7 +22,7 @@ export interface Parse {
   raw?: string;
 }
 
-export type TemplateFunction = (data: object, isAsync: boolean) => string;
+export type TemplateFunction = (data: object, helpers: Helpers, isAsync: boolean) => string;
 
 export interface Tags {
   opening: string;
@@ -40,3 +40,7 @@ export interface Debug {
   message: string;
   lineNumber: number;
 }
+
+export type Helpers = {
+  [fnName: string]: (...args: any[]) => any;
+};

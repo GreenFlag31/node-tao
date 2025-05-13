@@ -81,3 +81,25 @@ body {
 .error-line {
   background: #d8d8d8;
 }
+
+.github {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.github button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+}
+
+.github svg {
+  width: 20px;
+}

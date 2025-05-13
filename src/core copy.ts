@@ -11,7 +11,6 @@ import {
   isTemplateDynamicallyDefined,
   templateContainsInclude,
   templateContainsIncludeAsync,
-  templateContainsLayout,
   givenExtensionShouldNotStartWithADot,
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
@@ -20,14 +19,11 @@ import promise from 'node:fs/promises';
 
 import { log } from 'node:console';
 import {
-  buildLayoutFunction,
   buildPrefixRegex,
   compileBody,
   convertToCR,
   getCurrentPrefixType,
-  includeAsyncFn,
   includeFn,
-  includeLayoutContent,
 } from './utils';
 import {
   templateLitReg,
@@ -37,11 +33,19 @@ import {
   TEMPLATE_VARNAME,
   TP_VARNAME_WITH_PREFIX,
 } from './const';
-import { AstObject, TagType, TemplateFunction, TemplateData, Data, Debug } from './interfaces';
+import {
+  AstObject,
+  TagType,
+  TemplateFunction,
+  TemplateData,
+  Data,
+  Debug,
+  Helpers,
+} from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
 import { findOriginalLineNumberWithMessage } from './error-utils';
-import path, { resolve } from 'node:path';
+import path from 'node:path';
 
 export class Eta {
   // renderAsync = renderAsync;
@@ -113,11 +117,7 @@ export class Eta {
     const Fn = isAsync ? (AsyncFunction as FunctionConstructor) : Function;
 
     try {
-      return new Fn(
-        TEMPLATE_VARNAME,
-        'isAsync',
-        this.compile(content, isAsync)
-      ) as TemplateFunction;
+      return new Fn(TEMPLATE_VARNAME, 'hp', 'isAsync', this.compile(content)) as TemplateFunction;
     } catch (error: any) {
       log('error inside createCompilationFn');
 
@@ -128,7 +128,7 @@ export class Eta {
             '\n' +
             Array(error.message.length + 1).join('=') +
             '\n' +
-            this.compile(content, isAsync) +
+            this.compile(content) +
             '\n'
         );
       }
@@ -137,27 +137,18 @@ export class Eta {
     }
   }
 
-  private compile(content: string, isAsync: boolean) {
-    const { functionHeader } = this.config;
-
+  private compile(content: string) {
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
-    const isLayout = templateContainsLayout(content);
     const isInclude = templateContainsInclude(content);
     const isIncludeAsync = templateContainsIncludeAsync(content);
 
-    const result = `${functionHeader}
-    ${includeFn(isInclude, isLayout)}
-    ${includeAsyncFn(isIncludeAsync, isLayout)}
-
+    const result = `
+    ${includeFn(isInclude, isIncludeAsync)}
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
     
-    ${buildLayoutFunction(isLayout)}
-      
     ${compileBody(compiledData, this.config)}
-
-    ${includeLayoutContent(isLayout, isAsync)}
 
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
@@ -288,7 +279,7 @@ export class Eta {
     return compiledData;
   }
 
-  render(templatePath: string, data: Data): string | undefined {
+  render(templatePath: string, data: Data = {}, helpers: Helpers = {}) {
     const isAsync = false;
     const { views, extension } = this.config;
 
@@ -309,17 +300,17 @@ export class Eta {
 
     if (templateCached) {
       log(`${templatePath} cache hit`);
-      return this.execute(templateCached, data, isAsync);
+      return this.execute(templateCached, data, helpers, isAsync);
     }
 
-    const templateFn = this.readFileAndCompile(resolvedPath, isAsync);
-    return this.execute(templateFn, data, isAsync);
+    const templateFn = this.readFileAndCompile(resolvedPath, helpers, isAsync);
+    return this.execute(templateFn, data, helpers, isAsync);
   }
 
-  private execute(templateFn: TemplateFunction, data: Data, isAsync: boolean): string | undefined {
+  private execute(templateFn: TemplateFunction, data: Data, helpers: Helpers, isAsync: boolean) {
     try {
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, isAsync);
+      const html = templateFn.call(this, immutableData, helpers, isAsync);
       return html;
     } catch (error: any) {
       const errorData = this.handleErrorMessage(error);
@@ -372,7 +363,7 @@ export class Eta {
     return resolvedFilePath;
   }
 
-  private readFileAndCompile(resolvedPath: string, isAsync: boolean) {
+  private readFileAndCompile(resolvedPath: string, helpers: Helpers, isAsync: boolean) {
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
     const templateFn = this.createCompilationFunction(content, isAsync);
@@ -411,7 +402,7 @@ export class Eta {
     }
   }
 
-  loadTemplate(name: string, template: string, isAsync = false) {
+  loadTemplate(name: string, template: string, helpers: Helpers = {}, isAsync = false) {
     assert(typeof template === 'string', 'Provided template is not a string');
     assert(
       isTemplateDynamicallyDefined(name),

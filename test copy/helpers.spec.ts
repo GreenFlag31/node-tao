@@ -1,5 +1,9 @@
 import path from 'node:path';
-import { getFullPath, getPathWithExtension } from '../src/checks';
+import {
+  getFullPath,
+  getPathWithExtension,
+  isTemplateFileInsideGivenDirectory,
+} from '../src/checks';
 import { log } from 'node:console';
 
 describe('checks function tests', () => {
@@ -31,5 +35,19 @@ describe('checks function tests', () => {
 
     const result = getFullPath(views, completePath, pathIsAbsolute);
     expect(result).toBe(completePath);
+  });
+
+  it('isTemplateFileInsideGivenDirectory should return true', () => {
+    const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test copy\\simple.eta'];
+    const templateFile = 'simple.eta';
+    const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+    expect(result).toBe(true);
+  });
+
+  it('isTemplateFileInsideGivenDirectory should return true', () => {
+    const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test copy\\simple.eta'];
+    const templateFile = 'unexistant.eta';
+    const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+    expect(result).toBe(false);
   });
 });

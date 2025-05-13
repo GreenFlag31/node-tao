@@ -28,7 +28,7 @@
   "scripts": {
     "postversion": "node ./jsr.release.js",
     "test": "jest",
-    "build-own": "rimraf dist && tsc && cpx \"src/templates/**/*\" dist/templates",
+    "build": "rimraf dist && tsc && cpx \"src/templates/**/*\" dist/templates",
     "startNodemon": "nodemon --ext ts,eta,js,json,css,html --watch src --watch package.json --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/public/**/* dist/public && node dist/server.js\""
   },
   "devDependencies": {
