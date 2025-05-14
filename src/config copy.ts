@@ -62,6 +62,11 @@ export interface EtaConfig {
    * @default '.eta'
    */
   extension?: string;
+
+  /**
+   * Display a box inside your browser with several informations
+   */
+  metrics?: boolean;
 }
 
 export interface DefinitiveConfig {
@@ -124,6 +129,12 @@ export interface DefinitiveConfig {
    * @default '.eta'
    */
   extension: string;
+
+  /**
+   * Display a box inside your browser with several informations.
+   * Disable cache.
+   */
+  metrics: boolean;
 }
 
 const defaultConfig: DefinitiveConfig = {
@@ -146,6 +157,7 @@ const defaultConfig: DefinitiveConfig = {
     closing: '%>',
   },
   extension: DEFAULT_EXTENSION,
+  metrics: true,
 };
 
 export { defaultConfig };

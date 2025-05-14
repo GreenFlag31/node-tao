@@ -1,15 +1,46 @@
+import path from 'node:path';
 import type { DefinitiveConfig } from './config copy';
 import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Parse, TagType } from './interfaces';
 import { escapeRegExp } from './parse copy';
+import { log } from 'node:console';
 
-function includeFn(isInclude: boolean, isIncludeAsync: boolean) {
-  if (!isInclude && !isIncludeAsync) return '';
+function includeFn(isInclude: boolean) {
+  if (!isInclude) return '';
 
-  const variable = isInclude ? 'include' : 'includeAsync';
-  const render = isInclude ? 'render' : 'renderAsync';
+  return `const include = (templatePath, data = ${TEMPLATE_VARNAME}, helpers = ${HELPER_VARNAME}) => this.render(templatePath, data, helpers);`;
+}
 
-  return `const ${variable} = (templatePath, data = ${TEMPLATE_VARNAME}, helpers = ${HELPER_VARNAME}) => this.${render}(templatePath, data, helpers);`;
+function includeMetrics(metrics: boolean, files: string[]) {
+  if (!metrics) return '';
+
+  const data = {
+    renderTime: '0.5ms',
+    name: 'jogn--hn',
+  };
+
+  const filesNameAndPath = getFileNameAndAbsPath(files);
+  const filesNumber = filesNameAndPath.length;
+  log(filesNameAndPath);
+
+  return `'<script>console.log("%c[RENDERED]%c: ${
+    data.renderTime
+  }", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal");console.log("%c[${filesNumber} FILES MAPPED]%c:", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal");console.table(${JSON.stringify(
+    filesNameAndPath
+  )});</script>'`;
+}
+
+function getFileNameAndAbsPath(files: string[]) {
+  const filesNameAndPath = [];
+  const separator = path.sep;
+
+  for (const file of files) {
+    const fileName = file.split(separator).at(-1);
+    const nameAndPath = { name: fileName };
+    filesNameAndPath.push(nameAndPath);
+  }
+
+  return filesNameAndPath;
 }
 
 function convertToCR(value: string) {
@@ -25,7 +56,7 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveConfig['parse']):
 
   return parseOptions[prefix] ?? '';
 }
-
+// renvoyer simplement le contenu, pas mettre .res+=
 function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
   let result = '';
 
@@ -111,4 +142,5 @@ export {
   buildPrefixRegex,
   compileBody,
   includeFn,
+  includeMetrics,
 };

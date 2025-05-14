@@ -22,7 +22,7 @@ export interface Parse {
   raw?: string;
 }
 
-export type TemplateFunction = (data: object, helpers: Helpers, isAsync: boolean) => string;
+export type TemplateFunction = (data: object, helpers: Helpers) => string;
 
 export interface Tags {
   opening: string;

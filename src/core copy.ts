@@ -24,6 +24,7 @@ import {
   convertToCR,
   getCurrentPrefixType,
   includeFn,
+  includeMetrics,
 } from './utils';
 import {
   templateLitReg,
@@ -48,9 +49,7 @@ import { findOriginalLineNumberWithMessage } from './error-utils';
 import path from 'node:path';
 
 export class Eta {
-  // renderAsync = renderAsync;
   // renderString = renderString;
-  // renderStringAsync = renderStringAsync;
 
   private config: DefinitiveConfig;
   private templatePaths: string[] = [];
@@ -113,11 +112,9 @@ export class Eta {
     return undefined;
   }
 
-  private createCompilationFunction(content: string, isAsync: boolean) {
-    const Fn = isAsync ? (AsyncFunction as FunctionConstructor) : Function;
-
+  private createCompilationFunction(content: string) {
     try {
-      return new Fn(TEMPLATE_VARNAME, 'hp', 'isAsync', this.compile(content)) as TemplateFunction;
+      return new Function(TEMPLATE_VARNAME, 'hp', this.compile(content)) as TemplateFunction;
     } catch (error: any) {
       log('error inside createCompilationFn');
 
@@ -141,15 +138,15 @@ export class Eta {
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
     const isInclude = templateContainsInclude(content);
-    const isIncludeAsync = templateContainsIncludeAsync(content);
 
     const result = `
-    ${includeFn(isInclude, isIncludeAsync)}
+    ${includeFn(isInclude)}
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
     
     ${compileBody(compiledData, this.config)}
 
+    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(this.config.metrics, this.mappedFiles)}
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
 
@@ -280,7 +277,6 @@ export class Eta {
   }
 
   render(templatePath: string, data: Data = {}, helpers: Helpers = {}) {
-    const isAsync = false;
     const { views, extension } = this.config;
 
     assert(typeof templatePath === 'string', 'Template provided should be of type string');
@@ -300,17 +296,17 @@ export class Eta {
 
     if (templateCached) {
       log(`${templatePath} cache hit`);
-      return this.execute(templateCached, data, helpers, isAsync);
+      return this.execute(templateCached, data, helpers);
     }
 
-    const templateFn = this.readFileAndCompile(resolvedPath, helpers, isAsync);
-    return this.execute(templateFn, data, helpers, isAsync);
+    const templateFn = this.readFileAndCompile(resolvedPath);
+    return this.execute(templateFn, data, helpers);
   }
 
-  private execute(templateFn: TemplateFunction, data: Data, helpers: Helpers, isAsync: boolean) {
+  private execute(templateFn: TemplateFunction, data: Data, helpers: Helpers) {
     try {
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, isAsync);
+      const html = templateFn.call(this, immutableData, helpers);
       return html;
     } catch (error: any) {
       const errorData = this.handleErrorMessage(error);
@@ -363,10 +359,10 @@ export class Eta {
     return resolvedFilePath;
   }
 
-  private readFileAndCompile(resolvedPath: string, helpers: Helpers, isAsync: boolean) {
+  private readFileAndCompile(resolvedPath: string) {
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
-    const templateFn = this.createCompilationFunction(content, isAsync);
+    const templateFn = this.createCompilationFunction(content);
 
     if (this.config.cache) {
       this.templateStore.define(resolvedPath, templateFn);
@@ -402,14 +398,14 @@ export class Eta {
     }
   }
 
-  loadTemplate(name: string, template: string, helpers: Helpers = {}, isAsync = false) {
+  loadTemplate(name: string, template: string) {
     assert(typeof template === 'string', 'Provided template is not a string');
     assert(
       isTemplateDynamicallyDefined(name),
       "Dynamically loaded template should start with a '@'"
     );
 
-    const templateFn = this.createCompilationFunction(template, isAsync);
+    const templateFn = this.createCompilationFunction(template);
     this.templateStore.define(name, templateFn);
   }
 }

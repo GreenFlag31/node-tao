@@ -1,9 +1,9 @@
 import { TemplateFunction } from './interfaces';
 
-export class Store {
-  private store: Record<string, TemplateFunction> = {};
+export class Store<T = TemplateFunction> {
+  private store: Record<string, T> = {};
 
-  define(key: string, fn: TemplateFunction) {
+  define(key: string, fn: T) {
     this.store[key] = fn;
   }
 
@@ -19,7 +19,7 @@ export class Store {
     this.store = {};
   }
 
-  load(cached: Record<string, TemplateFunction>) {
+  load(cached: Record<string, T>) {
     this.store = { ...this.store, ...cached };
   }
 }
