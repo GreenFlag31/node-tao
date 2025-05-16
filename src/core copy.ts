@@ -14,7 +14,6 @@ import {
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
 import fs from 'node:fs';
-import promise from 'node:fs/promises';
 
 import { log } from 'node:console';
 import {
@@ -22,10 +21,8 @@ import {
   compileBody,
   convertToCR,
   getCurrentPrefixType,
-  includeCacheHit,
   includeFn,
-  includeMetrics,
-  includeRenderTime,
+  initVariablesAndHelpers,
 } from './utils';
 import {
   templateLitReg,
@@ -48,6 +45,7 @@ import { Store } from './storage copy';
 import { findOriginalLineNumberWithMessage } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
+import { includeCacheHit, includeMetrics, includeRenderTime } from './metrics';
 
 export class Eta {
   // renderString = renderString;
@@ -66,6 +64,7 @@ export class Eta {
     lineNumber: 1,
   };
   private startRenderTime = 0;
+  private cacheHit = false;
 
   // + everything should be defaulted at init
   constructor(customConfig: EtaConfig = {}) {
@@ -114,9 +113,17 @@ export class Eta {
     return undefined;
   }
 
-  private createCompilationFunction(content: string) {
+  private createCompilationFunction(
+    content: string,
+    variablesOfData: string,
+    variablesOfHelpers: string
+  ) {
     try {
-      return new Function(TEMPLATE_VARNAME, 'hp', this.compile(content)) as TemplateFunction;
+      return new Function(
+        TEMPLATE_VARNAME,
+        'hp',
+        this.compile(content, variablesOfData, variablesOfHelpers)
+      ) as TemplateFunction;
     } catch (error: any) {
       log('error inside createCompilationFn');
 
@@ -127,7 +134,7 @@ export class Eta {
             '\n' +
             Array(error.message.length + 1).join('=') +
             '\n' +
-            this.compile(content) +
+            this.compile(content, variablesOfData, variablesOfHelpers) +
             '\n'
         );
       }
@@ -136,14 +143,17 @@ export class Eta {
     }
   }
 
-  private compile(content: string) {
-    const { metrics } = this.config;
+  private compile(content: string, variablesOfData: string, variablesOfHelpers: string) {
+    const { metrics, cache } = this.config;
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
     const isInclude = templateContainsInclude(content);
 
     const result = `
     ${includeFn(isInclude)}
+    ${variablesOfData}
+    ${variablesOfHelpers}
+
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
     
@@ -151,7 +161,12 @@ export class Eta {
 
     ${includeRenderTime(metrics)}
     ${includeCacheHit(metrics)}
-    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(metrics, this.mappedFiles)}
+    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(
+      metrics,
+      this.mappedFiles,
+      this.debug.originalFileName,
+      cache
+    )}
 
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
@@ -282,14 +297,11 @@ export class Eta {
     return compiledData;
   }
 
-  cacheHit = false;
-
   render(templatePath: string, data: Data = {}, helpers: Helpers = {}) {
     const { views, extension } = this.config;
     this.startRenderTime = performance.now();
     this.cacheHit = false;
 
-    assert(typeof templatePath === 'string', 'Template provided should be of type string');
     assert(
       this.templatePaths.length > 0,
       `No template files found in ${views} with extension ${extension}`
@@ -305,12 +317,13 @@ export class Eta {
     const templateCached = this.handleCache(resolvedPath);
 
     if (templateCached) {
-      log(`${templatePath} cache hit`);
       this.cacheHit = true;
       return this.execute(templateCached, data, helpers);
     }
 
-    const templateFn = this.readFileAndCompile(resolvedPath);
+    const variablesOfData = initVariablesAndHelpers(data);
+    const variablesOfHelpers = initVariablesAndHelpers(helpers);
+    const templateFn = this.readFileAndCompile(resolvedPath, variablesOfData, variablesOfHelpers);
     return this.execute(templateFn, data, helpers);
   }
 
@@ -370,10 +383,14 @@ export class Eta {
     return resolvedFilePath;
   }
 
-  private readFileAndCompile(resolvedPath: string) {
+  private readFileAndCompile(
+    resolvedPath: string,
+    variablesOfData: string,
+    variablesOfHelpers: string
+  ) {
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
-    const templateFn = this.createCompilationFunction(content);
+    const templateFn = this.createCompilationFunction(content, variablesOfData, variablesOfHelpers);
 
     if (this.config.cache) {
       this.templateStore.define(resolvedPath, templateFn);
@@ -396,27 +413,17 @@ export class Eta {
     }
   }
 
-  private async asyncReadFile(path: string) {
-    try {
-      const file = await promise.readFile(path, 'utf8');
-      return file;
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
-        throw new Error(`Could not find template: ${path}`);
-      }
-
-      throw error;
-    }
-  }
-
   loadTemplate(name: string, template: string) {
-    assert(typeof template === 'string', 'Provided template is not a string');
     assert(
       isTemplateDynamicallyDefined(name),
       "Dynamically loaded template should start with a '@'"
     );
 
-    const templateFn = this.createCompilationFunction(template);
+    // TO FIX
+    // postposer createCompilation
+    // définir un store particulier pour temp dynamique ?
+    // mettre ensuite en cache dans le render
+    const templateFn = this.createCompilationFunction(template, '', '');
     this.templateStore.define(name, templateFn);
   }
 }

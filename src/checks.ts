@@ -30,7 +30,14 @@ function templateContainsIncludeAsync(content: string) {
 }
 
 function isInProduction() {
-  return (process.env.NODE_ENV = 'production');
+  return process.env.NODE_ENV === 'production';
+}
+
+/**
+ * No metrics should be displayed if disabled or in production.
+ */
+function metricsDisabledOrInProduction(metrics: boolean) {
+  return !metrics || isInProduction();
 }
 
 /**
@@ -99,4 +106,5 @@ export {
   checkAccessPermission,
   givenExtensionShouldNotStartWithADot,
   isInProduction,
+  metricsDisabledOrInProduction,
 };

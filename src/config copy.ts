@@ -89,7 +89,7 @@ export interface DefinitiveConfig {
   /**
    * Pretty-format error messages.
    */
-  debug?: boolean;
+  debug: boolean;
 
   /**
    * Function to XML-sanitize interpolations
@@ -131,7 +131,7 @@ export interface DefinitiveConfig {
   extension: string;
 
   /**
-   * Display a box inside your browser with several informations.
+   * Display console logs inside your browser with several informations.
    */
   metrics: boolean;
 }

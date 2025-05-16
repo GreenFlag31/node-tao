@@ -2,7 +2,6 @@ import path from 'node:path';
 import { Eta } from './index copy';
 import { Eta as EtaOriginal } from './original/index';
 import express from 'express';
-import { log, time, timeEnd } from 'node:console';
 
 const app = express();
 const PORT = 3000;
@@ -34,7 +33,12 @@ function nPlusOne(n: number) {
   return n + 1;
 }
 
-const eta = new Eta({ views: templatesPath, extension: 'eta', cache: true, debug: true });
+const eta = new Eta({
+  views: templatesPath,
+  extension: 'eta',
+  cache: true,
+  debug: true,
+});
 app.get('/', (req, res) => {
   const simple = {
     name: `ben`,

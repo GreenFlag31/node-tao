@@ -1,43 +1,29 @@
+import { log } from 'console';
 import type { DefinitiveConfig } from './config copy';
 import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
-import { AstObject, Parse, TagType } from './interfaces';
+import { AstObject, Data, Helpers, Parse, TagType } from './interfaces';
 import { escapeRegExp } from './parse copy';
-import { getFileNameAndAbsPath, setTitleStyle } from './metrics';
+
+function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
+  const dataEntries = Object.entries(dataOrHelpers);
+  if (dataEntries.length === 0) return '';
+  let variables = '';
+
+  for (const [key, value] of dataEntries) {
+    const valueIsOfTypeString = typeof value === 'string';
+    const formatValue = valueIsOfTypeString ? `"${value}"` : value;
+
+    variables += `const ${key} = ${formatValue};`;
+  }
+
+  log(variables);
+  return variables;
+}
 
 function includeFn(isInclude: boolean) {
   if (!isInclude) return '';
 
   return `const include = (templatePath, data = ${TEMPLATE_VARNAME}, helpers = ${HELPER_VARNAME}) => this.render(templatePath, data, helpers);`;
-}
-
-function includeRenderTime(metrics: boolean) {
-  if (!metrics) return '';
-  return `const renderDuration = (performance.now() - this.startRenderTime).toFixed(2);`;
-}
-
-function includeCacheHit(metrics: boolean) {
-  if (!metrics) return '';
-  return `const cacheHit = this.cacheHit;`;
-}
-
-function includeMetrics(metrics: boolean, files: string[]) {
-  if (!metrics) return '';
-
-  const filesNameAndPath = getFileNameAndAbsPath(files);
-  const filesNumber = filesNameAndPath.length;
-  const filesMapped = `${filesNumber} FILES MAPPED`;
-
-  return `'<script>${getRenderTime()};${getCacheHit()};console.log(${setTitleStyle(
-    filesMapped
-  )});console.table(${JSON.stringify(filesNameAndPath)});</script>'`;
-}
-
-function getCacheHit() {
-  return `console.log("%c[CACHE HIT]%c: ' + cacheHit + '", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal")`;
-}
-
-function getRenderTime() {
-  return `console.log("%c[RENDERED]%c: ' + renderDuration + 'ms", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal")`;
 }
 
 function convertToCR(value: string) {
@@ -139,7 +125,5 @@ export {
   buildPrefixRegex,
   compileBody,
   includeFn,
-  includeMetrics,
-  includeRenderTime,
-  includeCacheHit,
+  initVariablesAndHelpers,
 };
