@@ -29,6 +29,10 @@ function templateContainsIncludeAsync(content: string) {
   return layoutToken.test(content);
 }
 
+function isInProduction() {
+  return (process.env.NODE_ENV = 'production');
+}
+
 /**
  * Security measure to allow access to only files in given directory that has been previously mapped.
  */
@@ -94,4 +98,5 @@ export {
   templateContainsIncludeAsync,
   checkAccessPermission,
   givenExtensionShouldNotStartWithADot,
+  isInProduction,
 };

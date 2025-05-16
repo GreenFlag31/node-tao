@@ -10,7 +10,6 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   templateContainsInclude,
-  templateContainsIncludeAsync,
   givenExtensionShouldNotStartWithADot,
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
@@ -23,14 +22,15 @@ import {
   compileBody,
   convertToCR,
   getCurrentPrefixType,
+  includeCacheHit,
   includeFn,
   includeMetrics,
+  includeRenderTime,
 } from './utils';
 import {
   templateLitReg,
   singleQuoteReg,
   doubleQuoteReg,
-  AsyncFunction,
   TEMPLATE_VARNAME,
   TP_VARNAME_WITH_PREFIX,
 } from './const';
@@ -47,6 +47,7 @@ import assert from 'node:assert';
 import { Store } from './storage copy';
 import { findOriginalLineNumberWithMessage } from './error-utils';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 
 export class Eta {
   // renderString = renderString;
@@ -64,6 +65,7 @@ export class Eta {
     message: '',
     lineNumber: 1,
   };
+  private startRenderTime = 0;
 
   // + everything should be defaulted at init
   constructor(customConfig: EtaConfig = {}) {
@@ -135,6 +137,7 @@ export class Eta {
   }
 
   private compile(content: string) {
+    const { metrics } = this.config;
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
     const isInclude = templateContainsInclude(content);
@@ -146,7 +149,10 @@ export class Eta {
     
     ${compileBody(compiledData, this.config)}
 
-    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(this.config.metrics, this.mappedFiles)}
+    ${includeRenderTime(metrics)}
+    ${includeCacheHit(metrics)}
+    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(metrics, this.mappedFiles)}
+
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
 
@@ -276,8 +282,12 @@ export class Eta {
     return compiledData;
   }
 
+  cacheHit = false;
+
   render(templatePath: string, data: Data = {}, helpers: Helpers = {}) {
     const { views, extension } = this.config;
+    this.startRenderTime = performance.now();
+    this.cacheHit = false;
 
     assert(typeof templatePath === 'string', 'Template provided should be of type string');
     assert(
@@ -296,6 +306,7 @@ export class Eta {
 
     if (templateCached) {
       log(`${templatePath} cache hit`);
+      this.cacheHit = true;
       return this.execute(templateCached, data, helpers);
     }
 

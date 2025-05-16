@@ -1,9 +1,8 @@
-import path from 'node:path';
 import type { DefinitiveConfig } from './config copy';
 import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Parse, TagType } from './interfaces';
 import { escapeRegExp } from './parse copy';
-import { log } from 'node:console';
+import { getFileNameAndAbsPath, setTitleStyle } from './metrics';
 
 function includeFn(isInclude: boolean) {
   if (!isInclude) return '';
@@ -11,36 +10,34 @@ function includeFn(isInclude: boolean) {
   return `const include = (templatePath, data = ${TEMPLATE_VARNAME}, helpers = ${HELPER_VARNAME}) => this.render(templatePath, data, helpers);`;
 }
 
+function includeRenderTime(metrics: boolean) {
+  if (!metrics) return '';
+  return `const renderDuration = (performance.now() - this.startRenderTime).toFixed(2);`;
+}
+
+function includeCacheHit(metrics: boolean) {
+  if (!metrics) return '';
+  return `const cacheHit = this.cacheHit;`;
+}
+
 function includeMetrics(metrics: boolean, files: string[]) {
   if (!metrics) return '';
 
-  const data = {
-    renderTime: '0.5ms',
-    name: 'jogn--hn',
-  };
-
   const filesNameAndPath = getFileNameAndAbsPath(files);
   const filesNumber = filesNameAndPath.length;
-  log(filesNameAndPath);
+  const filesMapped = `${filesNumber} FILES MAPPED`;
 
-  return `'<script>console.log("%c[RENDERED]%c: ${
-    data.renderTime
-  }", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal");console.log("%c[${filesNumber} FILES MAPPED]%c:", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal");console.table(${JSON.stringify(
-    filesNameAndPath
-  )});</script>'`;
+  return `'<script>${getRenderTime()};${getCacheHit()};console.log(${setTitleStyle(
+    filesMapped
+  )});console.table(${JSON.stringify(filesNameAndPath)});</script>'`;
 }
 
-function getFileNameAndAbsPath(files: string[]) {
-  const filesNameAndPath = [];
-  const separator = path.sep;
+function getCacheHit() {
+  return `console.log("%c[CACHE HIT]%c: ' + cacheHit + '", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal")`;
+}
 
-  for (const file of files) {
-    const fileName = file.split(separator).at(-1);
-    const nameAndPath = { name: fileName };
-    filesNameAndPath.push(nameAndPath);
-  }
-
-  return filesNameAndPath;
+function getRenderTime() {
+  return `console.log("%c[RENDERED]%c: ' + renderDuration + 'ms", "color: white; background: green; padding: 2px; font-weight: bold;","color:normal")`;
 }
 
 function convertToCR(value: string) {
@@ -143,4 +140,6 @@ export {
   compileBody,
   includeFn,
   includeMetrics,
+  includeRenderTime,
+  includeCacheHit,
 };

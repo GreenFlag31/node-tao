@@ -132,7 +132,6 @@ export interface DefinitiveConfig {
 
   /**
    * Display a box inside your browser with several informations.
-   * Disable cache.
    */
   metrics: boolean;
 }
