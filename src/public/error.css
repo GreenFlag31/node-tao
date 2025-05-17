@@ -55,7 +55,7 @@ body {
 
 .source-code-container span {
   padding: 0.2rem;
-  font-family: monospace;
+  font-family: system-ui;
   font-size: 1rem;
 }
 
@@ -67,7 +67,7 @@ body {
   background: #000;
   color: #adadad;
   text-align: right;
-  width: 5ch;
+  min-width: 5ch;
   padding-right: 0.5ch;
 }
 
@@ -102,4 +102,27 @@ a {
 
 .github svg {
   width: 20px;
+}
+
+/* RESIZE CURSOR */
+.resize-handle {
+  top: 0;
+  position: absolute;
+  width: 6px;
+  height: 100%;
+  z-index: 2;
+  cursor: w-resize;
+}
+.resize-handle.left:hover,
+.resize-handle.right:hover {
+  background-color: #72bdff47;
+  transition: 0.4s background-color;
+}
+.resize-handle.left {
+  left: -3px;
+  border-radius: 0.5rem;
+}
+.resize-handle.right {
+  right: -3px;
+  border-radius: 0.5rem;
 }

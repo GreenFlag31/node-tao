@@ -64,6 +64,7 @@ function trimEmptySpaceAndDecrementLine(fileContent: string, lineNumber: number)
     const line = fileSplittedByNewLine[i];
 
     if (!line.trim()) {
+      // empty line
       if (i < lineNumber - 1) offset += 1;
       continue;
     }
@@ -73,6 +74,49 @@ function trimEmptySpaceAndDecrementLine(fileContent: string, lineNumber: number)
 
   const line = lineNumber - offset;
   return [fileContentWithoutEmptySpace, line];
+}
+
+function bareElementStyling(line: string) {
+  let lineWithStyle = line.toLowerCase();
+  const htmlElements = [
+    'doctype',
+    'html',
+    'head',
+    'title',
+    'meta',
+    'link',
+    'body',
+    'header',
+    'nav',
+    'main',
+    'section',
+    'article',
+    'footer',
+    'h1',
+    'h2',
+    'p',
+    'a',
+    'img',
+    'ul',
+    'ol',
+    'li',
+    'table',
+    'form',
+    'input',
+    'button',
+    'div',
+    'span',
+  ];
+
+  for (const element of htmlElements) {
+    const containsElement = lineWithStyle.indexOf(element);
+    if (containsElement === -1) continue;
+
+    const regex = new RegExp(`\\b${element}\\b`, 'g');
+    lineWithStyle = lineWithStyle.replace(regex, `<span>${element}</span>`);
+  }
+
+  return lineWithStyle;
 }
 
 export {

@@ -17,26 +17,28 @@
   <body>
     <div class="general-container">
       <section class="error-container">
+        <div class="resize-handle left"></div>
+        <div class="resize-handle right"></div>
         <div class="error">
           <div class="header">
             <h2>An error occurred</h2>
           </div>
 
           <div class="error-message">
-            <p><%= it.message %> at line <%= it.lineNumber %> in <%= it.originalFileName %></p>
+            <p><%= message %> at line <%= lineNumber %> in <%= originalFileName %></p>
           </div>
 
           <div class="content">
             <div class="source-code-container">
-              <% for (let i = 0; i < it.fileContent.length; i++) { %>
+              <% for (let i = 0; i < fileContent.length; i++) { %>
 
               <div class="error-line-container">
-                <% const errorLine = i === it.lineNumber - 1 %>
+                <% const errorLine = i === lineNumber - 1 %>
                 <span class="<%= errorLine ? 'line-number active' : 'line-number' %>"
                   ><%= i + 1 %>
                 </span>
                 <span class="<%= errorLine ? 'html error-line' : 'html' %>">
-                  <%= it.fileContent[i] %>
+                  <%= fileContent[i] %>
                 </span>
               </div>
               <% } %>

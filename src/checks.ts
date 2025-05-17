@@ -9,12 +9,6 @@ function getPathWithExtension(filePath: string, extension: string) {
   return `${filePath}.${extension}`;
 }
 
-function getFullPath(views: string, templatePath: string, isAbsolute: boolean) {
-  if (isAbsolute) return templatePath;
-
-  return path.join(views, templatePath);
-}
-
 function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
 }
@@ -96,7 +90,6 @@ function givenExtensionShouldNotStartWithADot(extension: string) {
 
 export {
   getPathWithExtension,
-  getFullPath,
   isTemplateFileInsideGivenDirectory,
   isTemplateDynamicallyDefined,
   checkOpeningAndClosingTag,

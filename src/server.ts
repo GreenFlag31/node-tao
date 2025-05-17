@@ -7,7 +7,7 @@ const app = express();
 const PORT = 3000;
 
 const templatesPath = path.join(__dirname, 'templates');
-const etaOrigin = new EtaOriginal({ views: templatesPath });
+// const etaOrigin = new EtaOriginal({ views: templatesPath });
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 const error = {
@@ -39,20 +39,21 @@ const eta = new Eta({
   cache: true,
   debug: true,
 });
+
 app.get('/', (req, res) => {
+  //   const headerPartial = `
+  //   <header>
+  //     <h1><%= title %></h1>
+  //   </header>
+  // `;
+  //   const partialData = { title: 'this is my t' };
+  // eta.loadTemplate('@header', headerPartial);
   const simple = {
     name: `ben`,
     num: 3,
   };
-  const data = {
-    title: 'My Page',
-    heading: 'Hello Eta!',
-    content: 'This is some dynamic content rendered via a layout.',
-    partial: 'page', // page.eta
-  };
 
   const renderedTemplate = eta.render('simple', simple, { nPlusOne });
-
   res.status(200).send(renderedTemplate);
 });
 

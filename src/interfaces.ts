@@ -23,6 +23,7 @@ export interface Parse {
 }
 
 export type TemplateFunction = (data: object, helpers: Helpers) => string;
+export type TemplateLoaded = string;
 
 export interface Tags {
   opening: string;

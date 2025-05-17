@@ -6,7 +6,6 @@ import {
   checkOpeningAndClosingTag,
   checkAccessPermission,
   checkPrefixTemplateTags,
-  getFullPath,
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   templateContainsInclude,
@@ -23,6 +22,7 @@ import {
   getCurrentPrefixType,
   includeFn,
   initVariablesAndHelpers,
+  getFullPath,
 } from './utils';
 import {
   templateLitReg,
@@ -39,6 +39,7 @@ import {
   Data,
   Debug,
   Helpers,
+  TemplateLoaded,
 } from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
@@ -52,7 +53,15 @@ export class Eta {
 
   private config: DefinitiveConfig;
   private templatePaths: string[] = [];
+
+  /**
+   * Stores the dynamically defined templates.
+   */
   public templateStore = new Store();
+  /**
+   * Stores the cached template.
+   */
+  public templateLoaded = new Store<TemplateLoaded>();
 
   private compiledAST: AstObject[] = [];
   private compiledAnonymousFnContent = '';
@@ -66,7 +75,6 @@ export class Eta {
   private startRenderTime = 0;
   private cacheHit = false;
 
-  // + everything should be defaulted at init
   constructor(customConfig: EtaConfig = {}) {
     this.config = Object.freeze({ ...defaultConfig, ...customConfig } as DefinitiveConfig);
     const { views, extension, tags, parse } = this.config;
@@ -93,26 +101,6 @@ export class Eta {
     return this.templatePaths;
   }
 
-  private handleCache(template: string) {
-    const cachedTemplate = this.templateStore.get(template);
-
-    if (isTemplateDynamicallyDefined(template)) {
-      if (!cachedTemplate) {
-        throw new Error(
-          `Failed to get programmaticaly defined template from cache (template '${template}')`
-        );
-      }
-
-      return cachedTemplate;
-    }
-
-    if (this.config.cache && cachedTemplate) {
-      return cachedTemplate;
-    }
-
-    return undefined;
-  }
-
   private createCompilationFunction(
     content: string,
     variablesOfData: string,
@@ -125,8 +113,6 @@ export class Eta {
         this.compile(content, variablesOfData, variablesOfHelpers)
       ) as TemplateFunction;
     } catch (error: any) {
-      log('error inside createCompilationFn');
-
       if (error instanceof SyntaxError) {
         throw new EtaParseError(
           'Bad template syntax\n\n' +
@@ -297,33 +283,45 @@ export class Eta {
     return compiledData;
   }
 
-  render(templatePath: string, data: Data = {}, helpers: Helpers = {}) {
+  /**
+   * Render a template with data and helpers.
+   * @param template The name of your template to render.
+   * @param data Provide data to inject.
+   * @param helpers Provide helper functions to inject.
+   * @returns {string} The HTML content.
+   */
+  render(template: string, data: Data = {}, helpers: Helpers = {}) {
     const { views, extension } = this.config;
     this.startRenderTime = performance.now();
     this.cacheHit = false;
+
+    if (isTemplateDynamicallyDefined(template)) {
+      const templateFn = this.handleLoadedTemplate(template, data, helpers);
+      return this.execute(templateFn, data, helpers);
+    }
 
     assert(
       this.templatePaths.length > 0,
       `No template files found in ${views} with extension ${extension}`
     );
 
-    const isAbsolutePath = path.isAbsolute(templatePath);
-    this.debug.originalFileName = getPathWithExtension(templatePath, extension);
+    const pathWithExtension = getPathWithExtension(template, extension);
+    this.debug.originalFileName = pathWithExtension;
 
-    const resolvedPath = this.resolvePath(templatePath, isAbsolutePath);
-    const hasAccess = checkAccessPermission(this.templatePaths, resolvedPath);
-    if (!hasAccess) return '<h1>An error occurred</h1>';
+    const fullPath = getFullPath(views, pathWithExtension);
+    const hasAccess = checkAccessPermission(this.templatePaths, fullPath);
+    if (!hasAccess) return 'An error occurred';
 
-    const templateCached = this.handleCache(resolvedPath);
-
-    if (templateCached) {
+    const cachedTemplate = this.templateStore.get(fullPath);
+    if (cachedTemplate) {
       this.cacheHit = true;
-      return this.execute(templateCached, data, helpers);
+      log(`${template} cache hit`);
+      return this.execute(cachedTemplate, data, helpers);
     }
 
     const variablesOfData = initVariablesAndHelpers(data);
     const variablesOfHelpers = initVariablesAndHelpers(helpers);
-    const templateFn = this.readFileAndCompile(resolvedPath, variablesOfData, variablesOfHelpers);
+    const templateFn = this.readFileAndCompile(fullPath, variablesOfData, variablesOfHelpers);
     return this.execute(templateFn, data, helpers);
   }
 
@@ -336,8 +334,7 @@ export class Eta {
       const errorData = this.handleErrorMessage(error);
       // by default, no error should be returned
       console.error(errorData);
-
-      return this.renderErrorTemplate(errorData);
+      return this.initErrorTemplate(errorData);
     }
   }
 
@@ -364,23 +361,12 @@ export class Eta {
     return errorData;
   }
 
-  private renderErrorTemplate(errorData: Data): string | undefined {
+  private initErrorTemplate(errorData: Data): string | undefined {
     if (!this.config.debug) return '';
 
     const templatesPath = path.join(__dirname, 'public');
-    const eta = new Eta({ views: templatesPath, extension: 'html', debug: true });
-    return eta.render('error.html', errorData);
-  }
-
-  private resolvePath(templatePath: string, isAbsolute: boolean) {
-    // Do not resolve dynamically loaded template
-    if (isTemplateDynamicallyDefined(templatePath)) return templatePath;
-
-    const { views, extension } = this.config;
-    templatePath = getPathWithExtension(templatePath, extension);
-    const resolvedFilePath = getFullPath(views, templatePath, isAbsolute);
-
-    return resolvedFilePath;
+    const eta = new Eta({ views: templatesPath, extension: 'html', cache: true, metrics: false });
+    return eta.render('error', errorData);
   }
 
   private readFileAndCompile(
@@ -404,26 +390,60 @@ export class Eta {
       const file = fs.readFileSync(path, 'utf8');
       return file;
     } catch (error: any) {
-      log(error.code);
-      if (error.code === 'ENOENT') {
-        throw new EtaFileResolutionError(`Could not find template: ${path}`);
-      }
-
       throw error;
     }
   }
 
+  private handleLoadedTemplate(
+    template: string,
+    data: Data = {},
+    helpers: Helpers = {}
+  ): TemplateFunction {
+    const cachedTemplate = this.templateStore.get(template);
+    this.debug.originalFileName = template;
+
+    if (cachedTemplate) {
+      log(`${template} cache hit`);
+      this.cacheHit = true;
+      return cachedTemplate;
+    }
+
+    // preloaded with 'loadTemplate'
+    const templateLoaded = this.templateLoaded.get(template);
+    if (!templateLoaded) {
+      throw new Error(
+        `Failed to get programmaticaly defined template from cache at template '${template}'`
+      );
+    }
+
+    const templateFn = this.readAndCompileLoadedTemplate(templateLoaded, data, helpers);
+
+    if (this.config.cache) {
+      this.templateStore.define(template, templateFn);
+    }
+
+    return templateFn;
+  }
+
+  private readAndCompileLoadedTemplate(content: string, data: Data = {}, helpers: Helpers = {}) {
+    const variablesOfData = initVariablesAndHelpers(data);
+    const variablesOfHelpers = initVariablesAndHelpers(helpers);
+    const templateFn = this.createCompilationFunction(content, variablesOfData, variablesOfHelpers);
+
+    return templateFn;
+  }
+
+  /**
+   * Cache dynamical defined templates.
+   * @param name The name of your template. Should start with a '@'.
+   * @param template The template content.
+   */
   loadTemplate(name: string, template: string) {
     assert(
       isTemplateDynamicallyDefined(name),
       "Dynamically loaded template should start with a '@'"
     );
 
-    // TO FIX
-    // postposer createCompilation
-    // définir un store particulier pour temp dynamique ?
-    // mettre ensuite en cache dans le render
-    const templateFn = this.createCompilationFunction(template, '', '');
-    this.templateStore.define(name, templateFn);
+    this.templateLoaded.define(name, template);
   }
 }
