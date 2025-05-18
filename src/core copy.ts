@@ -10,6 +10,7 @@ import {
   isTemplateDynamicallyDefined,
   templateContainsInclude,
   givenExtensionShouldNotStartWithADot,
+  debugDisabledOrInProduction,
 } from './checks';
 import { getFilesFromDirectory } from './helpers';
 import fs from 'node:fs';
@@ -40,6 +41,7 @@ import {
   Debug,
   Helpers,
   TemplateLoaded,
+  HelperFunction,
 } from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
@@ -62,10 +64,17 @@ export class Eta {
    * Stores the cached template.
    */
   public templateLoaded = new Store<TemplateLoaded>();
+  /**
+   * Stores global helpers.
+   */
+  public helperStorage = new Store<HelperFunction>();
 
   private compiledAST: AstObject[] = [];
   private compiledAnonymousFnContent = '';
 
+  /**
+   * General debug information.
+   */
   private debug: Debug = {
     originalFileName: '',
     fileContent: '',
@@ -94,8 +103,7 @@ export class Eta {
   }
 
   /**
-   * Get an array of absolute path of the mapped files
-   * according to the view directory provided.
+   * Get an array of absolute paths of the mapped files according to the view directory provided.
    */
   get mappedFiles() {
     return this.templatePaths;
@@ -113,18 +121,7 @@ export class Eta {
         this.compile(content, variablesOfData, variablesOfHelpers)
       ) as TemplateFunction;
     } catch (error: any) {
-      if (error instanceof SyntaxError) {
-        throw new EtaParseError(
-          'Bad template syntax\n\n' +
-            error.message +
-            '\n' +
-            Array(error.message.length + 1).join('=') +
-            '\n' +
-            this.compile(content, variablesOfData, variablesOfHelpers) +
-            '\n'
-        );
-      }
-
+      log('Error at compilation function');
       throw error;
     }
   }
@@ -134,11 +131,13 @@ export class Eta {
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
     const isInclude = templateContainsInclude(content);
+    const globalHelpers = initVariablesAndHelpers(this.helperStorage.getAll());
 
     const result = `
     ${includeFn(isInclude)}
     ${variablesOfData}
     ${variablesOfHelpers}
+    ${globalHelpers}
 
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
@@ -297,7 +296,7 @@ export class Eta {
 
     if (isTemplateDynamicallyDefined(template)) {
       const templateFn = this.handleLoadedTemplate(template, data, helpers);
-      return this.execute(templateFn, data, helpers);
+      return this.executeFunction(templateFn, data, helpers);
     }
 
     assert(
@@ -316,16 +315,29 @@ export class Eta {
     if (cachedTemplate) {
       this.cacheHit = true;
       log(`${template} cache hit`);
-      return this.execute(cachedTemplate, data, helpers);
+      return this.executeFunction(cachedTemplate, data, helpers);
     }
 
-    const variablesOfData = initVariablesAndHelpers(data);
-    const variablesOfHelpers = initVariablesAndHelpers(helpers);
-    const templateFn = this.readFileAndCompile(fullPath, variablesOfData, variablesOfHelpers);
-    return this.execute(templateFn, data, helpers);
+    return this.compileAndExecute(fullPath, data, helpers);
   }
 
-  private execute(templateFn: TemplateFunction, data: Data, helpers: Helpers) {
+  private compileAndExecute(fullPath: string, data: Data = {}, helpers: Helpers = {}) {
+    try {
+      const variablesOfData = initVariablesAndHelpers(data);
+      const variablesOfHelpers = initVariablesAndHelpers(helpers);
+      const templateFn = this.readFileAndCompile(fullPath, variablesOfData, variablesOfHelpers);
+      const immutableData = structuredClone(data);
+      const html = templateFn.call(this, immutableData, helpers);
+      return html;
+    } catch (error) {
+      const errorData = this.handleErrorMessage(error);
+      // by default, no error should be returned
+      console.error(errorData);
+      return this.initErrorTemplate(errorData);
+    }
+  }
+
+  private executeFunction(templateFn: TemplateFunction, data: Data, helpers: Helpers) {
     try {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers);
@@ -342,7 +354,7 @@ export class Eta {
     const { fileContent, lineNumber, message, originalFileName } = this.debug;
     const errorData = {
       originalFileName,
-      fileContent,
+      fileContent: [fileContent],
       message,
       lineNumber,
     };
@@ -362,7 +374,7 @@ export class Eta {
   }
 
   private initErrorTemplate(errorData: Data): string | undefined {
-    if (!this.config.debug) return '';
+    if (debugDisabledOrInProduction(this.config.debug)) return '';
 
     const templatesPath = path.join(__dirname, 'public');
     const eta = new Eta({ views: templatesPath, extension: 'html', cache: true, metrics: false });
@@ -374,6 +386,7 @@ export class Eta {
     variablesOfData: string,
     variablesOfHelpers: string
   ) {
+    this.debug.fileContent = '';
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
     const templateFn = this.createCompilationFunction(content, variablesOfData, variablesOfHelpers);
@@ -431,6 +444,19 @@ export class Eta {
     const templateFn = this.createCompilationFunction(content, variablesOfData, variablesOfHelpers);
 
     return templateFn;
+  }
+
+  /**
+   * Define global helpers. Define once, use everywhere.
+   * @param helpers An object of helpers.
+   */
+  defineHelpers(helpers: Helpers = {}) {
+    for (const key in helpers) {
+      if (!Object.prototype.hasOwnProperty.call(helpers, key)) continue;
+      const fn = helpers[key];
+
+      this.helperStorage.define(key, fn);
+    }
   }
 
   /**

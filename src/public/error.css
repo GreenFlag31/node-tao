@@ -25,11 +25,20 @@ body {
   min-width: 300px;
 }
 
+.error h2 {
+  text-align: center;
+}
+
 .error-message {
-  display: flex;
   margin-top: 2rem;
-  color: #000;
-  font-style: italic;
+}
+
+.error-message .general {
+  color: red;
+}
+
+.error-message .line {
+  font-size: 0.9rem;
 }
 
 .error-container .content {
@@ -39,11 +48,6 @@ body {
 .error-container .filename {
   display: flex;
   justify-content: flex-end;
-}
-
-.error h2 {
-  color: red;
-  text-align: center;
 }
 
 .source-code-container {
@@ -69,6 +73,10 @@ body {
   text-align: right;
   min-width: 5ch;
   padding-right: 0.5ch;
+}
+
+.error-line-container .error-line {
+  font-weight: 500;
 }
 
 .line-number.active {
@@ -104,7 +112,12 @@ a {
   width: 20px;
 }
 
-/* RESIZE CURSOR */
+.tips p {
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+
+/* RESIZE */
 .resize-handle {
   top: 0;
   position: absolute;

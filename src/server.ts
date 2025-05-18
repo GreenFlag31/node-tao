@@ -32,6 +32,9 @@ const error = {
 function nPlusOne(n: number) {
   return n + 1;
 }
+function nPlusTwo(n: number) {
+  return n + 2;
+}
 
 const eta = new Eta({
   views: templatesPath,
@@ -39,6 +42,7 @@ const eta = new Eta({
   cache: true,
   debug: true,
 });
+eta.defineHelpers({ nPlusTwo });
 
 app.get('/', (req, res) => {
   //   const headerPartial = `

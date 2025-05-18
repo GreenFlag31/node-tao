@@ -11,11 +11,18 @@ function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
 
   let variables = '';
   for (const [key, value] of dataEntries) {
-    variables += `const ${key} = ${JSON.stringify(value)};`;
+    variables += `const ${key} = ${getValueType(value)};`;
   }
 
   log(variables);
   return variables;
+}
+
+function getValueType(value: any) {
+  const valueIsAFunction = typeof value === 'function';
+  if (valueIsAFunction) return value;
+
+  return JSON.stringify(value);
 }
 
 function includeFn(isInclude: boolean) {

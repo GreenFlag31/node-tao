@@ -35,6 +35,13 @@ function metricsDisabledOrInProduction(metrics: boolean) {
 }
 
 /**
+ * No debug message should be displayed if disabled or in production.
+ */
+function debugDisabledOrInProduction(debug: boolean) {
+  return !debug || isInProduction();
+}
+
+/**
  * Security measure to allow access to only files in given directory that has been previously mapped.
  */
 function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFile: string) {
@@ -100,4 +107,5 @@ export {
   givenExtensionShouldNotStartWithADot,
   isInProduction,
   metricsDisabledOrInProduction,
+  debugDisabledOrInProduction,
 };

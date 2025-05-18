@@ -42,6 +42,8 @@ export interface Debug {
   lineNumber: number;
 }
 
+export type HelperFunction = (...args: any[]) => any;
+
 export type Helpers = {
-  [fnName: string]: (...args: any[]) => any;
+  [fnName: string]: HelperFunction;
 };

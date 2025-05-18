@@ -59,12 +59,12 @@ export interface EtaConfig {
 
   /**
    * Control template file extension defaults.
-   * @default '.eta'
+   * @default 'eta'
    */
   extension?: string;
 
   /**
-   * Display a box inside your browser with several informations
+   * Display console logs inside your browser with several informations.
    */
   metrics?: boolean;
 }
@@ -126,7 +126,7 @@ export interface DefinitiveConfig {
 
   /**
    * Control template file extension defaults.
-   * @default '.eta'
+   * @default 'eta'
    */
   extension: string;
 

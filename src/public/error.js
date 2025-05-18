@@ -2,8 +2,9 @@ const errorContainer = document.querySelector('.error-container');
 const sourceCode = document.querySelector('.source-code-container');
 const errorLine = sourceCode.querySelector('.error-line-container .line-number.active');
 const resizeHandlers = document.querySelectorAll('.resize-handle');
+const htmlLines = sourceCode.querySelectorAll('span.html');
 
-errorLine.scrollIntoView();
+errorLine?.scrollIntoView();
 
 const minWidth = errorContainer.clientWidth;
 // 10 padding on sides
@@ -19,8 +20,7 @@ resizeHandlers.forEach((resizer) => {
     const onMouseMove = (event) => {
       const dx = event.clientX - startX;
       const newWidth = isLeft ? startWidth - dx : startWidth + dx;
-      if (newWidth < minWidth) return;
-      if (newWidth > maxWidth) return;
+      if (newWidth < minWidth || newWidth > maxWidth) return;
 
       errorContainer.style.width = `${newWidth}px`;
     };

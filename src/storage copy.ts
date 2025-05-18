@@ -3,12 +3,16 @@ import { TemplateFunction } from './interfaces';
 export class Store<T = TemplateFunction> {
   private store: Record<string, T> = {};
 
-  define(key: string, fn: T) {
-    this.store[key] = fn;
+  define(key: string, value: T) {
+    this.store[key] = value;
   }
 
   get(key: string) {
     return this.store[key];
+  }
+
+  getAll() {
+    return this.store;
   }
 
   remove(key: string) {

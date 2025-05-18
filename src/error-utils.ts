@@ -1,13 +1,31 @@
+import { TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject } from './interfaces';
 
+/**
+ * Two possible exceptions
+ * There is no content => an error occurred while reading the file
+ * There is no line number => there is a syntax error
+ */
 function findOriginalLineNumberWithMessage(
   error: string,
   compiledAST: AstObject[],
   compiledAnonymousFnContent: string,
   originalFileContent: string
-) {
+): [string, string[], number] {
+  if (!originalFileContent) {
+    return ['Error while reading template file', ['', '', '', 'No content', '', '', ''], NaN];
+  }
+
   const [message, source] = getErrorMessageAndSource(error);
   const lineFromAnonymousFn = getLineFromAnonymousFunction(source);
+  if (isNaN(lineFromAnonymousFn)) {
+    const [fileContent, _] = trimEmptySpaceAndDecrementLine(
+      originalFileContent,
+      lineFromAnonymousFn
+    );
+    return [message, fileContent, lineFromAnonymousFn];
+  }
+
   const compiledContent = extractContentFromAnonymousFunction(
     compiledAnonymousFnContent,
     lineFromAnonymousFn
@@ -18,7 +36,7 @@ function findOriginalLineNumberWithMessage(
   return [message, fileContent, line];
 }
 
-function getErrorMessageAndSource(error: any) {
+function getErrorMessageAndSource(error: any): [string, string] {
   const [message, source] = error.stack.split('\n');
 
   return [message, source];
@@ -42,7 +60,9 @@ function extractContentFromAnonymousFunction(compiledAnonymousFnContent: string,
 }
 
 function getOriginalLineNumber(compiledJoined: string, compiledAST: AstObject[]) {
-  const countBodyContent = compiledJoined.match(/__it\.res\+=/g) || [];
+  const result = `${TP_VARNAME_WITH_PREFIX}\\.res\\+=`;
+  const resultRegex = new RegExp(result, 'g');
+  const countBodyContent = compiledJoined.match(resultRegex) || [];
   const extract = compiledAST.slice(0, countBodyContent.length);
   let lineNumber = 1;
 
@@ -55,7 +75,10 @@ function getOriginalLineNumber(compiledJoined: string, compiledAST: AstObject[])
   return lineNumber;
 }
 
-function trimEmptySpaceAndDecrementLine(fileContent: string, lineNumber: number) {
+function trimEmptySpaceAndDecrementLine(
+  fileContent: string,
+  lineNumber: number
+): [string[], number] {
   const fileSplittedByNewLine = fileContent.split('\n');
   const fileContentWithoutEmptySpace: string[] = [];
   let offset = 0;
@@ -74,49 +97,6 @@ function trimEmptySpaceAndDecrementLine(fileContent: string, lineNumber: number)
 
   const line = lineNumber - offset;
   return [fileContentWithoutEmptySpace, line];
-}
-
-function bareElementStyling(line: string) {
-  let lineWithStyle = line.toLowerCase();
-  const htmlElements = [
-    'doctype',
-    'html',
-    'head',
-    'title',
-    'meta',
-    'link',
-    'body',
-    'header',
-    'nav',
-    'main',
-    'section',
-    'article',
-    'footer',
-    'h1',
-    'h2',
-    'p',
-    'a',
-    'img',
-    'ul',
-    'ol',
-    'li',
-    'table',
-    'form',
-    'input',
-    'button',
-    'div',
-    'span',
-  ];
-
-  for (const element of htmlElements) {
-    const containsElement = lineWithStyle.indexOf(element);
-    if (containsElement === -1) continue;
-
-    const regex = new RegExp(`\\b${element}\\b`, 'g');
-    lineWithStyle = lineWithStyle.replace(regex, `<span>${element}</span>`);
-  }
-
-  return lineWithStyle;
 }
 
 export {
