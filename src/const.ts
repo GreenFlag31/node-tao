@@ -21,15 +21,12 @@ const escMap: { [key: string]: string } = {
   "'": '&#39;',
 };
 
-const AsyncFunction = async function () {}.constructor;
-
 export {
   DEFAULT_EXTENSION,
   templateLitReg,
   singleQuoteReg,
   doubleQuoteReg,
   escMap,
-  AsyncFunction,
   TEMPLATE_VARNAME,
   DYNAMICAL_TEMPLATE_PREFIX,
   TP_VARNAME_WITH_PREFIX,

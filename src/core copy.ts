@@ -1,6 +1,6 @@
 import { defaultConfig } from './config copy';
 import { escapeRegExp } from './parse copy';
-import { buildParseError, EtaFileResolutionError, EtaParseError } from './err copy';
+import { buildParseError, EtaParseError } from './err copy';
 import type { DefinitiveConfig, EtaConfig } from './config copy';
 import {
   checkOpeningAndClosingTag,
@@ -12,7 +12,7 @@ import {
   givenExtensionShouldNotStartWithADot,
   debugDisabledOrInProduction,
 } from './checks';
-import { getFilesFromDirectory } from './helpers';
+import { getFilesFromDirectory } from './get-files';
 import fs from 'node:fs';
 
 import { log } from 'node:console';
@@ -114,16 +114,11 @@ export class Eta {
     variablesOfData: string,
     variablesOfHelpers: string
   ) {
-    try {
-      return new Function(
-        TEMPLATE_VARNAME,
-        'hp',
-        this.compile(content, variablesOfData, variablesOfHelpers)
-      ) as TemplateFunction;
-    } catch (error: any) {
-      log('Error at compilation function');
-      throw error;
-    }
+    return new Function(
+      TEMPLATE_VARNAME,
+      'hp',
+      this.compile(content, variablesOfData, variablesOfHelpers)
+    ) as TemplateFunction;
   }
 
   private compile(content: string, variablesOfData: string, variablesOfHelpers: string) {
@@ -287,29 +282,42 @@ export class Eta {
    * @param template The name of your template to render.
    * @param data Provide data to inject.
    * @param helpers Provide helper functions to inject.
-   * @returns {string} The HTML content.
    */
-  render(template: string, data: Data = {}, helpers: Helpers = {}) {
+  render(template: string, data: Data = {}, helpers: Helpers = {}): string {
     const { views, extension } = this.config;
     this.startRenderTime = performance.now();
     this.cacheHit = false;
 
     if (isTemplateDynamicallyDefined(template)) {
-      const templateFn = this.handleLoadedTemplate(template, data, helpers);
-      return this.executeFunction(templateFn, data, helpers);
+      const cachedTemplate = this.handleCachedLoadedTemplate(template);
+
+      if (cachedTemplate) {
+        return this.executeFunction(cachedTemplate, data, helpers);
+      }
+
+      // preloaded with 'loadTemplate'
+      const templateLoaded = this.templateLoaded.get(template);
+      if (!templateLoaded) {
+        console.error(
+          `Failed to get programmaticaly defined template from cache at template '${template}'`
+        );
+        return '';
+      }
+
+      return this.handleLoadedTemplate(template, templateLoaded, data, helpers);
     }
 
-    assert(
-      this.templatePaths.length > 0,
-      `No template files found in ${views} with extension ${extension}`
-    );
+    if (this.templatePaths.length === 0) {
+      console.error(`No template files found in ${views} with extension ${extension}`);
+      return '';
+    }
 
     const pathWithExtension = getPathWithExtension(template, extension);
     this.debug.originalFileName = pathWithExtension;
 
     const fullPath = getFullPath(views, pathWithExtension);
     const hasAccess = checkAccessPermission(this.templatePaths, fullPath);
-    if (!hasAccess) return 'An error occurred';
+    if (!hasAccess) return '';
 
     const cachedTemplate = this.templateStore.get(fullPath);
     if (cachedTemplate) {
@@ -337,7 +345,7 @@ export class Eta {
     }
   }
 
-  private executeFunction(templateFn: TemplateFunction, data: Data, helpers: Helpers) {
+  private executeFunction(templateFn: TemplateFunction, data: Data, helpers: Helpers): string {
     try {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers);
@@ -373,7 +381,7 @@ export class Eta {
     return errorData;
   }
 
-  private initErrorTemplate(errorData: Data): string | undefined {
+  private initErrorTemplate(errorData: Data): string {
     if (debugDisabledOrInProduction(this.config.debug)) return '';
 
     const templatesPath = path.join(__dirname, 'public');
@@ -407,38 +415,42 @@ export class Eta {
     }
   }
 
-  private handleLoadedTemplate(
-    template: string,
-    data: Data = {},
-    helpers: Helpers = {}
-  ): TemplateFunction {
+  private handleCachedLoadedTemplate(template: string) {
     const cachedTemplate = this.templateStore.get(template);
     this.debug.originalFileName = template;
 
-    if (cachedTemplate) {
-      log(`${template} cache hit`);
-      this.cacheHit = true;
-      return cachedTemplate;
-    }
+    if (!cachedTemplate) return undefined;
 
-    // preloaded with 'loadTemplate'
-    const templateLoaded = this.templateLoaded.get(template);
-    if (!templateLoaded) {
-      throw new Error(
-        `Failed to get programmaticaly defined template from cache at template '${template}'`
-      );
-    }
-
-    const templateFn = this.readAndCompileLoadedTemplate(templateLoaded, data, helpers);
-
-    if (this.config.cache) {
-      this.templateStore.define(template, templateFn);
-    }
-
-    return templateFn;
+    log(`${template} cache hit`);
+    this.cacheHit = true;
+    return cachedTemplate;
   }
 
-  private readAndCompileLoadedTemplate(content: string, data: Data = {}, helpers: Helpers = {}) {
+  private handleLoadedTemplate(
+    template: string,
+    templateLoaded: string,
+    data: Data = {},
+    helpers: Helpers = {}
+  ) {
+    try {
+      const templateFn = this.compileLoadedTemplate(templateLoaded, data, helpers);
+
+      if (this.config.cache) {
+        this.templateStore.define(template, templateFn);
+      }
+
+      const immutableData = structuredClone(data);
+      const html = templateFn.call(this, immutableData, helpers);
+      return html;
+    } catch (error) {
+      const errorData = this.handleErrorMessage(error);
+      // by default, no error should be returned
+      console.error(errorData);
+      return this.initErrorTemplate(errorData);
+    }
+  }
+
+  private compileLoadedTemplate(content: string, data: Data = {}, helpers: Helpers = {}) {
     const variablesOfData = initVariablesAndHelpers(data);
     const variablesOfHelpers = initVariablesAndHelpers(helpers);
     const templateFn = this.createCompilationFunction(content, variablesOfData, variablesOfHelpers);

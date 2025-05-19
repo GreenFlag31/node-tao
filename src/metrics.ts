@@ -52,7 +52,7 @@ function getFileNameAndAbsPath(files: string[]) {
   const separator = path.sep;
 
   for (const file of files) {
-    const fileName = file.split(separator).at(-1);
+    const fileName = file.split(separator).slice(-2).join('/');
     const nameAndPath = { name: fileName };
     filesNameAndPath.push(nameAndPath);
   }

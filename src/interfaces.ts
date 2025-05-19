@@ -2,7 +2,6 @@ export interface Data {
   [key: string]: any;
 }
 
-// le dernier cas est vraiment utile? =>  | "";
 export type TagType = 'raw' | 'execute' | 'interpolate';
 
 export interface TemplateData {

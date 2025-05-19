@@ -28,7 +28,7 @@
             <% const lineNumberMessage = lineNumber ? " at line " + lineNumber : "" %>
             <p class="general"><%= `${message}${lineNumberMessage} in ${originalFileName}` %></p>
             <% if (!lineNumber) { %>
-            <p class="line">⚠️ Error line number could not be retrieved</p>
+            <p class="line">⚠️ Error line number cannot be retrieved</p>
             <% } %>
           </div>
 

@@ -7,7 +7,7 @@ export class Store<T = TemplateFunction> {
     this.store[key] = value;
   }
 
-  get(key: string) {
+  get(key: string): T | undefined {
     return this.store[key];
   }
 

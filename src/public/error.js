@@ -7,7 +7,7 @@ const htmlLines = sourceCode.querySelectorAll('span.html');
 errorLine?.scrollIntoView();
 
 const minWidth = errorContainer.clientWidth;
-// 10 padding on sides
+// 10 padding on each side
 const maxWidth = window.innerWidth - 20;
 
 resizeHandlers.forEach((resizer) => {

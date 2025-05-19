@@ -14,7 +14,7 @@ function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
     variables += `const ${key} = ${getValueType(value)};`;
   }
 
-  log(variables);
+  // log(variables);
   return variables;
 }
 
