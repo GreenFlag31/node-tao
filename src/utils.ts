@@ -1,4 +1,3 @@
-import { log } from 'console';
 import type { DefinitiveConfig } from './config copy';
 import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Data, Helpers, Parse, TagType } from './interfaces';

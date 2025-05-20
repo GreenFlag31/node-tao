@@ -45,18 +45,19 @@ const eta = new Eta({
 eta.defineHelpers({ nPlusTwo });
 
 app.get('/', (req, res) => {
-  //   const headerPartial = `
+  // const headerPartial = `
   //   <header>
   //     <h1><%= title %></h1>
   //   </header>
   // `;
-  //   const partialData = { title: 'this is my t' };
+  // const partialData = { title: 'this is my t' };
   // eta.loadTemplate('@header', headerPartial);
   const simple = {
     name: `ben`,
     num: 3,
   };
 
+  // const renderedTemplate = eta.render('@header', partialData, { nPlusOne });
   const renderedTemplate = eta.render('simple', simple, { nPlusOne });
   res.status(200).send(renderedTemplate);
 });

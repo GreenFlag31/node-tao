@@ -1,5 +1,7 @@
 import path from 'node:path';
 import { metricsDisabledOrInProduction } from './checks';
+import { log } from 'node:console';
+import { Metrics } from './interfaces';
 
 function includeRenderTime(metrics: boolean) {
   if (metricsDisabledOrInProduction(metrics)) return '';
@@ -13,30 +15,39 @@ function includeCacheHit(metrics: boolean) {
   return `const cacheHit = this.cacheHit;`;
 }
 
-function includeMetrics(
-  metrics: boolean,
-  files: string[],
-  filename: string,
-  cacheEnabled: boolean
-) {
+function includeMetrics(metricsData: Metrics) {
+  const { cacheEnabled, filename, files, metrics, templateLoaded } = metricsData;
   if (metricsDisabledOrInProduction(metrics)) return '""';
 
   const filesNameAndPath = getFileNameAndAbsPath(files);
+  const includeDynamicalTemplates = includeDynamicalDefinedTemplate(templateLoaded);
   const filesNumber = filesNameAndPath.length;
-  const filesMapped = 'FILES MAPPED';
-  const fileRendered = 'FILE RENDERED';
+  const templatesMapped = 'TEMPLATES MAPPED';
+  const templateRendered = 'TEMPLATE RENDERED';
   const cache = 'CACHE ENABLED';
 
   return `'<script>console.log(${setTitleStyle(
-    fileRendered,
+    templateRendered,
     filename
   )});${getRenderTime()};console.log(${setTitleStyle(
     cache,
     cacheEnabled
   )});${getCacheHit()};console.log(${setTitleStyle(
-    filesMapped,
+    templatesMapped,
     filesNumber
-  )});console.table(${JSON.stringify(filesNameAndPath)});</script>'`;
+  )});console.table(${JSON.stringify(filesNameAndPath)});${includeDynamicalTemplates}</script>'`;
+}
+
+function includeDynamicalDefinedTemplate(templateLoaded: string[]) {
+  const dynamicalTemplateNumber = templateLoaded.length;
+  if (dynamicalTemplateNumber === 0) return '""';
+
+  const dynamicalTemplate = `DYNAMICAL TEMPLATE${dynamicalTemplateNumber > 1 ? 'S' : ''}`;
+
+  return `console.log(${setTitleStyle(
+    dynamicalTemplate,
+    dynamicalTemplateNumber
+  )});console.table(${JSON.stringify(templateLoaded)});`;
 }
 
 function getCacheHit() {

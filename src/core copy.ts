@@ -42,6 +42,7 @@ import {
   Helpers,
   TemplateLoaded,
   HelperFunction,
+  Metrics,
 } from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
@@ -121,12 +122,26 @@ export class Eta {
     ) as TemplateFunction;
   }
 
-  private compile(content: string, variablesOfData: string, variablesOfHelpers: string) {
+  private getMetrics() {
     const { metrics, cache } = this.config;
+    const metricsData: Metrics = {
+      metrics,
+      files: this.mappedFiles,
+      filename: this.debug.originalFileName,
+      cacheEnabled: cache,
+      templateLoaded: Object.keys(this.templateLoaded.getAll()),
+    };
+
+    return metricsData;
+  }
+
+  private compile(content: string, variablesOfData: string, variablesOfHelpers: string) {
+    const { metrics } = this.config;
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
     const isInclude = templateContainsInclude(content);
     const globalHelpers = initVariablesAndHelpers(this.helperStorage.getAll());
+    const metricsData = this.getMetrics();
 
     const result = `
     ${includeFn(isInclude)}
@@ -141,12 +156,7 @@ export class Eta {
 
     ${includeRenderTime(metrics)}
     ${includeCacheHit(metrics)}
-    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(
-      metrics,
-      this.mappedFiles,
-      this.debug.originalFileName,
-      cache
-    )}
+    ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(metricsData)}
 
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
@@ -477,10 +487,10 @@ export class Eta {
    * @param template The template content.
    */
   loadTemplate(name: string, template: string) {
-    assert(
-      isTemplateDynamicallyDefined(name),
-      "Dynamically loaded template should start with a '@'"
-    );
+    if (!isTemplateDynamicallyDefined(name)) {
+      console.error("Dynamically loaded template should start with a '@'");
+      return;
+    }
 
     this.templateLoaded.define(name, template);
   }

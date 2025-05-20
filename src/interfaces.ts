@@ -46,3 +46,11 @@ export type HelperFunction = (...args: any[]) => any;
 export type Helpers = {
   [fnName: string]: HelperFunction;
 };
+
+export interface Metrics {
+  metrics: boolean;
+  files: string[];
+  filename: string;
+  cacheEnabled: boolean;
+  templateLoaded: string[];
+}

@@ -5,6 +5,7 @@ import { XMLEscape } from './utils';
 export interface EtaConfig {
   /**
    * Automatically XML-escape interpolations.
+   * Default true.
    * @default true
    */
   autoEscape?: boolean;
@@ -16,11 +17,13 @@ export interface EtaConfig {
 
   /**
    * Enable template cache.
+   * Default true.
    */
   cache?: boolean;
 
   /**
    * Pretty-format error messages.
+   * Default false.
    */
   debug?: boolean;
 
@@ -45,8 +48,7 @@ export interface EtaConfig {
   }>;
 
   /**
-   * Default opening '<%'
-   * Default closing '%>'
+   * Default opening '<%', default closing '%>'
    */
   tags?: Tags;
 
@@ -72,6 +74,7 @@ export interface EtaConfig {
 export interface DefinitiveConfig {
   /**
    * Automatically XML-escape interpolations.
+   * Default true.
    * @default true
    */
   autoEscape: boolean;
@@ -112,8 +115,7 @@ export interface DefinitiveConfig {
   }>;
 
   /**
-   * Default opening '<%'
-   * Default closing '%>'
+   * Default opening '<%', default closing '%>'
    */
   tags: Required<Tags>;
 
@@ -126,7 +128,8 @@ export interface DefinitiveConfig {
 
   /**
    * Control template file extension defaults.
-   * @default 'eta'
+   * Default tao.
+   * @default 'tao'
    */
   extension: string;
 
