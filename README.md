@@ -27,21 +27,24 @@ import { Eta } from 'eta';
 
 const eta = new Eta({ views: path.join(__dirname, 'templates') });
 
-const res = eta.render('./simple', { name: 'Ben' });
-console.log(res); // <h1>Hi Ben!</h1>
+const res = eta.render('./simple', { name: 'Tao' });
+console.log(res); // <h1>Hi Tao!</h1>
 ```
 
-## Complete example
+## Helpers
+
+Helpers are functions that can be used inside a template. Helpers can be local (only available in a particular `render`) or global (available everywhere on the instance).
 
 ```javascript
 import { Eta } from 'eta';
 
 const eta = new Eta({ views: path.join(__dirname, 'templates') });
 
-// Global helpers, available everywhere on the instance
+// Global helper
 function nPlusTwo(n: number) {
   return n + 2;
 }
+// Global helper need to be registered on the instance
 eta.defineHelpers({ nPlusTwo });
 
 // Local helper
@@ -51,12 +54,14 @@ function nPlusOne(n: number) {
 
 // Render a template
 app.get('/', (req, res) => {
-  // data are immutables by default
+  // data is immutable by default
   const data = { name: 'Ben' };
   const res = eta.render('./simple', { name: 'Ben' }, { nPlusOne });
   console.log(res); // <h1>Hi Ben!</h1>
 });
 ```
+
+It is also possible to register an helper on `globalThis`, but I would not recommand this approach, since it can lead to name collision.
 
 ## FAQs
 
@@ -71,11 +76,24 @@ It started as a fork of `eta`, but eventually became a complete rewrite of the l
 
 <details>
   <summary>
+    <b>If you want to compare `tao` with `eta`</b>
+  </summary>
+
+- Tao set security by design: Stack traces are not and _should not_ be visible in the browser.
+- Increased developer experience: Visual error representation, metrics, configuration options are checked.
+- Immutability: Data provided in the template is immutable.
+-
+
+</details>
+
+<details>
+  <summary>
     <b>Choices</b>
   </summary>
 
 - No async support: Supporting async rendering (ie. `await include`) in the template would be an incentive to put a lot of logic in the template. A template should display the data, a controller should handle the logic. Async logic in the template would also necessitate error management (ie. `try catch`), which would increase the logic in the template. Having too much logic in the template is untestable, undebuggable, and hard to read.
-- No `layouts`: Layouts are technically includes and add unnecessary complexities.
+- No `layouts`: Layouts are technically includes and add unnecessary complexifications.
+- No `rmWhitespace`: Removing whitespaces by the template engine offers negligible economy of the HTML size. An HTML compression by a proxy (Nginx or others) will be much more efficient.
 
 </details>
 
@@ -103,4 +121,4 @@ NB: _Metrics is not available in production._
 
 ## Credits
 
-- Syntax and some parts of compilation are based on ETA.
+- Syntax and some parts of compilation are based on `eta`.

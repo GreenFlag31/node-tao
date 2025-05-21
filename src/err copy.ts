@@ -33,11 +33,17 @@ export class EtaNameResolutionError extends EtaError {
   }
 }
 
+function getTemplateLineNumber(expression: string, index: number) {
+  const whitespace = expression.slice(0, index).split(/\n/);
+  const line = whitespace.length;
+  return line;
+}
+
 /**
  * Throws an EtaError with a nicely formatted error and message showing where in the template the error occurred.
  */
 
-export function buildParseError(errorMessage: string, str: string, index: number) {
+function buildParseError(errorMessage: string, str: string, index: number) {
   const whitespace = str.slice(0, index).split(/\n/);
   const lineNo = whitespace.length;
   const previousLineNo = lineNo - 1;
@@ -58,3 +64,5 @@ export function buildParseError(errorMessage: string, str: string, index: number
 
   return errorMessage + error;
 }
+
+export { buildParseError, getTemplateLineNumber };

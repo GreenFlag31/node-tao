@@ -1,4 +1,4 @@
-import { DEFAULT_EXTENSION } from './const';
+import { DEFAULT_CLOSING, DEFAULT_EXTENSION, DEFAULT_OPENING } from './const';
 import { Parse, Tags } from './interfaces';
 import { XMLEscape } from './utils';
 
@@ -9,11 +9,6 @@ export interface EtaConfig {
    * @default true
    */
   autoEscape?: boolean;
-
-  /**
-   * Apply a filter function defined on the class to every interpolation or raw interpolation.
-   */
-  autoFilter?: boolean;
 
   /**
    * Enable template cache.
@@ -31,11 +26,6 @@ export interface EtaConfig {
    * Function to XML-sanitize interpolations
    */
   escapeFunction?: (str: unknown) => string;
-
-  /**
-   * Function applied to all interpolations when autoFilter is true
-   */
-  filterFunction?: (val: unknown) => string;
 
   /** Parsing options */
   parse?: Parse;
@@ -80,11 +70,6 @@ export interface DefinitiveConfig {
   autoEscape: boolean;
 
   /**
-   * Apply a filter function defined on the class to every interpolation or raw interpolation.
-   */
-  autoFilter: boolean;
-
-  /**
    * Enable lazy template cache.
    */
   cache: boolean;
@@ -98,11 +83,6 @@ export interface DefinitiveConfig {
    * Function to XML-sanitize interpolations
    */
   escapeFunction: (str: unknown) => string;
-
-  /**
-   * Function applied to all interpolations when autoFilter is true
-   */
-  filterFunction: (val: unknown) => string;
 
   /** Parsing options */
   parse: Required<Parse>;
@@ -142,12 +122,10 @@ export interface DefinitiveConfig {
 const defaultConfig: DefinitiveConfig = {
   autoEscape: true,
   cache: true,
-  autoFilter: false,
   debug: false,
   views: process.cwd(),
   escapeFunction: XMLEscape,
-  // default filter function (not used unless enables) just stringifies the input
-  filterFunction: (val) => String(val),
+  // ==> pareil que pour les tags
   parse: {
     exec: '',
     interpolate: '=',
@@ -155,8 +133,8 @@ const defaultConfig: DefinitiveConfig = {
   },
   plugins: [],
   tags: {
-    opening: '<%',
-    closing: '%>',
+    opening: DEFAULT_OPENING,
+    closing: DEFAULT_CLOSING,
   },
   extension: DEFAULT_EXTENSION,
   metrics: true,

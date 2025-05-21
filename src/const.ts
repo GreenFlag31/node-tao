@@ -1,4 +1,6 @@
 const DEFAULT_EXTENSION = 'eta';
+const DEFAULT_OPENING = '<%';
+const DEFAULT_CLOSING = '%>';
 const TEMPLATE_VARNAME = 'it';
 const HELPER_VARNAME = 'hp';
 
@@ -32,4 +34,6 @@ export {
   TP_VARNAME_WITH_PREFIX,
   HELPER_WITH_PREFIX,
   HELPER_VARNAME,
+  DEFAULT_CLOSING,
+  DEFAULT_OPENING,
 };

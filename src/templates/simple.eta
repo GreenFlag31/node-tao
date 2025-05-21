@@ -30,9 +30,7 @@
 <p>this is my useless content</p>
 <p>this is my useless content</p>
 
-<h1>Hi <%= name %></h1>
-<h1><%= nPlusOne(1) %></h1>
-<h1><%= nPlusTwo(1) %></h1>
+<h1>Hi <%= ' %></h1>
 
 
 </body>

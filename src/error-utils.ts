@@ -99,10 +99,26 @@ function trimEmptySpaceAndDecrementLine(
   return [fileContentWithoutEmptySpace, line];
 }
 
+function isAParseError(error: any) {
+  return error.type === 'Parse Error';
+}
+
+function handleParseError(error: any) {
+  const { type, fileContent, message, lineNumber, originalFileName } = error;
+
+  const [content, line] = trimEmptySpaceAndDecrementLine(fileContent, lineNumber);
+
+  error.fileContent = content;
+  error.lineNumber = line;
+  return error;
+}
+
 export {
   getErrorMessageAndSource,
   getLineFromAnonymousFunction,
   extractContentFromAnonymousFunction,
   getOriginalLineNumber,
   findOriginalLineNumberWithMessage,
+  isAParseError,
+  handleParseError,
 };

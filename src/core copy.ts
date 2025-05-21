@@ -1,6 +1,6 @@
 import { defaultConfig } from './config copy';
 import { escapeRegExp } from './parse copy';
-import { buildParseError, EtaParseError } from './err copy';
+import { buildParseError, EtaParseError, getTemplateLineNumber } from './err copy';
 import type { DefinitiveConfig, EtaConfig } from './config copy';
 import {
   checkOpeningAndClosingTag,
@@ -46,10 +46,11 @@ import {
 } from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
-import { findOriginalLineNumberWithMessage } from './error-utils';
+import { findOriginalLineNumberWithMessage, handleParseError, isAParseError } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { includeCacheHit, includeMetrics, includeRenderTime } from './metrics';
+import { assignTags } from './init';
 
 export class Eta {
   // renderString = renderString;
@@ -86,10 +87,11 @@ export class Eta {
   private cacheHit = false;
 
   constructor(customConfig: EtaConfig = {}) {
-    this.config = Object.freeze({ ...defaultConfig, ...customConfig } as DefinitiveConfig);
+    this.config = { ...defaultConfig, ...customConfig } as DefinitiveConfig;
     const { views, extension, tags, parse } = this.config;
+    this.config.tags = assignTags(tags);
 
-    checkOpeningAndClosingTag(tags);
+    checkOpeningAndClosingTag(this.config.tags);
     checkPrefixTemplateTags(parse);
     givenExtensionShouldNotStartWithADot(extension);
 
@@ -150,7 +152,7 @@ export class Eta {
     ${globalHelpers}
 
 
-    const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction, f: this.config.filterFunction}
+    const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction}
     
     ${compileBody(compiledData, this.config)}
 
@@ -171,40 +173,34 @@ export class Eta {
 
     const compiledData: AstObject[] = [];
     let lastIndex = 0;
-    const parseOptions = parse;
 
-    const prefixes = [parseOptions.exec, parseOptions.interpolate, parseOptions.raw].reduce(
-      function (accumulator, prefix) {
-        if (accumulator && prefix) {
-          return accumulator + '|' + escapeRegExp(prefix);
-        } else if (prefix) {
-          // accumulator is falsy
-          return escapeRegExp(prefix);
-        } else {
-          // prefix and accumulator are both falsy
-          return accumulator;
-        }
-      },
-      ''
-    );
+    const prefixes = [parse.exec, parse.interpolate, parse.raw].reduce(function (
+      accumulator,
+      prefix
+    ) {
+      if (accumulator && prefix) {
+        return accumulator + '|' + escapeRegExp(prefix);
+      } else if (prefix) {
+        // accumulator is falsy
+        return escapeRegExp(prefix);
+      } else {
+        // prefix and accumulator are both falsy
+        return accumulator;
+      }
+    },
+    '');
 
-    const pr = buildPrefixRegex(parseOptions);
+    const pr = buildPrefixRegex(parse);
     assert(pr === prefixes, 'buildprefixregex not the same');
 
-    const parseOpenReg = new RegExp(
-      escapeRegExp(opening) + '(-|_)?\\s*(' + prefixes + ')?\\s*',
-      'g'
-    );
+    const parseOpenReg = new RegExp(escapeRegExp(opening) + '\\s*(' + prefixes + ')?\\s*', 'g');
 
-    const parseCloseReg = new RegExp(
-      '\'|"|`|\\/\\*|(\\s*(-|_)?' + escapeRegExp(closing) + ')',
-      'g'
-    );
+    const parseCloseReg = new RegExp('\'|"|`|\\/\\*|(\\s*' + escapeRegExp(closing) + ')', 'g');
 
     let openingResult: RegExpExecArray | null = null;
 
     while ((openingResult = parseOpenReg.exec(expression))) {
-      const [original, dashOrUnderscore, openingPrefix = ''] = openingResult;
+      const [original, openingPrefix = ''] = openingResult;
       let closeResult: RegExpExecArray | null = null;
       let templateData: TemplateData | undefined = undefined;
 
@@ -245,8 +241,15 @@ export class Eta {
 
           const singleQuoteMatch = singleQuoteReg.exec(expression);
           if (!singleQuoteMatch) {
-            const error = buildParseError('Unclosed string', expression, closeResult.index);
-            throw new EtaParseError(error);
+            const lineNumber = getTemplateLineNumber(expression, closeResult.index);
+            const error: any = new Error();
+            error.message = `Unclosed string "${original}"`;
+            error.lineNumber = lineNumber;
+            error.fileContent = this.debug.fileContent;
+            error.originalFileName = this.debug.originalFileName;
+            error.type = 'Parse Error';
+
+            throw error;
           }
 
           parseCloseReg.lastIndex = singleQuoteReg.lastIndex;
@@ -355,7 +358,7 @@ export class Eta {
     }
   }
 
-  private executeFunction(templateFn: TemplateFunction, data: Data, helpers: Helpers): string {
+  private executeFunction(templateFn: TemplateFunction, data: Data, helpers: Helpers) {
     try {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers);
@@ -369,6 +372,9 @@ export class Eta {
   }
 
   private handleErrorMessage(error: any) {
+    const parsingError = isAParseError(error);
+    if (parsingError) return handleParseError(error);
+
     const { fileContent, lineNumber, message, originalFileName } = this.debug;
     const errorData = {
       originalFileName,

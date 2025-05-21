@@ -6,7 +6,7 @@ import path from 'node:path';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
-  if (dataEntries.length === 0) return '';
+  // if (dataEntries.length === 0) return '';
 
   let variables = '';
   for (const [key, value] of dataEntries) {
@@ -63,22 +63,14 @@ function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
 }
 
 function compileContent(type: TagType, content: string, config: DefinitiveConfig) {
-  const { autoEscape, autoFilter } = config;
+  const { autoEscape } = config;
   const prefix = TP_VARNAME_WITH_PREFIX;
 
   if (type === 'raw') {
-    if (autoFilter) {
-      content = `${prefix}.f(${content});`;
-    }
-
     return `${prefix}.res+=${content};\n`;
   }
 
   if (type === 'interpolate') {
-    if (autoFilter) {
-      content = `${prefix}.f(${content})`;
-    }
-
     if (autoEscape) {
       content = `${prefix}.e(${content})`;
     }

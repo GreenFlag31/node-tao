@@ -11,13 +11,13 @@ export interface TemplateData {
 }
 
 export interface Parse {
-  /** Which prefix to use for evaluation. Default `""`, does not support `"-"` or `"_"` */
+  /** Which prefix to use for evaluation. Default `""` */
   exec?: string;
 
-  /** Which prefix to use for interpolation. Default `"="`, does not support `"-"` or `"_"` */
+  /** Which prefix to use for interpolation. Default `"="` */
   interpolate?: string;
 
-  /** Which prefix to use for raw interpolation. Default `"~"`, does not support `"-"` or `"_"` */
+  /** Which prefix to use for raw interpolation. Default `"~"` */
   raw?: string;
 }
 
@@ -25,8 +25,8 @@ export type TemplateFunction = (data: object, helpers: Helpers) => string;
 export type TemplateLoaded = string;
 
 export interface Tags {
-  opening: string;
-  closing: string;
+  opening?: string;
+  closing?: string;
 }
 
 /**
