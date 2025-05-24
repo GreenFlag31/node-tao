@@ -1,12 +1,18 @@
-import type { DefinitiveConfig } from './config copy';
 import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
-import { AstObject, Data, Helpers, Parse, TagType } from './interfaces';
+import {
+  AstObject,
+  Data,
+  DefinitiveConfig,
+  FileResolution,
+  Helpers,
+  Parse,
+  TagType,
+} from './interfaces';
 import { escapeRegExp } from './parse copy';
 import path from 'node:path';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
-  // if (dataEntries.length === 0) return '';
 
   let variables = '';
   for (const [key, value] of dataEntries) {
@@ -41,10 +47,10 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveConfig['parse']):
     [parse.interpolate]: 'interpolate',
   };
 
-  // ajout vérification ?
-  return parseOptions[prefix] ?? '';
+  // escaping if not found
+  return parseOptions[prefix] ?? '=';
 }
-// renvoyer simplement le contenu, pas mettre .res+=
+
 function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
   let result = '';
 
@@ -83,7 +89,9 @@ function compileContent(type: TagType, content: string, config: DefinitiveConfig
   }
 }
 
-function getFullPath(views: string, tpPathWithExtension: string) {
+function getFullPath(views: string, tpPathWithExtension: string, fileResolution: FileResolution) {
+  if (fileResolution === 'flexible') return tpPathWithExtension;
+
   const isAbsolutePath = path.isAbsolute(tpPathWithExtension);
   if (isAbsolutePath) return tpPathWithExtension;
 

@@ -1,6 +1,10 @@
 const DEFAULT_EXTENSION = 'eta';
 const DEFAULT_OPENING = '<%';
 const DEFAULT_CLOSING = '%>';
+const DEFAULT_EXEC = '';
+const DEFAULT_INTERPOLATE = '=';
+const DEFAULT_RAW = '~';
+
 const TEMPLATE_VARNAME = 'it';
 const HELPER_VARNAME = 'hp';
 
@@ -36,4 +40,7 @@ export {
   HELPER_VARNAME,
   DEFAULT_CLOSING,
   DEFAULT_OPENING,
+  DEFAULT_EXEC,
+  DEFAULT_INTERPOLATE,
+  DEFAULT_RAW,
 };

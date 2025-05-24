@@ -1,25 +1,27 @@
-import { defaultConfig } from '../src/config copy';
 import { Eta, EtaConfig } from '../src/index copy';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { DEFAULT_EXTENSION } from '../src/const';
-
-const eta = new Eta();
+import { defaultConfig } from '../src/default-config';
 
 describe('eta constructor', () => {
   it('initialisation', () => {
-    expect(eta.currentConfig).toStrictEqual(defaultConfig);
+    const eta = new Eta();
+    const currentConfig = eta['config'];
+    expect(currentConfig).toStrictEqual(defaultConfig);
   });
 
   it('should merge config', () => {
     const currentConf = { cache: true, tags: { opening: '{{', closing: '}}' } };
+
     const eta = new Eta(currentConf);
+    const conf = eta['config'];
 
     const finalConf: EtaConfig = {
       ...defaultConfig,
       ...currentConf,
     };
-    expect(eta.currentConfig).toMatchObject(finalConf);
+    expect(conf).toMatchObject(finalConf);
   });
 
   it('should throw if opening and closing tags are equal', () => {

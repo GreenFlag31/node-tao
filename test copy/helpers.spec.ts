@@ -1,10 +1,6 @@
 import path from 'node:path';
-import {
-  getFullPath,
-  getPathWithExtension,
-  isTemplateFileInsideGivenDirectory,
-} from '../src/checks';
-import { log } from 'node:console';
+import { getPathWithExtension, isTemplateFileInsideGivenDirectory } from '../src/checks';
+import { getFullPath } from '../src/utils';
 
 describe('checks function tests', () => {
   it('getPathWithExtension should return a path with its extension when the filePath does not contain the extension', () => {
@@ -17,37 +13,34 @@ describe('checks function tests', () => {
     expect(result).toBe('simple.eta');
   });
 
-  it('getFullPath should return a complete path when the given template is not absolute', () => {
+  it('getFullPath should return a complete path when the path is not absolute', () => {
     const views = path.join(process.cwd(), 'test copy/templates');
     const template = 'simple.eta';
-    const pathIsAbsolute = path.isAbsolute(template);
 
-    const result = getFullPath(views, template, pathIsAbsolute);
+    const result = getFullPath(views, template, 'strict');
     expect(result).toBe(path.join(views, template));
   });
 
-  it('getFullPath should return a complete path when the given template is absolute', () => {
+  it('getFullPath should return a complete path when the path is absolute', () => {
     const views = path.join(process.cwd(), 'test copy/templates');
     const template = 'simple.eta';
-
     const completePath = path.join(views, template);
-    const pathIsAbsolute = path.isAbsolute(completePath);
 
-    const result = getFullPath(views, completePath, pathIsAbsolute);
+    const result = getFullPath(views, completePath, 'strict');
     expect(result).toBe(completePath);
   });
 
-  it('isTemplateFileInsideGivenDirectory should return true', () => {
+  it('isTemplateFileInsideGivenDirectory should contains templatePath', () => {
     const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test copy\\simple.eta'];
     const templateFile = 'simple.eta';
     const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
-    expect(result).toBe(true);
+    expect(result).toMatchObject(templatePaths);
   });
 
-  it('isTemplateFileInsideGivenDirectory should return true', () => {
+  it('isTemplateFileInsideGivenDirectory should be empty', () => {
     const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test copy\\simple.eta'];
     const templateFile = 'unexistant.eta';
     const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
-    expect(result).toBe(false);
+    expect(result).toMatchObject([]);
   });
 });

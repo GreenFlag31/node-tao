@@ -1,5 +1,5 @@
 import { TP_VARNAME_WITH_PREFIX } from './const';
-import { AstObject } from './interfaces';
+import { AstObject, Debug, ErrorType } from './interfaces';
 
 /**
  * Two possible exceptions
@@ -99,18 +99,47 @@ function trimEmptySpaceAndDecrementLine(
   return [fileContentWithoutEmptySpace, line];
 }
 
+/**
+ * Error occurred while parsing the template.
+ */
 function isAParseError(error: any) {
   return error.type === 'Parse Error';
 }
 
 function handleParseError(error: any) {
-  const { type, fileContent, message, lineNumber, originalFileName } = error;
+  const { fileContent, lineNumber } = error;
 
   const [content, line] = trimEmptySpaceAndDecrementLine(fileContent, lineNumber);
 
   error.fileContent = content;
   error.lineNumber = line;
   return error;
+}
+
+function getParsingErrorData(
+  expression: string,
+  index: number,
+  message: string,
+  debug: Debug
+): Error {
+  const { fileContent, originalFileName } = debug;
+  const lineNumber = getTemplateParsedLineNumber(expression, index);
+  const type: ErrorType = 'Parse Error';
+
+  const error: any = new Error();
+  error.message = message;
+  error.lineNumber = lineNumber;
+  error.fileContent = fileContent;
+  error.originalFileName = originalFileName;
+  error.type = type;
+
+  return error;
+}
+
+function getTemplateParsedLineNumber(expression: string, index: number) {
+  const whitespace = expression.slice(0, index).split(/\n/);
+  const line = whitespace.length;
+  return line;
 }
 
 export {
@@ -121,4 +150,5 @@ export {
   findOriginalLineNumberWithMessage,
   isAParseError,
   handleParseError,
+  getParsingErrorData,
 };

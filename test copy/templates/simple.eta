@@ -1,1 +1,1 @@
-Hi <%= it.name %>
+Hi <%= name %>

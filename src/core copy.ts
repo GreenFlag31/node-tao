@@ -1,7 +1,6 @@
-import { defaultConfig } from './config copy';
+import { defaultConfig } from './default-config';
 import { escapeRegExp } from './parse copy';
-import { buildParseError, EtaParseError, getTemplateLineNumber } from './err copy';
-import type { DefinitiveConfig, EtaConfig } from './config copy';
+
 import {
   checkOpeningAndClosingTag,
   checkAccessPermission,
@@ -25,13 +24,7 @@ import {
   initVariablesAndHelpers,
   getFullPath,
 } from './utils';
-import {
-  templateLitReg,
-  singleQuoteReg,
-  doubleQuoteReg,
-  TEMPLATE_VARNAME,
-  TP_VARNAME_WITH_PREFIX,
-} from './const';
+import { TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import {
   AstObject,
   TagType,
@@ -40,9 +33,11 @@ import {
   Data,
   Debug,
   Helpers,
-  TemplateLoaded,
   HelperFunction,
   Metrics,
+  ErrorType,
+  DefinitiveConfig,
+  EtaConfig,
 } from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
@@ -50,22 +45,24 @@ import { findOriginalLineNumberWithMessage, handleParseError, isAParseError } fr
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { includeCacheHit, includeMetrics, includeRenderTime } from './metrics';
-import { assignTags } from './init';
+import { assignParse, assignTags } from './init';
+import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
 export class Eta {
   // renderString = renderString;
 
   private config: DefinitiveConfig;
   private templatePaths: string[] = [];
+  private prefixBuild = '';
 
   /**
-   * Stores the dynamically defined templates.
+   * Stores dynamically defined templates.
    */
   public templateStore = new Store();
   /**
-   * Stores the cached template.
+   * Stores cached templates.
    */
-  public templateLoaded = new Store<TemplateLoaded>();
+  public templateLoaded = new Store<string>();
   /**
    * Stores global helpers.
    */
@@ -90,26 +87,21 @@ export class Eta {
     this.config = { ...defaultConfig, ...customConfig } as DefinitiveConfig;
     const { views, extension, tags, parse } = this.config;
     this.config.tags = assignTags(tags);
+    this.config.parse = assignParse(parse);
 
     checkOpeningAndClosingTag(this.config.tags);
     checkPrefixTemplateTags(parse);
     givenExtensionShouldNotStartWithADot(extension);
 
+    this.prefixBuild = buildPrefixRegex(parse);
     this.templatePaths = getFilesFromDirectory(views, extension);
-  }
-
-  /**
-   * Get the current config.
-   */
-  get currentConfig() {
-    return this.config;
   }
 
   /**
    * Get an array of absolute paths of the mapped files according to the view directory provided.
    */
   get mappedFiles() {
-    return this.templatePaths;
+    return this.templatePaths.slice();
   }
 
   private createCompilationFunction(
@@ -117,11 +109,17 @@ export class Eta {
     variablesOfData: string,
     variablesOfHelpers: string
   ) {
-    return new Function(
-      TEMPLATE_VARNAME,
-      'hp',
-      this.compile(content, variablesOfData, variablesOfHelpers)
-    ) as TemplateFunction;
+    try {
+      return new Function(
+        TEMPLATE_VARNAME,
+        'hp',
+        this.compile(content, variablesOfData, variablesOfHelpers)
+      ) as TemplateFunction;
+    } catch (error: any) {
+      const type: ErrorType = 'Compilation Error';
+      error.type = error.type ?? type;
+      throw error;
+    }
   }
 
   private getMetrics() {
@@ -190,23 +188,25 @@ export class Eta {
     },
     '');
 
-    const pr = buildPrefixRegex(parse);
-    assert(pr === prefixes, 'buildprefixregex not the same');
+    assert(this.prefixBuild === prefixes, 'buildprefixregex not the same');
 
-    const parseOpenReg = new RegExp(escapeRegExp(opening) + '\\s*(' + prefixes + ')?\\s*', 'g');
+    const parseOpenReg = new RegExp(
+      escapeRegExp(opening) + '\\s*(' + this.prefixBuild + ')?\\s*',
+      'g'
+    );
 
     const parseCloseReg = new RegExp('\'|"|`|\\/\\*|(\\s*' + escapeRegExp(closing) + ')', 'g');
 
     let openingResult: RegExpExecArray | null = null;
 
     while ((openingResult = parseOpenReg.exec(expression))) {
-      const [original, openingPrefix = ''] = openingResult;
+      const [originalOpen, openingPrefix = ''] = openingResult;
       let closeResult: RegExpExecArray | null = null;
       let templateData: TemplateData | undefined = undefined;
 
       const precedingExpression = expression.slice(lastIndex, openingResult.index);
 
-      lastIndex = original.length + openingResult.index;
+      lastIndex = originalOpen.length + openingResult.index;
       const prefix = openingPrefix; // by default either ~, =, or empty
 
       compiledData.push(convertToCR(precedingExpression));
@@ -214,7 +214,7 @@ export class Eta {
       parseCloseReg.lastIndex = lastIndex;
 
       while ((closeResult = parseCloseReg.exec(expression))) {
-        const [original, closePrefix] = closeResult;
+        const [originalClose, closePrefix] = closeResult;
 
         if (closePrefix) {
           const content = expression.slice(lastIndex, closeResult.index);
@@ -227,61 +227,87 @@ export class Eta {
           break;
         }
 
-        if (original === '/*') {
-          const commentCloseInd = expression.indexOf('*/', parseCloseReg.lastIndex);
+        parseCloseReg.lastIndex = handleQuotes(
+          expression,
+          originalClose,
+          closeResult.index,
+          this.debug
+        );
+        // if (original === '/*') {
+        //   const commentCloseInd = expression.indexOf('*/', parseCloseReg.lastIndex);
 
-          if (commentCloseInd === -1) {
-            const error = buildParseError('Unclosed comment', expression, closeResult.index);
-            throw new EtaParseError(error);
-          }
+        //   if (commentCloseInd === -1) {
+        //     const error = getParsingErrorData(
+        //       expression,
+        //       closeResult.index,
+        //       `Unclosed comment " ${original} "`,
+        //       this.debug
+        //     );
 
-          parseCloseReg.lastIndex = commentCloseInd;
-        } else if (original === "'") {
-          singleQuoteReg.lastIndex = closeResult.index;
+        //     throw error;
+        //   }
 
-          const singleQuoteMatch = singleQuoteReg.exec(expression);
-          if (!singleQuoteMatch) {
-            const lineNumber = getTemplateLineNumber(expression, closeResult.index);
-            const error: any = new Error();
-            error.message = `Unclosed string "${original}"`;
-            error.lineNumber = lineNumber;
-            error.fileContent = this.debug.fileContent;
-            error.originalFileName = this.debug.originalFileName;
-            error.type = 'Parse Error';
+        //   parseCloseReg.lastIndex = commentCloseInd;
+        // } else if (original === "'") {
+        //   singleQuoteReg.lastIndex = closeResult.index;
 
-            throw error;
-          }
+        //   const singleQuoteMatch = singleQuoteReg.exec(expression);
+        //   if (!singleQuoteMatch) {
+        //     const error = getParsingErrorData(
+        //       expression,
+        //       closeResult.index,
+        //       `Unclosed string " ${original} "`,
+        //       this.debug
+        //     );
 
-          parseCloseReg.lastIndex = singleQuoteReg.lastIndex;
-        } else if (original === '"') {
-          doubleQuoteReg.lastIndex = closeResult.index;
-          const doubleQuoteMatch = doubleQuoteReg.exec(expression);
+        //     throw error;
+        //   }
 
-          if (!doubleQuoteMatch) {
-            const error = buildParseError('Unclosed string', expression, closeResult.index);
-            throw new EtaParseError(error);
-          }
+        //   parseCloseReg.lastIndex = singleQuoteReg.lastIndex;
+        // } else if (original === '"') {
+        //   doubleQuoteReg.lastIndex = closeResult.index;
+        //   const doubleQuoteMatch = doubleQuoteReg.exec(expression);
 
-          parseCloseReg.lastIndex = doubleQuoteReg.lastIndex;
-        } else if (original === '`') {
-          templateLitReg.lastIndex = closeResult.index;
-          const templateLitMatch = templateLitReg.exec(expression);
+        //   if (!doubleQuoteMatch) {
+        //     const error = getParsingErrorData(
+        //       expression,
+        //       closeResult.index,
+        //       `Unclosed string " ${original} "`,
+        //       this.debug
+        //     );
 
-          if (!templateLitMatch) {
-            const error = buildParseError('Unclosed string', expression, closeResult.index);
-            throw new EtaParseError(error);
-          }
+        //     throw error;
+        //   }
 
-          parseCloseReg.lastIndex = templateLitReg.lastIndex;
-        }
+        //   parseCloseReg.lastIndex = doubleQuoteReg.lastIndex;
+        // } else if (original === '`') {
+        //   templateLitReg.lastIndex = closeResult.index;
+        //   const templateLitMatch = templateLitReg.exec(expression);
+
+        //   if (!templateLitMatch) {
+        //     const error = getParsingErrorData(
+        //       expression,
+        //       closeResult.index,
+        //       `Unclosed string " ${original} "`,
+        //       this.debug
+        //     );
+
+        //     throw error;
+        //   }
+
+        //   parseCloseReg.lastIndex = templateLitReg.lastIndex;
+        // }
       }
 
-      if (templateData === undefined) {
-        const error = buildParseError('Unclosed tag', expression, openingResult.index);
-        throw new EtaParseError(error);
-      }
+      checkForUnclosedPrefix(
+        templateData,
+        expression,
+        originalOpen,
+        openingResult.index,
+        this.debug
+      );
 
-      compiledData.push(templateData);
+      compiledData.push(templateData!);
     }
 
     const endOfTemplate = expression.slice(lastIndex);
@@ -297,7 +323,7 @@ export class Eta {
    * @param helpers Provide helper functions to inject.
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
-    const { views, extension } = this.config;
+    const { views, extension, fileResolution } = this.config;
     this.startRenderTime = performance.now();
     this.cacheHit = false;
 
@@ -328,18 +354,18 @@ export class Eta {
     const pathWithExtension = getPathWithExtension(template, extension);
     this.debug.originalFileName = pathWithExtension;
 
-    const fullPath = getFullPath(views, pathWithExtension);
-    const hasAccess = checkAccessPermission(this.templatePaths, fullPath);
-    if (!hasAccess) return '';
+    const fullPath = getFullPath(views, pathWithExtension, fileResolution);
+    const fileFound = checkAccessPermission(this.templatePaths, fullPath);
+    if (!fileFound) return '';
 
-    const cachedTemplate = this.templateStore.get(fullPath);
+    const cachedTemplate = this.templateStore.get(fileFound);
     if (cachedTemplate) {
       this.cacheHit = true;
       log(`${template} cache hit`);
       return this.executeFunction(cachedTemplate, data, helpers);
     }
 
-    return this.compileAndExecute(fullPath, data, helpers);
+    return this.compileAndExecute(fileFound, data, helpers);
   }
 
   private compileAndExecute(fullPath: string, data: Data = {}, helpers: Helpers = {}) {
@@ -372,6 +398,7 @@ export class Eta {
   }
 
   private handleErrorMessage(error: any) {
+    error.type = error.type ?? 'Execution Error';
     const parsingError = isAParseError(error);
     if (parsingError) return handleParseError(error);
 
@@ -381,6 +408,7 @@ export class Eta {
       fileContent: [fileContent],
       message,
       lineNumber,
+      type: error.type,
     };
 
     const [finalMessage, fileContentPerLine, correctedLineNumber] =
@@ -427,6 +455,8 @@ export class Eta {
       const file = fs.readFileSync(path, 'utf8');
       return file;
     } catch (error: any) {
+      const type: ErrorType = 'ReadFile Error';
+      error.type = type;
       throw error;
     }
   }
