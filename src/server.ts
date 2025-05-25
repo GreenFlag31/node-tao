@@ -9,20 +9,11 @@ const templatesPath = path.join(__dirname, 'templates');
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-function nPlusOne(n: number) {
-  return n + 1;
-}
-function nPlusTwo(n: number) {
-  return n + 2;
-}
-
 const eta = new Eta({
   views: templatesPath,
-  extension: 'html',
   cache: true,
   debug: true,
 });
-eta.defineHelpers({ nPlusTwo });
 
 app.get('/', (req, res) => {
   // const headerPartial = `
@@ -36,10 +27,12 @@ app.get('/', (req, res) => {
 
   const simple = {
     name: `ben`,
-    num: 3,
+    includePage: `this is included in include page`,
+    heading: 'this is a heading',
+    content: 'this is a content',
   };
 
-  const renderedTemplate = eta.render('simple', simple, { nPlusOne });
+  const renderedTemplate = eta.render('simple', simple);
   res.status(200).send(renderedTemplate);
 });
 

@@ -1,20 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title><%= it.title %></title>
-</head>
-<body>
-  <header>
-    <h1>Site Header</h1>
-  </header>
 
-  <main>
-    <%~ include('page', it) %>
-  </main>
+  <h2>
+    <p><%= includePage %></p>
+    <%~ include('/page') %>
+  </h2>
 
-  <footer>
-    <p>Footer content</p>
-  </footer>
-</body>
-</html>

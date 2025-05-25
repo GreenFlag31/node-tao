@@ -1,6 +1,4 @@
-import path from 'node:path';
 import { metricsDisabledOrInProduction } from './checks';
-import { log } from 'node:console';
 import { Metrics } from './interfaces';
 
 function includeRenderTime(metrics: boolean) {
@@ -42,7 +40,7 @@ function includeDynamicalDefinedTemplate(templateLoaded: string[]) {
   const dynamicalTemplateNumber = templateLoaded.length;
   if (dynamicalTemplateNumber === 0) return '""';
 
-  const dynamicalTemplate = `DYNAMICAL TEMPLATE${dynamicalTemplateNumber > 1 ? 'S' : ''}`;
+  const dynamicalTemplate = `DYNAMIC TEMPLATE${dynamicalTemplateNumber > 1 ? 'S' : ''}`;
 
   return `console.log(${setTitleStyle(
     dynamicalTemplate,
@@ -60,10 +58,9 @@ function getRenderTime() {
 
 function getFileNameAndAbsPath(files: string[]) {
   const filesNameAndPath = [];
-  const separator = path.sep;
 
   for (const file of files) {
-    const fileName = file.split(separator).slice(-2).join('/');
+    const fileName = file.split('/').slice(-2).join('/');
     const nameAndPath = { name: fileName };
     filesNameAndPath.push(nameAndPath);
   }

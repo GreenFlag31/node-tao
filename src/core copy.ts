@@ -1,5 +1,4 @@
 import { defaultConfig } from './default-config';
-import { escapeRegExp } from './parse copy';
 
 import {
   checkOpeningAndClosingTag,
@@ -18,11 +17,12 @@ import { log } from 'node:console';
 import {
   buildPrefixRegex,
   compileBody,
-  convertToCR,
+  escapeJSLiteral,
   getCurrentPrefixType,
   includeFn,
   initVariablesAndHelpers,
   getFullPath,
+  escapeRegExp,
 } from './utils';
 import { TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -49,31 +49,11 @@ import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
 export class Eta {
-  // renderString = renderString;
-
   private config: DefinitiveConfig;
   private templatePaths: string[] = [];
   private prefixBuild = '';
-
-  /**
-   * Stores dynamically defined templates.
-   */
-  public templateStore = new Store();
-  /**
-   * Stores cached templates.
-   */
-  public templateLoaded = new Store<string>();
-  /**
-   * Stores global helpers.
-   */
-  public helperStorage = new Store<HelperFunction>();
-
   private compiledAST: AstObject[] = [];
   private compiledAnonymousFnContent = '';
-
-  /**
-   * General debug information.
-   */
   private debug: Debug = {
     originalFileName: '',
     fileContent: '',
@@ -82,6 +62,19 @@ export class Eta {
   };
   private startRenderTime = 0;
   private cacheHit = false;
+
+  /**
+   * Stores dynamically defined templates.
+   */
+  public templatesStore = new Store<TemplateFunction>();
+  /**
+   * Stores cached templates.
+   */
+  public dynamictemplatesStore = new Store<string>();
+  /**
+   * Stores global helpers.
+   */
+  public helpersStore = new Store<HelperFunction>();
 
   constructor(customConfig: EtaConfig = {}) {
     this.config = { ...defaultConfig, ...customConfig } as DefinitiveConfig;
@@ -129,30 +122,35 @@ export class Eta {
       files: this.mappedFiles,
       filename: this.debug.originalFileName,
       cacheEnabled: cache,
-      templateLoaded: Object.keys(this.templateLoaded.getAll()),
+      templateLoaded: Object.keys(this.dynamictemplatesStore.getAll()),
     };
 
     return metricsData;
   }
 
+  private isIncluded: string[] = [];
+
   private compile(content: string, variablesOfData: string, variablesOfHelpers: string) {
     const { metrics } = this.config;
     const compiledData: AstObject[] = this.parse(content);
     this.compiledAST = compiledData;
-    const isInclude = templateContainsInclude(content);
-    const globalHelpers = initVariablesAndHelpers(this.helperStorage.getAll());
+    const containsInclude = templateContainsInclude(content);
+    if (containsInclude) this.isIncluded.push(this.debug.originalFileName);
+
+    const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
     const metricsData = this.getMetrics();
 
     const result = `
-    ${includeFn(isInclude)}
+    ${includeFn(containsInclude)}
     ${variablesOfData}
     ${variablesOfHelpers}
     ${globalHelpers}
 
 
-    const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction}
+    const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction};
     
     ${compileBody(compiledData, this.config)}
+
 
     ${includeRenderTime(metrics)}
     ${includeCacheHit(metrics)}
@@ -162,6 +160,7 @@ export class Eta {
   `;
 
     this.compiledAnonymousFnContent = result;
+    this.isIncluded = [];
     return result;
   }
 
@@ -209,7 +208,7 @@ export class Eta {
       lastIndex = originalOpen.length + openingResult.index;
       const prefix = openingPrefix; // by default either ~, =, or empty
 
-      compiledData.push(convertToCR(precedingExpression));
+      compiledData.push(escapeJSLiteral(precedingExpression));
 
       parseCloseReg.lastIndex = lastIndex;
 
@@ -233,70 +232,6 @@ export class Eta {
           closeResult.index,
           this.debug
         );
-        // if (original === '/*') {
-        //   const commentCloseInd = expression.indexOf('*/', parseCloseReg.lastIndex);
-
-        //   if (commentCloseInd === -1) {
-        //     const error = getParsingErrorData(
-        //       expression,
-        //       closeResult.index,
-        //       `Unclosed comment " ${original} "`,
-        //       this.debug
-        //     );
-
-        //     throw error;
-        //   }
-
-        //   parseCloseReg.lastIndex = commentCloseInd;
-        // } else if (original === "'") {
-        //   singleQuoteReg.lastIndex = closeResult.index;
-
-        //   const singleQuoteMatch = singleQuoteReg.exec(expression);
-        //   if (!singleQuoteMatch) {
-        //     const error = getParsingErrorData(
-        //       expression,
-        //       closeResult.index,
-        //       `Unclosed string " ${original} "`,
-        //       this.debug
-        //     );
-
-        //     throw error;
-        //   }
-
-        //   parseCloseReg.lastIndex = singleQuoteReg.lastIndex;
-        // } else if (original === '"') {
-        //   doubleQuoteReg.lastIndex = closeResult.index;
-        //   const doubleQuoteMatch = doubleQuoteReg.exec(expression);
-
-        //   if (!doubleQuoteMatch) {
-        //     const error = getParsingErrorData(
-        //       expression,
-        //       closeResult.index,
-        //       `Unclosed string " ${original} "`,
-        //       this.debug
-        //     );
-
-        //     throw error;
-        //   }
-
-        //   parseCloseReg.lastIndex = doubleQuoteReg.lastIndex;
-        // } else if (original === '`') {
-        //   templateLitReg.lastIndex = closeResult.index;
-        //   const templateLitMatch = templateLitReg.exec(expression);
-
-        //   if (!templateLitMatch) {
-        //     const error = getParsingErrorData(
-        //       expression,
-        //       closeResult.index,
-        //       `Unclosed string " ${original} "`,
-        //       this.debug
-        //     );
-
-        //     throw error;
-        //   }
-
-        //   parseCloseReg.lastIndex = templateLitReg.lastIndex;
-        // }
       }
 
       checkForUnclosedPrefix(
@@ -311,7 +246,7 @@ export class Eta {
     }
 
     const endOfTemplate = expression.slice(lastIndex);
-    compiledData.push(convertToCR(endOfTemplate));
+    compiledData.push(escapeJSLiteral(endOfTemplate));
 
     return compiledData;
   }
@@ -335,7 +270,7 @@ export class Eta {
       }
 
       // preloaded with 'loadTemplate'
-      const templateLoaded = this.templateLoaded.get(template);
+      const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
         console.error(
           `Failed to get programmaticaly defined template from cache at template '${template}'`
@@ -358,7 +293,7 @@ export class Eta {
     const fileFound = checkAccessPermission(this.templatePaths, fullPath);
     if (!fileFound) return '';
 
-    const cachedTemplate = this.templateStore.get(fileFound);
+    const cachedTemplate = this.templatesStore.get(fileFound);
     if (cachedTemplate) {
       this.cacheHit = true;
       log(`${template} cache hit`);
@@ -444,7 +379,7 @@ export class Eta {
     const templateFn = this.createCompilationFunction(content, variablesOfData, variablesOfHelpers);
 
     if (this.config.cache) {
-      this.templateStore.define(resolvedPath, templateFn);
+      this.templatesStore.define(resolvedPath, templateFn);
     }
 
     return templateFn;
@@ -462,7 +397,7 @@ export class Eta {
   }
 
   private handleCachedLoadedTemplate(template: string) {
-    const cachedTemplate = this.templateStore.get(template);
+    const cachedTemplate = this.templatesStore.get(template);
     this.debug.originalFileName = template;
 
     if (!cachedTemplate) return undefined;
@@ -482,7 +417,7 @@ export class Eta {
       const templateFn = this.compileLoadedTemplate(templateLoaded, data, helpers);
 
       if (this.config.cache) {
-        this.templateStore.define(template, templateFn);
+        this.templatesStore.define(template, templateFn);
       }
 
       const immutableData = structuredClone(data);
@@ -513,7 +448,7 @@ export class Eta {
       if (!Object.prototype.hasOwnProperty.call(helpers, key)) continue;
       const fn = helpers[key];
 
-      this.helperStorage.define(key, fn);
+      this.helpersStore.define(key, fn);
     }
   }
 
@@ -528,6 +463,6 @@ export class Eta {
       return;
     }
 
-    this.templateLoaded.define(name, template);
+    this.dynamictemplatesStore.define(name, template);
   }
 }

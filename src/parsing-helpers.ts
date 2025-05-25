@@ -21,6 +21,9 @@ function checkForUnclosedPrefix(
   throw error;
 }
 
+/**
+ * Handle quotes and throw in case of an error.
+ */
 function handleQuotes(
   expression: string,
   original: string,

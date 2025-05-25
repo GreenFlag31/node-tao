@@ -1,11 +1,6 @@
 export type TagType = 'raw' | 'execute' | 'interpolate';
 export type ErrorType = 'Parse Error' | 'ReadFile Error' | 'Compilation Error' | 'Execution Error';
 
-export interface TemplateData {
-  type: TagType;
-  content: string;
-}
-
 export interface Parse {
   /**
    * Which prefix to use for evaluation. Default `""`
@@ -23,10 +18,14 @@ export interface Parse {
   raw?: string;
 }
 
-export type TemplateFunction = (data: object, helpers: Helpers) => string;
-
 export interface Tags {
+  /**
+   * Default "<%"
+   */
   opening?: string;
+  /**
+   * Default "%>"
+   */
   closing?: string;
 }
 
@@ -35,14 +34,19 @@ export interface Tags {
  */
 export type AstObject = string | TemplateData;
 
+export interface TemplateData {
+  type: TagType;
+  content: string;
+}
+
+export type TemplateFunction = (data: object, helpers: Helpers) => string;
+
 export interface Debug {
   originalFileName: string;
   fileContent: string;
   message: string;
   lineNumber: number;
 }
-
-export type HelperFunction = (...args: any[]) => any;
 
 export interface Data {
   [key: string]: any;
@@ -51,6 +55,8 @@ export interface Data {
 export type Helpers = {
   [fnName: string]: HelperFunction;
 };
+
+export type HelperFunction = (...args: any[]) => any;
 
 export interface Metrics {
   metrics: boolean;

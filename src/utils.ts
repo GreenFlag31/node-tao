@@ -8,7 +8,6 @@ import {
   Parse,
   TagType,
 } from './interfaces';
-import { escapeRegExp } from './parse copy';
 import path from 'node:path';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
@@ -33,10 +32,15 @@ function getValueType(value: any) {
 function includeFn(isInclude: boolean) {
   if (!isInclude) return '';
 
-  return `const include = (templatePath, data = ${TEMPLATE_VARNAME}, helpers = ${HELPER_VARNAME}) => this.render(templatePath, data, helpers);`;
+  return `const include = (templatePath, data, helpers) => {
+    data = {...${TEMPLATE_VARNAME}, ...data};
+    helpers = {...${HELPER_VARNAME}, ...helpers};
+    return this.render(templatePath, data, helpers);
+  }`;
 }
 
-function convertToCR(value: string) {
+function escapeJSLiteral(value: string) {
+  // example: I'm using \ today → I\'m using \\ today
   return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 }
 
@@ -48,7 +52,7 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveConfig['parse']):
   };
 
   // escaping if not found
-  return parseOptions[prefix] ?? '=';
+  return parseOptions[prefix] ?? parse.interpolate;
 }
 
 function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
@@ -89,6 +93,9 @@ function compileContent(type: TagType, content: string, config: DefinitiveConfig
   }
 }
 
+/**
+ * If path resolution is set to "flexible", do not return the full path.
+ */
 function getFullPath(views: string, tpPathWithExtension: string, fileResolution: FileResolution) {
   if (fileResolution === 'flexible') return tpPathWithExtension;
 
@@ -116,6 +123,15 @@ function replaceChar(input: string): string {
 }
 
 /**
+ * Escape special regular expression characters inside a string
+ * MDN
+ */
+function escapeRegExp(string: string) {
+  // $& means the whole matched string
+  return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * XML-escapes an input value after converting it to a string
  * @param value - Input value (usually a string)
  * @returns XML-escaped string
@@ -131,7 +147,7 @@ function XMLEscape(input: unknown): string {
 
 export {
   XMLEscape,
-  convertToCR,
+  escapeJSLiteral,
   getCurrentPrefixType,
   compileContent,
   buildPrefixRegex,
@@ -139,4 +155,5 @@ export {
   includeFn,
   initVariablesAndHelpers,
   getFullPath,
+  escapeRegExp,
 };

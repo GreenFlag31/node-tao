@@ -2,8 +2,8 @@ import { globSync } from 'glob';
 
 /**
  * Perform once.
- * Search for all files within a give directory.
- * Synchronous version is used due to commonjs support.
+ * Search for all files within a given directory.
+ * Normalize paths on Windows.
  */
 function getFilesFromDirectory(directory: string, extension: string) {
   const files = globSync(`${directory}/**/*${extension}`, {
@@ -12,7 +12,8 @@ function getFilesFromDirectory(directory: string, extension: string) {
     ignore: ['node_modules/**'],
   });
 
-  return files;
+  const normalizedPaths = files.map((file) => file.replace(/\\/g, '/'));
+  return normalizedPaths;
 }
 
 export { getFilesFromDirectory };
