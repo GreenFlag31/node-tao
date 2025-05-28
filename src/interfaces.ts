@@ -39,10 +39,14 @@ export interface TemplateData {
   content: string;
 }
 
-export type TemplateFunction = (data: object, helpers: Helpers) => string;
+export type TemplateFunction = (
+  data: object,
+  helpers: Helpers,
+  start: number,
+  cacheHit: boolean
+) => string;
 
 export interface Debug {
-  originalFileName: string;
   fileContent: string;
   message: string;
   lineNumber: number;
@@ -64,6 +68,26 @@ export interface Metrics {
   filename: string;
   cacheEnabled: boolean;
   templateLoaded: string[];
+  childTemplates: string[];
+}
+
+export interface LoadedTemplateData {
+  template: string;
+  templateLoaded: string;
+  data: Data;
+  helpers: Helpers;
+  start: number;
+  cacheHit: boolean;
+  filename: string;
+}
+
+export interface CompileExecuteData {
+  filename: string;
+  fullPath: string;
+  data: Data;
+  helpers: Helpers;
+  start: number;
+  cacheHit: boolean;
 }
 
 export interface EtaConfig {

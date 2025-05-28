@@ -7,7 +7,8 @@ function checkForUnclosedPrefix(
   expression: string,
   originalOpen: string,
   openingResultIndex: number,
-  debug: Debug
+  debug: Debug,
+  filename: string
 ) {
   if (templateData) return;
 
@@ -15,7 +16,8 @@ function checkForUnclosedPrefix(
     expression,
     openingResultIndex,
     `Unclosed prefix " ${originalOpen} "`,
-    debug
+    debug,
+    filename
   );
 
   throw error;
@@ -28,7 +30,8 @@ function handleQuotes(
   expression: string,
   original: string,
   closeResultIndex: number,
-  debug: Debug
+  debug: Debug,
+  filename: string
 ) {
   let lastIndex = 0;
   const SINGLE_QUOTE = "'";
@@ -44,7 +47,8 @@ function handleQuotes(
         expression,
         closeResultIndex,
         `Unclosed string " ${original} "`,
-        debug
+        debug,
+        filename
       );
 
       throw error;
@@ -60,7 +64,8 @@ function handleQuotes(
         expression,
         closeResultIndex,
         `Unclosed string " ${original} "`,
-        debug
+        debug,
+        filename
       );
 
       throw error;
@@ -76,7 +81,8 @@ function handleQuotes(
         expression,
         closeResultIndex,
         `Unclosed string " ${original} "`,
-        debug
+        debug,
+        filename
       );
 
       throw error;

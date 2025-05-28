@@ -10,11 +10,13 @@ import { DefinitiveConfig } from './interfaces';
 import { XMLEscape } from './utils';
 
 const defaultConfig: DefinitiveConfig = {
+  views: process.cwd(),
   autoEscape: true,
+  escapeFunction: XMLEscape,
   cache: true,
   debug: false,
-  views: process.cwd(),
-  escapeFunction: XMLEscape,
+  metrics: false,
+  fileResolution: 'flexible',
   parse: {
     exec: DEFAULT_EXEC,
     interpolate: DEFAULT_INTERPOLATE,
@@ -25,8 +27,6 @@ const defaultConfig: DefinitiveConfig = {
     closing: DEFAULT_CLOSING,
   },
   extension: DEFAULT_EXTENSION,
-  metrics: true,
-  fileResolution: 'flexible',
 };
 
 export { defaultConfig };

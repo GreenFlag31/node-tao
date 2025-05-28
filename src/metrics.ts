@@ -1,36 +1,50 @@
-import { metricsDisabledOrInProduction } from './checks';
+import { metricsDisabled } from './checks';
 import { Metrics } from './interfaces';
 
 function includeRenderTime(metrics: boolean) {
-  if (metricsDisabledOrInProduction(metrics)) return '';
+  if (metricsDisabled(metrics)) return '';
 
-  return `const renderDuration = (performance.now() - this.startRenderTime).toFixed(2);`;
+  return `const renderDuration = (performance.now() - start).toFixed(2);`;
 }
 
-function includeCacheHit(metrics: boolean) {
-  if (metricsDisabledOrInProduction(metrics)) return '';
+function includeChildTemplatesCount(metrics: boolean) {
+  if (metricsDisabled(metrics)) return '';
 
-  return `const cacheHit = this.cacheHit;`;
+  return `const childTemplatesCount = this.childTemplates.length`;
 }
 
+function isAChildTemplate(templateName: string, childTemplates: string[]) {
+  return childTemplates.includes(templateName);
+}
+
+function resetChildTemplatesIfParentTemplates(filename: string, childTemplates: string[]) {
+  if (isAChildTemplate(filename, childTemplates)) return childTemplates;
+
+  return [];
+}
+
+/**
+ * Include logs in the browser. Do not include log if disabled or if the current template is included in another template.
+ */
 function includeMetrics(metricsData: Metrics) {
-  const { cacheEnabled, filename, files, metrics, templateLoaded } = metricsData;
-  if (metricsDisabledOrInProduction(metrics)) return '""';
+  const { cacheEnabled, filename, files, metrics, templateLoaded, childTemplates } = metricsData;
+  if (metricsDisabled(metrics)) return '""';
+  if (isAChildTemplate(filename, childTemplates)) return '""';
 
   const filesNameAndPath = getFileNameAndAbsPath(files);
   const includeDynamicalTemplates = includeDynamicalDefinedTemplate(templateLoaded);
   const filesNumber = filesNameAndPath.length;
-  const templatesMapped = 'TEMPLATES MAPPED';
   const templateRendered = 'TEMPLATE RENDERED';
   const cache = 'CACHE ENABLED';
+  const templatesMapped = 'TEMPLATES MAPPED';
 
   return `'<script>console.log(${setTitleStyle(
     templateRendered,
     filename
-  )});${getRenderTime()};console.log(${setTitleStyle(
+  )});${logChildTemplatesCount()};${logRenderTime()};console.log(${setTitleStyle(
     cache,
     cacheEnabled
-  )});${getCacheHit()};console.log(${setTitleStyle(
+  )});${logCacheHit()};console.log(${setTitleStyle(
     templatesMapped,
     filesNumber
   )});console.table(${JSON.stringify(filesNameAndPath)});${includeDynamicalTemplates}</script>'`;
@@ -48,11 +62,15 @@ function includeDynamicalDefinedTemplate(templateLoaded: string[]) {
   )});console.table(${JSON.stringify(templateLoaded)});`;
 }
 
-function getCacheHit() {
+function logChildTemplatesCount() {
+  return `console.log("%c[CHILD TEMPLATES]%c: ' + childTemplatesCount + '", ${getTitleStyle()},${getNormalStyle()})`;
+}
+
+function logCacheHit() {
   return `console.log("%c[CACHE HIT]%c: ' + cacheHit + '", ${getTitleStyle()},${getNormalStyle()})`;
 }
 
-function getRenderTime() {
+function logRenderTime() {
   return `console.log("%c[RENDER TIME]%c: ' + renderDuration + 'ms", ${getTitleStyle()},${getNormalStyle()})`;
 }
 
@@ -85,9 +103,8 @@ export {
   setTitleStyle,
   getTitleStyle,
   getNormalStyle,
-  getCacheHit,
-  getRenderTime,
-  includeCacheHit,
   includeMetrics,
   includeRenderTime,
+  includeChildTemplatesCount,
+  resetChildTemplatesIfParentTemplates,
 };

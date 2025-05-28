@@ -11,8 +11,8 @@ app.use(express.static(publicPath));
 
 const eta = new Eta({
   views: templatesPath,
-  cache: true,
   debug: true,
+  metrics: true,
 });
 
 app.get('/', (req, res) => {

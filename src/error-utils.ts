@@ -120,9 +120,10 @@ function getParsingErrorData(
   expression: string,
   index: number,
   message: string,
-  debug: Debug
+  debug: Debug,
+  filename: string
 ): Error {
-  const { fileContent, originalFileName } = debug;
+  const { fileContent } = debug;
   const lineNumber = getTemplateParsedLineNumber(expression, index);
   const type: ErrorType = 'Parse Error';
 
@@ -130,7 +131,7 @@ function getParsingErrorData(
   error.message = message;
   error.lineNumber = lineNumber;
   error.fileContent = fileContent;
-  error.originalFileName = originalFileName;
+  error.originalFileName = filename;
   error.type = type;
 
   return error;

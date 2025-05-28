@@ -13,32 +13,31 @@ function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
 }
 
+function includedTemplates(content: string, extension: string) {
+  const includeToken = new RegExp(/include\(\s*([^,)]+)/, 'g');
+  return [...content.matchAll(includeToken)].map((match) => {
+    const matchWithoutQuotes = match[1].replace(/'|"|`/g, '');
+    return getPathWithExtension(matchWithoutQuotes, extension);
+  });
+}
+
 function templateContainsInclude(content: string) {
-  const layoutToken = new RegExp(/include\(.*\)/);
-  return layoutToken.test(content);
-}
-
-function templateContainsIncludeAsync(content: string) {
-  const layoutToken = new RegExp(/includeAsync\(.*\)/);
-  return layoutToken.test(content);
-}
-
-function isInProduction() {
-  return process.env.NODE_ENV === 'production';
+  const includeToken = new RegExp(/include\(.*\)/);
+  return includeToken.test(content);
 }
 
 /**
  * No metrics should be displayed if disabled or in production.
  */
-function metricsDisabledOrInProduction(metrics: boolean) {
-  return !metrics || isInProduction();
+function metricsDisabled(metrics: boolean) {
+  return !metrics;
 }
 
 /**
  * No debug message should be displayed if disabled or in production.
  */
-function debugDisabledOrInProduction(debug: boolean) {
-  return !debug || isInProduction();
+function debugDisabled(debug: boolean) {
+  return !debug;
 }
 
 /**
@@ -103,10 +102,9 @@ export {
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
   templateContainsInclude,
-  templateContainsIncludeAsync,
   checkAccessPermission,
   givenExtensionShouldNotStartWithADot,
-  isInProduction,
-  metricsDisabledOrInProduction,
-  debugDisabledOrInProduction,
+  metricsDisabled,
+  debugDisabled,
+  includedTemplates,
 };
