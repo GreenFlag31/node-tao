@@ -6,7 +6,6 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   givenExtensionShouldNotStartWithADot,
-  debugDisabled,
   includedTemplates,
 } from './checks';
 import { getFilesFromDirectory } from './get-files';
@@ -39,6 +38,7 @@ import {
   EtaConfig,
   LoadedTemplateData,
   CompileExecuteData,
+  ExecuteFunction,
 } from './interfaces';
 import assert from 'node:assert';
 import { Store } from './storage copy';
@@ -50,6 +50,7 @@ import {
   includeChildTemplatesCount,
   includeMetrics,
   includeRenderTime,
+  isAChildTemplate,
 } from './metrics';
 import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
@@ -65,6 +66,8 @@ export class Eta {
     message: '',
     lineNumber: 1,
   };
+  private childTemplates: string[] = [];
+  private childCopy: string[] = [];
 
   /**
    * Stores dynamically defined templates.
@@ -81,6 +84,10 @@ export class Eta {
 
   constructor(customConfig: EtaConfig = {}) {
     this.config = { ...defaultConfig, ...customConfig } as DefinitiveConfig;
+    this.initializeConfig();
+  }
+
+  private initializeConfig() {
     const { views, extension, tags, parse } = this.config;
     this.config.tags = assignTags(tags);
     this.config.parse = assignParse(parse);
@@ -110,8 +117,8 @@ export class Eta {
       return new Function(
         TEMPLATE_VARNAME,
         'hp',
-        'start',
-        'cacheHit',
+        'ɵɵstart',
+        'ɵɵcacheHit',
         this.compile(content, variablesOfData, variablesOfHelpers, filename)
       ) as TemplateFunction;
     } catch (error: any) {
@@ -121,7 +128,7 @@ export class Eta {
     }
   }
 
-  private getMetrics(filename: string) {
+  private getMetrics(filename: string, isAChild: boolean) {
     const { metrics, cache } = this.config;
     const metricsData: Metrics = {
       metrics,
@@ -130,12 +137,11 @@ export class Eta {
       cacheEnabled: cache,
       templateLoaded: Object.keys(this.dynamictemplatesStore.getAll()),
       childTemplates: this.childTemplates,
+      isAChild,
     };
 
     return metricsData;
   }
-
-  private childTemplates: string[] = [];
 
   private compile(
     content: string,
@@ -146,14 +152,15 @@ export class Eta {
     const { metrics } = this.config;
     const compiledData: AstObject[] = this.parse(content, filename);
     this.compiledAST = compiledData;
+
     const templatesCount = includedTemplates(content, this.config.extension);
     const containsInclude = templatesCount.length > 0;
-    // si pas contenu dedans à la fin alors delete
     this.childTemplates = this.childTemplates.concat(templatesCount);
-    // log(this.childTemplates);
+    const isAChild = isAChildTemplate(filename, this.childTemplates);
 
     const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
-    const metricsData = this.getMetrics(filename);
+    const metricsData = this.getMetrics(filename, isAChild);
+    this.childCopy = this.childTemplates.slice();
 
     const result = `
     ${includeFn(containsInclude)}
@@ -167,8 +174,8 @@ export class Eta {
     ${compileBody(compiledData, this.config)}
 
 
-    ${includeRenderTime(metrics)}
-    ${includeChildTemplatesCount(metrics)}
+    ${includeRenderTime(metrics, isAChild)}
+    ${includeChildTemplatesCount(metrics, isAChild)}
     ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(metricsData)}
 
     return ${TP_VARNAME_WITH_PREFIX}.res;
@@ -275,16 +282,24 @@ export class Eta {
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
     const { views, extension, fileResolution } = this.config;
-    const start = performance.now();
-    let cacheHit = false;
+    const ɵɵstart = performance.now();
+    let ɵɵcacheHit = false;
     let filename = template;
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.handleCachedLoadedTemplate(template);
 
       if (cachedTemplate) {
-        cacheHit = true;
-        return this.executeFunction(cachedTemplate, data, helpers, start, cacheHit);
+        ɵɵcacheHit = true;
+        const executeData: ExecuteFunction = {
+          templateFn: cachedTemplate,
+          data,
+          helpers,
+          ɵɵstart,
+          ɵɵcacheHit,
+          filename,
+        };
+        return this.executeFunction(executeData);
       }
 
       // preloaded with 'loadTemplate'
@@ -301,8 +316,8 @@ export class Eta {
         templateLoaded,
         data,
         helpers,
-        start,
-        cacheHit,
+        ɵɵstart,
+        ɵɵcacheHit,
         filename,
       };
       return this.handleLoadedTemplate(templateData);
@@ -322,9 +337,18 @@ export class Eta {
 
     const cachedTemplate = this.templatesStore.get(fileFound);
     if (cachedTemplate) {
-      cacheHit = true;
+      ɵɵcacheHit = true;
       log(`${template} cache hit`);
-      return this.executeFunction(cachedTemplate, data, helpers, start, cacheHit);
+
+      const executeData: ExecuteFunction = {
+        templateFn: cachedTemplate,
+        data,
+        helpers,
+        ɵɵstart,
+        ɵɵcacheHit,
+        filename,
+      };
+      return this.executeFunction(executeData);
     }
 
     const compileData: CompileExecuteData = {
@@ -332,15 +356,15 @@ export class Eta {
       fullPath: fileFound,
       data,
       helpers,
-      start,
-      cacheHit,
+      ɵɵstart,
+      ɵɵcacheHit,
     };
 
     return this.compileAndExecute(compileData);
   }
 
   private compileAndExecute(compileData: CompileExecuteData) {
-    const { cacheHit, data, filename, fullPath, helpers, start } = compileData;
+    const { ɵɵcacheHit, data, filename, fullPath, helpers, ɵɵstart } = compileData;
 
     try {
       const variablesOfData = initVariablesAndHelpers(data);
@@ -352,11 +376,12 @@ export class Eta {
         filename
       );
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, start, cacheHit);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
       this.childTemplates = resetChildTemplatesIfParentTemplates(filename, this.childTemplates);
       return html;
-    } catch (error) {
+    } catch (error: any) {
+      error.filename = filename;
       const errorData = this.handleErrorMessage(error);
       // by default, no error should be returned
       console.error(errorData);
@@ -364,18 +389,15 @@ export class Eta {
     }
   }
 
-  private executeFunction(
-    templateFn: TemplateFunction,
-    data: Data,
-    helpers: Helpers,
-    start: number,
-    cacheHit: boolean
-  ) {
+  private executeFunction(executeData: ExecuteFunction) {
+    const { data, filename, helpers, ɵɵstart, templateFn, ɵɵcacheHit } = executeData;
+
     try {
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, start, cacheHit);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
       return html;
     } catch (error: any) {
+      error.filename = filename;
       const errorData = this.handleErrorMessage(error);
       // by default, no error should be returned
       console.error(errorData);
@@ -414,7 +436,7 @@ export class Eta {
   }
 
   private initErrorTemplate(errorData: Data): string {
-    if (debugDisabled(this.config.debug)) return '';
+    if (!this.config.debug) return '';
 
     const templatesPath = path.join(__dirname, 'public');
     const eta = new Eta({ views: templatesPath, extension: 'html', cache: true, metrics: false });
@@ -465,7 +487,7 @@ export class Eta {
   }
 
   private handleLoadedTemplate(templateData: LoadedTemplateData) {
-    const { cacheHit, data, filename, helpers, start, template, templateLoaded } = templateData;
+    const { ɵɵcacheHit, data, filename, helpers, ɵɵstart, template, templateLoaded } = templateData;
 
     try {
       const templateFn = this.compileLoadedTemplate(templateLoaded, data, helpers, filename);
@@ -475,9 +497,10 @@ export class Eta {
       }
 
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, start, cacheHit);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
       return html;
-    } catch (error) {
+    } catch (error: any) {
+      error.filename = filename;
       const errorData = this.handleErrorMessage(error);
       // by default, no error should be returned
       console.error(errorData);

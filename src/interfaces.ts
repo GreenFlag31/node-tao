@@ -42,8 +42,8 @@ export interface TemplateData {
 export type TemplateFunction = (
   data: object,
   helpers: Helpers,
-  start: number,
-  cacheHit: boolean
+  ɵɵstart: number,
+  ɵɵcacheHit: boolean
 ) => string;
 
 export interface Debug {
@@ -69,16 +69,17 @@ export interface Metrics {
   cacheEnabled: boolean;
   templateLoaded: string[];
   childTemplates: string[];
+  isAChild: boolean;
 }
 
 export interface LoadedTemplateData {
+  filename: string;
   template: string;
   templateLoaded: string;
   data: Data;
   helpers: Helpers;
-  start: number;
-  cacheHit: boolean;
-  filename: string;
+  ɵɵstart: number;
+  ɵɵcacheHit: boolean;
 }
 
 export interface CompileExecuteData {
@@ -86,8 +87,17 @@ export interface CompileExecuteData {
   fullPath: string;
   data: Data;
   helpers: Helpers;
-  start: number;
-  cacheHit: boolean;
+  ɵɵstart: number;
+  ɵɵcacheHit: boolean;
+}
+
+export interface ExecuteFunction {
+  templateFn: TemplateFunction;
+  data: Data;
+  helpers: Helpers;
+  ɵɵstart: number;
+  ɵɵcacheHit: boolean;
+  filename: string;
 }
 
 export interface EtaConfig {
@@ -141,6 +151,8 @@ export interface EtaConfig {
 
   /**
    * Display console logs inside your browser with several informations.
+   *
+   * Default false.
    */
   metrics?: boolean;
 
@@ -201,13 +213,15 @@ export interface DefinitiveConfig {
 
   /**
    * Display console logs inside your browser with several informations.
+   *
+   * Default false.
    */
   metrics: boolean;
 
   /**
    * File mode resolution. Strict means you have to defined the template path relative to the view defined, flexible allow you to define only the end of your path (make sure it is unique!).
    *
-   * Default "flexible"
+   * Default "flexible".
    */
   fileResolution: FileResolution;
 }

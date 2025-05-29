@@ -27,20 +27,6 @@ function templateContainsInclude(content: string) {
 }
 
 /**
- * No metrics should be displayed if disabled or in production.
- */
-function metricsDisabled(metrics: boolean) {
-  return !metrics;
-}
-
-/**
- * No debug message should be displayed if disabled or in production.
- */
-function debugDisabled(debug: boolean) {
-  return !debug;
-}
-
-/**
  * Security measure to allow access to only files in given directory that has been previously mapped.
  */
 function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFile: string) {
@@ -104,7 +90,5 @@ export {
   templateContainsInclude,
   checkAccessPermission,
   givenExtensionShouldNotStartWithADot,
-  metricsDisabled,
-  debugDisabled,
   includedTemplates,
 };
