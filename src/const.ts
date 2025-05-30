@@ -1,4 +1,4 @@
-const DEFAULT_EXTENSION = 'eta';
+const DEFAULT_EXTENSION = 'html';
 const DEFAULT_OPENING = '<%';
 const DEFAULT_CLOSING = '%>';
 const DEFAULT_EXEC = '';

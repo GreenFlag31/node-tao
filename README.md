@@ -122,13 +122,13 @@ In case of an error, a visual representation is available in your browser, givin
 
 ![Error representation](error-representation.png)
 
-NB: _set `debug: true` to activate this option. Debug is not available in production._
+NB: _set `debug: true` to activate this option._
 
 Metrics are also available, so you get some usefull informations about the template rendering time, cache hit, mapped templates, etc. in your browser console.
 
 ![Metrics](metrics.png)
 
-NB: _Metrics is not available in production._
+NB: _set `metrics: true` to activate this option._
 
 ## FAQs
 

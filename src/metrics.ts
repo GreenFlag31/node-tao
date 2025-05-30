@@ -10,7 +10,7 @@ function includeRenderTime(metrics: boolean, isAChild: boolean) {
 function includeChildTemplatesCount(metrics: boolean, isAChild: boolean) {
   if (!metrics || isAChild) return '';
 
-  return `const ɵɵchildTemplates = this.childCopy`;
+  return `const ɵɵchildTemplates = this.childCopy;`;
 }
 
 function isAChildTemplate(templateName: string, childTemplates: string[]) {
@@ -46,15 +46,13 @@ function includeMetrics(metricsData: Metrics) {
 }
 
 function includeDynamicalDefinedTemplate(templateLoaded: string[]) {
-  const dynamicalTemplateNumber = templateLoaded.length;
-  if (dynamicalTemplateNumber === 0) return '""';
-
-  const dynamicalTemplate = `DYNAMIC TEMPLATE${dynamicalTemplateNumber > 1 ? 'S' : ''}`;
-
-  return `console.log(${setTitleStyle(
-    dynamicalTemplate,
-    dynamicalTemplateNumber
-  )});console.table(${JSON.stringify(templateLoaded)});`;
+  // const dynamicalTemplateNumber = templateLoaded.length;
+  // if (dynamicalTemplateNumber === 0) return '""';
+  // const dynamicalTemplate = `DYNAMIC TEMPLATE${dynamicalTemplateNumber > 1 ? 'S' : ''}`;
+  // return `console.log(${setTitleStyle(
+  //   dynamicalTemplate,
+  //   dynamicalTemplateNumber
+  // )});console.table(${JSON.stringify(templateLoaded)});`;
 }
 
 function logMappedTemplates(templates: string[]) {
@@ -62,7 +60,7 @@ function logMappedTemplates(templates: string[]) {
     .map((tpl, i) => `console.log("%c#${i + 1} %c${tpl}", "color: #888", "color: #87cefa");`)
     .join('');
 
-  return `console.group("%cMAPPED TEMPLATES ${templates.length}", "color: #00ffcc; font-weight: bold");${logs}console.groupEnd();`;
+  return `console.group("%cMAPPED TEMPLATES (${templates.length})", "color: #00ffcc; font-weight: bold");${logs}console.groupEnd();`;
 }
 
 function logCache(cacheEnabled: boolean) {
@@ -80,7 +78,7 @@ function logRendered(template: string) {
 }
 
 function logChildTemplatesCount() {
-  return `console.log("%c[CHILDREN]%c    ' + ɵɵchildTemplates.join(', ') + ' (' + ɵɵchildTemplates.length + ')' + '", "color:#66ccff;font-weight:bold",${getNormalStyle()})`;
+  return `console.log("%c[CHILDREN]%c   ' + ɵɵchildTemplates.join(', ') + ' (' + ɵɵchildTemplates.length + ')' + '", "color:#66ccff;font-weight:bold",${getNormalStyle()})`;
 }
 
 function logCacheHit() {
@@ -102,22 +100,12 @@ function getFileNameAndAbsPath(files: string[]) {
   return templatesPathWithDirectory;
 }
 
-function setTitleStyle(title: string, value: any = '') {
-  return `"%c[${title}]%c: ${value}", ${getTitleStyle()}, ${getNormalStyle()}`;
-}
-
-function getTitleStyle() {
-  return `"color: white; background: green; padding: 2px; font-weight: bold;"`;
-}
-
 function getNormalStyle() {
   return `"color:white"`;
 }
 
 export {
   getFileNameAndAbsPath,
-  setTitleStyle,
-  getTitleStyle,
   getNormalStyle,
   includeMetrics,
   includeRenderTime,

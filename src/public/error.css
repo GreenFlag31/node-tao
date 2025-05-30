@@ -19,7 +19,7 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 1rem;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   background: #fff;
   min-width: 300px;
@@ -34,11 +34,17 @@ body {
 }
 
 .error-message .general {
-  color: red;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #e74c3c;
 }
 
 .error-message .line {
   font-size: 0.9rem;
+}
+
+.error-container {
+  border-left: 3px solid #e74c3c;
 }
 
 .error-container .content {
@@ -87,7 +93,11 @@ body {
   width: 100%;
 }
 .error-line {
-  background: #d8d8d8;
+  background: #ffe9e9;
+  color: #c0392b;
+}
+.error-line-container:hover {
+  background-color: #f1f1f1;
 }
 
 .github {
@@ -128,8 +138,7 @@ a {
 }
 .resize-handle.left:hover,
 .resize-handle.right:hover {
-  background-color: #72bdff47;
-  transition: 0.4s background-color;
+  background-color: rgba(192, 192, 192, 0.479);
 }
 .resize-handle.left {
   left: -3px;
