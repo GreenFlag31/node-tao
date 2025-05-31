@@ -1,13 +1,6 @@
-import path from 'node:path';
 import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
-
-function getPathWithExtension(filePath: string, extension: string) {
-  const pathContainsExtension = path.extname(filePath);
-  if (pathContainsExtension) return filePath;
-
-  return `${filePath}.${extension}`;
-}
+import { getPathWithExtension } from './utils';
 
 function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
@@ -24,30 +17,6 @@ function includedTemplates(content: string, extension: string) {
 function templateContainsInclude(content: string) {
   const includeToken = new RegExp(/include\(.*\)/);
   return includeToken.test(content);
-}
-
-/**
- * Security measure to allow access to only files in given directory that has been previously mapped.
- */
-function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFile: string) {
-  return templatePaths.filter((path) => path.endsWith(templateFile));
-}
-
-function checkAccessPermission(templatePaths: string[], templateFile: string) {
-  const filesFound = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
-
-  if (filesFound.length === 0) {
-    console.error(`Non existing template or template out of scope (reading "${templateFile}")`);
-    return undefined;
-  }
-  if (filesFound.length > 1) {
-    console.error(
-      `Non unique template given "${templateFile}". Possible:\n- ${filesFound.join('\n- ')}`
-    );
-    return undefined;
-  }
-
-  return filesFound[0];
 }
 
 function checkOpeningAndClosingTag(tags: Tags) {
@@ -75,20 +44,11 @@ function checkPrefixTemplateTags(parse: Parse) {
   }
 }
 
-function givenExtensionShouldNotStartWithADot(extension: string) {
-  if (extension.startsWith('.')) {
-    throw new Error('Please provide an extension without a dot in front');
-  }
-}
-
 export {
   getPathWithExtension,
-  isTemplateFileInsideGivenDirectory,
   isTemplateDynamicallyDefined,
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
   templateContainsInclude,
-  checkAccessPermission,
-  givenExtensionShouldNotStartWithADot,
   includedTemplates,
 };

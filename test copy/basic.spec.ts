@@ -47,6 +47,10 @@ describe('eta constructor', () => {
     const templateViews = path.join(process.cwd(), 'test copy/templates');
     const eta = new Eta({ views: templateViews });
 
-    expect(eta['templatePaths']).toContain(path.join(templateViews, `simple.${DEFAULT_EXTENSION}`));
+    const pathWithSimpleSlash = path
+      .join(templateViews, `simple.${DEFAULT_EXTENSION}`)
+      .replace(/\\/g, '/');
+
+    expect(eta['templatePaths']).toContain(pathWithSimpleSlash);
   });
 });

@@ -27,7 +27,7 @@ import { Eta } from 'eta';
 
 const eta = new Eta({ views: path.join(__dirname, 'templates') });
 
-const res = eta.render('./simple', { name: 'Tao' });
+const res = eta.render('simple', { name: 'Tao' });
 console.log(res); // <h1>Hi Tao!</h1>
 ```
 
@@ -53,14 +53,13 @@ app.get('/', (req, res) => {
   function nPlusOne(n: number) {
     return n + 1;
   }
-  const data = { name: 'Ben' };
 
   const res = eta.render('simple', { name: 'Ben' }, { nPlusOne });
   console.log(res); // <h1>Hi Ben!</h1>
 });
 ```
 
-It is also possible to register helpers on `globalThis`, but it can lead to name collision.
+It is also possible to register helpers on `globalThis` without provided them to the template engine, but it can lead to name collision.
 
 ## Include
 
@@ -68,10 +67,25 @@ In your template, you might want to include another template:
 
 ```html
 <h1>Hi <%= name %>!</h1>
-include('article', {phone: 'Tao T9'})
+<%~ include('article', {phone: 'Tao T9'}) %>
 ```
 
 Data and Helpers given in the parent component will be available in the child component.
+
+## Template prefix options
+
+There are three differents template prefix.
+
+```html
+<!-- Evaluation (''): no escape -->
+<% const age = 33; %>
+<!-- Interpolation (=): escaping -->
+<p><%= `Age: ${age}` %></p>
+<!-- Raw (~): no escape -->
+<%~ include('product') %>
+```
+
+NB: _Those prefix are configurable in the options._
 
 ## Template paths resolution
 
@@ -112,7 +126,7 @@ tao.helpersStore.remove('myHelperFn');
 
 ## Security by design
 
-By default, `TAO` assume you are running your app in production, so no error will be thrown, such that error stack traces are not visible in your browser. Errors will be displayed in your editor console, and visual error representation (see developer experience) is available in your browser by setting `debug: true` at option initialisation. If you run your application in production (checking environnement variable `NODE_ENV`), no error will be thrown.
+By default, `TAO` assume you are running your app in production, so no error will be thrown, such that error stack traces are not visible in your browser. Errors will be displayed in your editor console, and visual error representation (see developer experience) is available in your browser by setting `debug: true` at option initialisation.
 
 ## Developer experience
 
@@ -161,11 +175,11 @@ It started as a fork of `eta`, but became a complete rewrite of the library beca
     <b>Choices</b>
   </summary>
 
-- No async support: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer. Templates should be responsible for displaying data, while controllers handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity and increasing the risk of exposing stack traces to users. Excessive logic in templates makes them hard to test, debug, and read. In short: if you have async data, fetch it beforehand and render it synchronously.
+- No async support: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and is an _anti-pattern_. Templates should be responsible for displaying data, while controllers handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity and increasing the risk of exposing stack traces to users. Excessive logic in templates makes them hard to test, debug, and read. In short: if you have async data, fetch it beforehand and render it synchronously.
 
 - No `layouts`: Layouts are essentially includes and add unnecessary complexity to the rendering process.
 
-- No `rmWhitespace`: Stripping whitespace at the template level yields negligible HTML size savings. Using compression (e.g., via Nginx or other proxies) is far more effective and scalable.
+- No `rmWhitespace`: Stripping whitespace at the template level yields negligible HTML size savings. Using compression (e.g., via Nginx or other proxies) is far more effective and scalable. Your HTML and CSS define how the template looks like, not the template engine.
 
 _If you think those features are absolutely necessary, please open a new discussion on github and provide an example._
 

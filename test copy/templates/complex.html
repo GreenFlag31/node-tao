@@ -1,0 +1,16 @@
+<div class="user-card">
+  <h2><%= user.name %></h2>
+  <p>Email: <%= user.email %></p>
+
+  <ul class="roles">
+    <% for (const role of user.roles) { %>
+    <li class="<%= role === 'admin' ? 'highlight' : '' %>"><%= role %></li>
+    <% } %>
+  </ul>
+
+  <% if (user.isActive) { %>
+  <span class="badge active">Active</span>
+  <% } else { %>
+  <span class="badge inactive">Inactive</span>
+  <% } %>
+</div>

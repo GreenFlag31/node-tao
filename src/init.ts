@@ -27,4 +27,10 @@ function assignParse(parse: Parse) {
   return definitiveParse;
 }
 
-export { assignTags, assignParse };
+function givenExtensionShouldNotStartWithADot(extension: string) {
+  if (extension.startsWith('.')) return extension.slice(1);
+
+  return extension;
+}
+
+export { assignTags, assignParse, givenExtensionShouldNotStartWithADot };

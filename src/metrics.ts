@@ -24,11 +24,10 @@ function resetChildTemplatesIfParentTemplates(filename: string, childTemplates: 
 }
 
 /**
- * Include logs in the browser. Do not include log if disabled or if the current template is included in another template.
+ * Logs metrics in the browser. Do not include logs if disabled or if the current template is included in another template.
  */
 function includeMetrics(metricsData: Metrics) {
-  const { cacheEnabled, filename, files, metrics, templateLoaded, childTemplates, isAChild } =
-    metricsData;
+  const { cacheEnabled, filename, files, metrics, templateLoaded, isAChild } = metricsData;
 
   if (!metrics || isAChild) return '""';
 
@@ -66,29 +65,32 @@ function logMappedTemplates(templates: string[]) {
 function logCache(cacheEnabled: boolean) {
   const isEnabled = cacheEnabled ? 'enabled' : 'disabled';
 
-  return `"%c[CACHE]%c       ${isEnabled}", "color:#00bfff;font-weight:bold", ${getNormalStyle()}`;
+  return `"%c[CACHE]%c       ${isEnabled}", "color: #00bfff;font-weight:bold", ${getNormalStyle()}`;
 }
 
 function logTemplatesMapped(templateNumber: number) {
-  return `"%c[TEMPLATES]%c   ${templateNumber}", "color:#bb86fc;font-weight:bold", ${getNormalStyle()}`;
+  return `"%c[TEMPLATES]%c   ${templateNumber}", "color: #bb86fc;font-weight:bold", ${getNormalStyle()}`;
 }
 
 function logRendered(template: string) {
-  return `"%c[RENDERED]%c    ${template}", "color:#00ff99;font-weight:bold", ${getNormalStyle()}`;
+  return `"%c[RENDERED]%c    ${template}", "color: #00ff99;font-weight:bold", ${getNormalStyle()}`;
 }
 
 function logChildTemplatesCount() {
-  return `console.log("%c[CHILDREN]%c   ' + ɵɵchildTemplates.join(', ') + ' (' + ɵɵchildTemplates.length + ')' + '", "color:#66ccff;font-weight:bold",${getNormalStyle()})`;
+  return `console.log("%c[CHILDREN]%c   ' + ɵɵchildTemplates.join(', ') + ' (' + ɵɵchildTemplates.length + ')' + '", "color: #66ccff;font-weight:bold",${getNormalStyle()})`;
 }
 
 function logCacheHit() {
-  return `console.log("%c[CACHE HIT]%c   ' + ɵɵcacheHit + '", "color:#ff4d4d;font-weight:bold",${getNormalStyle()})`;
+  return `console.log("%c[CACHE HIT]%c   ' + ɵɵcacheHit + '", "color: #ff4d4d;font-weight:bold",${getNormalStyle()})`;
 }
 
 function logRenderTime() {
-  return `console.log("%c[RENDER TIME]%c ' + ɵɵrenderDuration + 'ms", "color:#ffa500;font-weight:bold",${getNormalStyle()})`;
+  return `console.log("%c[RENDER TIME]%c ' + ɵɵrenderDuration + 'ms", "color: #ffa500;font-weight:bold",${getNormalStyle()})`;
 }
 
+/**
+ * Takes into account the parent directory.
+ */
 function getFileNameAndAbsPath(files: string[]) {
   const templatesPathWithDirectory: string[] = [];
 
@@ -101,7 +103,7 @@ function getFileNameAndAbsPath(files: string[]) {
 }
 
 function getNormalStyle() {
-  return `"color:white"`;
+  return `"color: #fff"`;
 }
 
 export {

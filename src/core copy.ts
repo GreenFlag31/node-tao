@@ -1,14 +1,12 @@
 import { defaultConfig } from './default-config';
 import {
   checkOpeningAndClosingTag,
-  checkAccessPermission,
   checkPrefixTemplateTags,
   getPathWithExtension,
   isTemplateDynamicallyDefined,
-  givenExtensionShouldNotStartWithADot,
   includedTemplates,
 } from './checks';
-import { getFilesFromDirectory } from './get-files';
+import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
 
 import { log } from 'node:console';
@@ -41,7 +39,7 @@ import {
   ExecuteFunction,
 } from './interfaces';
 import assert from 'node:assert';
-import { Store } from './storage copy';
+import { Store } from './store';
 import { findOriginalLineNumberWithMessage, handleParseError, isAParseError } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -52,7 +50,7 @@ import {
   includeRenderTime,
   isAChildTemplate,
 } from './metrics';
-import { assignParse, assignTags } from './init';
+import { assignParse, assignTags, givenExtensionShouldNotStartWithADot } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
 export class Eta {
@@ -91,10 +89,10 @@ export class Eta {
     const { views, extension, tags, parse } = this.config;
     this.config.tags = assignTags(tags);
     this.config.parse = assignParse(parse);
+    this.config.extension = givenExtensionShouldNotStartWithADot(extension);
 
     checkOpeningAndClosingTag(this.config.tags);
     checkPrefixTemplateTags(parse);
-    givenExtensionShouldNotStartWithADot(extension);
 
     this.prefixBuild = buildPrefixRegex(parse);
     this.templatePaths = getFilesFromDirectory(views, extension);
@@ -136,7 +134,6 @@ export class Eta {
       filename,
       cacheEnabled: cache,
       templateLoaded: Object.keys(this.dynamictemplatesStore.getAll()),
-      childTemplates: this.childTemplates,
       isAChild,
     };
 
@@ -329,9 +326,9 @@ export class Eta {
     }
 
     const pathWithExtension = getPathWithExtension(template, extension);
-    filename = pathWithExtension;
-
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
+    filename = fullPath.split('/').at(-1)!;
+
     const fileFound = checkAccessPermission(this.templatePaths, fullPath);
     if (!fileFound) return '';
 

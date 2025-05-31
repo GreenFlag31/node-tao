@@ -1,3 +1,0 @@
-ASYNC CONTENT BELOW!
-
-<%= await includeAsync("./async-partial") %>

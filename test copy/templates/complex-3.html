@@ -1,0 +1,29 @@
+<section class="dashboard">
+  <header>
+    <h1>Welcome, <%= user.name %></h1>
+    <p>Last login: <%= formatDate(user.lastLogin) %></p>
+  </header>
+
+  <div class="projects">
+    <% for (let project of user.projects) { %>
+    <article class="project <%= project.active ? 'active' : 'archived' %>">
+      <h2><%= project.title %></h2>
+      <p><%= project.description %></p>
+
+      <ul class="tags">
+        <% for (let tag of project.tags) { %>
+        <li class="tag"><%= tag %></li>
+        <% } %>
+      </ul>
+
+      <% if (project.team.length) { %>
+      <p>
+        Team: <% for (let member of project.team) { %>
+        <span class="member <%= member.role %>"><%= member.name %></span>
+        <% } %>
+      </p>
+      <% } %>
+    </article>
+    <% } %>
+  </div>
+</section>

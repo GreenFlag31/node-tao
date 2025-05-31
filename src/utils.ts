@@ -18,13 +18,12 @@ function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
     variables += `const ${key} = ${getValueType(value)};`;
   }
 
-  // log(variables);
   return variables;
 }
 
 function getValueType(value: any) {
-  const valueIsAFunction = typeof value === 'function';
-  if (valueIsAFunction) return value;
+  const isAFunction = typeof value === 'function';
+  if (isAFunction) return value;
 
   return JSON.stringify(value);
 }
@@ -51,7 +50,7 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveConfig['parse']):
     [parse.interpolate]: 'interpolate',
   };
 
-  // escaping if not found
+  // escaping if not null | undefined
   return parseOptions[prefix] ?? parse.interpolate;
 }
 
@@ -93,16 +92,23 @@ function compileContent(type: TagType, content: string, config: DefinitiveConfig
   }
 }
 
+function getPathWithExtension(filePath: string, extension: string) {
+  const pathContainsExtension = path.extname(filePath);
+  if (pathContainsExtension) return filePath;
+
+  return `${filePath}.${extension}`;
+}
+
 /**
  * If path resolution is set to "flexible", do not return the full path.
  */
-function getFullPath(views: string, tpPathWithExtension: string, fileResolution: FileResolution) {
-  if (fileResolution === 'flexible') return tpPathWithExtension;
+function getFullPath(views: string, pathWithExtension: string, fileResolution: FileResolution) {
+  if (fileResolution === 'flexible') return pathWithExtension;
 
-  const isAbsolutePath = path.isAbsolute(tpPathWithExtension);
-  if (isAbsolutePath) return tpPathWithExtension;
+  const isAbsolutePath = path.isAbsolute(pathWithExtension);
+  if (isAbsolutePath) return pathWithExtension;
 
-  return path.join(views, tpPathWithExtension);
+  return path.join(views, pathWithExtension);
 }
 
 function buildPrefixRegex(parseOptions: Parse) {
@@ -156,4 +162,5 @@ export {
   initVariablesAndHelpers,
   getFullPath,
   escapeRegExp,
+  getPathWithExtension,
 };

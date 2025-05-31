@@ -1,4 +1,5 @@
-import { getPathWithExtension, isTemplateFileInsideGivenDirectory } from '../src/checks';
+import { getPathWithExtension } from '../src/checks';
+import { isTemplateFileInsideGivenDirectory } from '../src/templates-access';
 
 describe('checks function tests', () => {
   it('getPathWithExtension should return a path with its extension when the filePath does not contain the extension', () => {

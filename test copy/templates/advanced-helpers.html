@@ -1,0 +1,17 @@
+<section>
+  <h1>User: <%= upper(user.name) %></h1>
+  <p>Last login: <%= formatDate(user.lastLogin) %></p>
+
+  <% if (isManager(user.roles)) { %>
+  <p class="badge">Manager Access</p>
+  <% } %>
+
+  <div class="projects">
+    <% for (let project of user.projects) { %>
+    <article>
+      <h2><%= project.title %></h2>
+      <p>Team: <%= listTeam(project.team) %></p>
+    </article>
+    <% } %>
+  </div>
+</section>
