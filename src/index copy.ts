@@ -1,2 +1,2 @@
-export { Eta } from './core copy';
-export { type EtaConfig } from './interfaces';
+export { Tao } from './tao';
+export { type options } from './interfaces';

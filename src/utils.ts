@@ -2,7 +2,7 @@ import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from
 import {
   AstObject,
   Data,
-  DefinitiveConfig,
+  DefinitiveOptions,
   FileResolution,
   Helpers,
   Parse,
@@ -43,7 +43,7 @@ function escapeJSLiteral(value: string) {
   return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 }
 
-function getCurrentPrefixType(prefix: string, parse: DefinitiveConfig['parse']): TagType {
+function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse']): TagType {
   const parseOptions: Record<string, TagType> = {
     [parse.exec]: 'execute',
     [parse.raw]: 'raw',
@@ -54,7 +54,7 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveConfig['parse']):
   return parseOptions[prefix] ?? parse.interpolate;
 }
 
-function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
+function compileBody(templateValues: AstObject[], config: DefinitiveOptions) {
   let result = '';
 
   for (const value of templateValues) {
@@ -71,7 +71,7 @@ function compileBody(templateValues: AstObject[], config: DefinitiveConfig) {
   return result;
 }
 
-function compileContent(type: TagType, content: string, config: DefinitiveConfig) {
+function compileContent(type: TagType, content: string, config: DefinitiveOptions) {
   const { autoEscape } = config;
   const prefix = TP_VARNAME_WITH_PREFIX;
 

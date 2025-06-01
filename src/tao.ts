@@ -32,8 +32,8 @@ import {
   HelperFunction,
   Metrics,
   ErrorType,
-  DefinitiveConfig,
-  EtaConfig,
+  DefinitiveOptions,
+  options,
   LoadedTemplateData,
   CompileExecuteData,
   ExecuteFunction,
@@ -53,8 +53,8 @@ import {
 import { assignParse, assignTags, givenExtensionShouldNotStartWithADot } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
-export class Eta {
-  private config: DefinitiveConfig;
+export class Tao {
+  private config: DefinitiveOptions;
   private templatePaths: string[] = [];
   private prefixBuild = '';
   private compiledAST: AstObject[] = [];
@@ -80,8 +80,8 @@ export class Eta {
    */
   public helpersStore = new Store<HelperFunction>();
 
-  constructor(customConfig: EtaConfig = {}) {
-    this.config = { ...defaultConfig, ...customConfig } as DefinitiveConfig;
+  constructor(customConfig: options = {}) {
+    this.config = { ...defaultConfig, ...customConfig } as DefinitiveOptions;
     this.initializeConfig();
   }
 
@@ -273,7 +273,7 @@ export class Eta {
 
   /**
    * Render a template with data and helpers.
-   * @param template The name of your template to render.
+   * @param template The path of your template to render. Always use "/" as separator.
    * @param data Provide data to inject.
    * @param helpers Provide helper functions to inject.
    */
@@ -436,7 +436,7 @@ export class Eta {
     if (!this.config.debug) return '';
 
     const templatesPath = path.join(__dirname, 'public');
-    const eta = new Eta({ views: templatesPath, extension: 'html', cache: true, metrics: false });
+    const eta = new Tao({ views: templatesPath, extension: 'html', cache: true, metrics: false });
     return eta.render('error', errorData);
   }
 
@@ -532,7 +532,7 @@ export class Eta {
   }
 
   /**
-   * Cache dynamical defined templates.
+   * Load dynamically defined templates.
    * @param name The name of your template. Should start with a '@'.
    * @param template The template content.
    */

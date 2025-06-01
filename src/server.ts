@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { Eta } from './index copy';
 import express from 'express';
+import { Tao } from './tao';
 
 const app = express();
 const PORT = 3000;
@@ -9,20 +9,20 @@ const templatesPath = path.join(__dirname, 'templates');
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-const eta = new Eta({
+const tao = new Tao({
   views: templatesPath,
   debug: true,
   metrics: true,
 });
 
 app.get('/', (req, res) => {
-  // const headerPartial = `
-  //   <header>
-  //     <h1><%= title %></h1>
-  //   </header>
-  // `;
+  const headerPartial = `
+    <header>
+      <h1><%= title %></h1>
+    </header>
+  `;
   // const partialData = { title: 'this is my t' };
-  // eta.loadTemplate('@header', headerPartial);
+  tao.loadTemplate('@header', headerPartial);
   // const renderedTemplate = eta.render('@header', partialData, { nPlusOne });
 
   const simple = {
@@ -32,7 +32,7 @@ app.get('/', (req, res) => {
     content: 'this is a content',
   };
 
-  const renderedTemplate = eta.render('simple', simple);
+  const renderedTemplate = tao.render('simple', simple);
   res.status(200).send(renderedTemplate);
 });
 

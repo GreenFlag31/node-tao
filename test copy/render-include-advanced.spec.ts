@@ -1,19 +1,19 @@
-import { Eta } from '../src/index copy';
+import { Tao } from '../src/index copy';
 import path from 'path';
 
 const templateViews = path.join(process.cwd(), 'test copy/templates');
 
 describe('advanced render tests (helpers, etc)', () => {
   it('should support local and global helpers in templates', () => {
-    const eta = new Eta({ views: templateViews });
+    const tao = new Tao({ views: templateViews });
 
-    eta.defineHelpers({
+    tao.defineHelpers({
       nPlusTwo: (n: number) => n + 2,
     });
 
     const n = 5;
 
-    const result = eta.render(
+    const result = tao.render(
       '/helpers',
       { n },
       {
@@ -27,9 +27,9 @@ describe('advanced render tests (helpers, etc)', () => {
   });
 
   it('should render complex template using local and global helpers with logic and formatting', () => {
-    const eta = new Eta({ views: templateViews });
+    const tao = new Tao({ views: templateViews });
 
-    eta.defineHelpers({
+    tao.defineHelpers({
       upper: (str: string) => str.toUpperCase(),
       formatDate: (d: string) => d.split('T')[0],
     });
@@ -57,7 +57,7 @@ describe('advanced render tests (helpers, etc)', () => {
       listTeam: (team: { name: string }[]) => team.map((m) => m.name).join(', '),
     };
 
-    const result = eta.render('advanced-helpers', data, localHelpers);
+    const result = tao.render('advanced-helpers', data, localHelpers);
 
     expect(result).toContain('<h1>User: ALICE</h1>');
     expect(result).toContain('<p>Last login: 2025-05-30</p>');

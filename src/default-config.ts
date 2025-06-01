@@ -6,10 +6,10 @@ import {
   DEFAULT_OPENING,
   DEFAULT_RAW,
 } from './const';
-import { DefinitiveConfig } from './interfaces';
+import { DefinitiveOptions } from './interfaces';
 import { XMLEscape } from './utils';
 
-const defaultConfig: DefinitiveConfig = {
+const defaultConfig: DefinitiveOptions = {
   views: process.cwd(),
   autoEscape: true,
   escapeFunction: XMLEscape,

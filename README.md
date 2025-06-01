@@ -1,4 +1,4 @@
-## Node Template Engine
+## Node Tao
 
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.
 
@@ -23,11 +23,11 @@ Define a template `simple.html` inside a view directory `templates`
 ```
 
 ```javascript
-import { Eta } from 'eta';
+import { Tao } from 'tao';
 
-const eta = new Eta({ views: path.join(__dirname, 'templates') });
+const tao = new Tao({ views: path.join(__dirname, 'templates') });
 
-const res = eta.render('simple', { name: 'Tao' });
+const res = tao.render('simple', { name: 'Tao' });
 console.log(res); // <h1>Hi Tao!</h1>
 ```
 
@@ -36,16 +36,16 @@ console.log(res); // <h1>Hi Tao!</h1>
 Helpers are functions that can be used inside a template. Helpers can be local (only available in a particular `render`) or global (available everywhere on the instance).
 
 ```javascript
-import { Eta } from 'eta';
+import { Tao } from 'tao';
 
-const eta = new Eta({ views: path.join(__dirname, 'templates') });
+const tao = new Tao({ views: path.join(__dirname, 'templates') });
 
 // Global helper
 function nPlusTwo(n: number) {
   return n + 2;
 }
 // Global helper need to be registered on the instance
-eta.defineHelpers({ nPlusTwo });
+tao.defineHelpers({ nPlusTwo });
 
 // Render a template
 app.get('/', (req, res) => {
@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
     return n + 1;
   }
 
-  const res = eta.render('simple', { name: 'Ben' }, { nPlusOne });
+  const res = tao.render('simple', { name: 'Ben' }, { nPlusOne });
   console.log(res); // <h1>Hi Ben!</h1>
 });
 ```
@@ -67,7 +67,7 @@ In your template, you might want to include another template:
 
 ```html
 <h1>Hi <%= name %>!</h1>
-<%~ include('article', {phone: 'Tao T9'}) %>
+<%~ include('article', { phone: 'Tao T9' }) %>
 ```
 
 Data and Helpers given in the parent component will be available in the child component.
@@ -92,9 +92,9 @@ NB: _Those prefix are configurable in the options._
 `TAO` will _recursively_ add all templates matching the containing `views` path definition:
 
 ```javascript
-import { Eta } from 'eta';
+import { Tao } from 'tao';
 
-const eta = new Eta({ views: path.join(__dirname, 'templates') });
+const tao = new Tao({ views: path.join(__dirname, 'templates') });
 ```
 
 such that following structure is ok:
@@ -108,13 +108,29 @@ such that following structure is ok:
 |       - nested.html     ✔️
 ```
 
-By default, `fileResolution` is set to `flexible`, which means that you can only provide _end unique paths_:
+By default, `fileResolution` is set to `flexible`, which means that you can only provide _end unique path fragment_:
 
 ```javascript
-const res = eta.render('article');
+const res = tao.render('templates/products/article'); // not necessary ❌
+const res = tao.render('article'); // accepted ✔️
 ```
 
 `TAO` will successfully identify the nested templates without providing the subfolder(s).
+
+## Programmatically defined templates
+
+You might want to define programmatically templates:
+
+```javascript
+const headerPartial = `
+  <header>
+    <h1><%= title %></h1>
+  </header>
+`;
+
+tao.loadTemplate('@header', headerPartial);
+const rendered = tao.render('@header', { title: 'Computer shop' });
+```
 
 ## Cache Storage
 
@@ -151,21 +167,21 @@ NB: _set `metrics: true` to activate this option._
     <b>Some words about this library</b>
   </summary>
 
-It started as a fork of `eta`, but became a complete rewrite of the library because the changes made were too significant. Some parts are still based on `eta`, especially the template parsing, and if you know `eta`, the api will be familiar.
+It started as a fork of `eta`, but became a complete rewrite of the library because the changes made were too significant. Some parts are still based on `eta`, especially the template parsing, and if you know `eta`, the API will be familiar.
 
 </details>
 
 <details>
   <summary>
-    <b>If you want to compare `tao` with `eta`</b>
+    <b>If you want to compare "tao" with "eta"</b>
   </summary>
 
-- Tao set security by design: Stack traces are not (and _should not_) be visible in the browser.
-- Increased developer experience: Visual error representation, metrics, configuration options are checked. Zero frustration!
+- Tao set security by design: Stack traces are not visible in the browser. Increased security in mapping files.
+- Increased developer experience: Visual error representation, metrics, configuration options are checked.
 - Immutability: Data provided in the template is immutable, ie. template data modification does not affect original data.
-- Clearer API: Scope is well defined and restricted, which also improves security.
+- Clearer API: Scope is well defined and restricted, which also improves security. Clean code practices.
 - Clearer template syntax: No prefix are needed.
-- Helpers: Global and local helpers are helpfull for many usecases, such as translation, little template logic, etc.
+- Helpers: Global and local helpers, which are clearer and more suitable for little template logic.
 - Flexible template path resolution: With `fileResolution` mode set to `flexible`, only end unique paths can be provided, which increases file path readability (feature equivalent to `namespaces`).
 
 </details>
@@ -175,11 +191,11 @@ It started as a fork of `eta`, but became a complete rewrite of the library beca
     <b>Choices</b>
   </summary>
 
-- No async support: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and is an _anti-pattern_. Templates should be responsible for displaying data, while controllers handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity and increasing the risk of exposing stack traces to users. Excessive logic in templates makes them hard to test, debug, and read. In short: if you have async data, fetch it beforehand and render it synchronously.
+- No async support: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and is an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity. Logic in templates is untestable, undebuggable, and hard to read. In short: if you have async data, fetch it beforehand and render it synchronously.
 
 - No `layouts`: Layouts are essentially includes and add unnecessary complexity to the rendering process.
 
-- No `rmWhitespace`: Stripping whitespace at the template level yields negligible HTML size savings. Using compression (e.g., via Nginx or other proxies) is far more effective and scalable. Your HTML and CSS define how the template looks like, not the template engine.
+- No `rmWhitespace`: Stripping whitespace at the template level yields negligible HTML size savings. Using compression (e.g., via Nginx or other proxies) is far more effective and scalable.
 
 _If you think those features are absolutely necessary, please open a new discussion on github and provide an example._
 

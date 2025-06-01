@@ -99,7 +99,7 @@ export interface ExecuteFunction {
   filename: string;
 }
 
-export interface EtaConfig {
+export interface options {
   /**
    * Automatically XML-escape interpolations.
    *
@@ -165,7 +165,7 @@ export interface EtaConfig {
 
 export type FileResolution = 'strict' | 'flexible';
 
-export interface DefinitiveConfig {
+export interface DefinitiveOptions {
   /**
    * Automatically XML-escape interpolations.
    * Default true.

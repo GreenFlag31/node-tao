@@ -1,4 +1,4 @@
-import { Eta, EtaConfig } from '../src/index copy';
+import { options, Tao } from '../src/index copy';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { DEFAULT_EXTENSION } from '../src/const';
@@ -6,7 +6,7 @@ import { defaultConfig } from '../src/default-config';
 
 describe('eta constructor', () => {
   it('initialisation', () => {
-    const eta = new Eta();
+    const eta = new Tao();
     const currentConfig = eta['config'];
     expect(currentConfig).toStrictEqual(defaultConfig);
   });
@@ -14,10 +14,10 @@ describe('eta constructor', () => {
   it('should merge config', () => {
     const currentConf = { cache: true, tags: { opening: '{{', closing: '}}' } };
 
-    const eta = new Eta(currentConf);
-    const conf = eta['config'];
+    const tao = new Tao(currentConf);
+    const conf = tao['config'];
 
-    const finalConf: EtaConfig = {
+    const finalConf: options = {
       ...defaultConfig,
       ...currentConf,
     };
@@ -26,31 +26,31 @@ describe('eta constructor', () => {
 
   it('should throw if opening and closing tags are equal', () => {
     const customConfig = { tags: { opening: '{{', closing: '{{' } };
-    expect(() => new Eta(customConfig)).toThrow('Opening and closing tag should be different');
+    expect(() => new Tao(customConfig)).toThrow('Opening and closing tag should be different');
   });
 
   it('should throw if parse values are duplicated', () => {
-    const customConfig: EtaConfig = { parse: { exec: '<%', interpolate: '<%' } };
-    expect(() => new Eta(customConfig)).toThrow(
+    const customConfig: options = { parse: { exec: '<%', interpolate: '<%' } };
+    expect(() => new Tao(customConfig)).toThrow(
       `Cannot have the same parse value at 'exec' and 'interpolate' with value '<%'`
     );
   });
 
   it('No template files should have been found', () => {
     const templateViews = path.join(process.cwd(), `unexisting-path-${randomUUID()}`);
-    const eta = new Eta({ views: templateViews });
+    const tao = new Tao({ views: templateViews });
 
-    expect(eta['templatePaths'].length).toBe(0);
+    expect(tao['templatePaths'].length).toBe(0);
   });
 
   it('Simple template files should be found', () => {
     const templateViews = path.join(process.cwd(), 'test copy/templates');
-    const eta = new Eta({ views: templateViews });
+    const tao = new Tao({ views: templateViews });
 
     const pathWithSimpleSlash = path
       .join(templateViews, `simple.${DEFAULT_EXTENSION}`)
       .replace(/\\/g, '/');
 
-    expect(eta['templatePaths']).toContain(pathWithSimpleSlash);
+    expect(tao['templatePaths']).toContain(pathWithSimpleSlash);
   });
 });

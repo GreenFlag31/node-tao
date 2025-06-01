@@ -1,8 +1,8 @@
-import { Eta } from '../src/index copy';
+import { Tao } from '../src/index copy';
 import path from 'path';
 
 const templateViews = path.join(process.cwd(), 'test copy/templates');
-const eta = new Eta({ views: templateViews, metrics: false });
+const tao = new Tao({ views: templateViews, metrics: false });
 
 describe('complex render tests', () => {
   it('should render a more complex template with more data', () => {
@@ -15,7 +15,7 @@ describe('complex render tests', () => {
       },
     };
 
-    const result = eta.render('complex', data);
+    const result = tao.render('complex', data);
     expect(result).toContain(`<div class="user-card">
   <h2>Alice</h2>
   <p>Email: alice@example.com</p>`);
@@ -31,7 +31,7 @@ describe('complex render tests', () => {
       },
     };
 
-    const result = eta.render('complex', data);
+    const result = tao.render('complex', data);
 
     expect(result).toContain(`<div class="user-card">
   <h2>Alice</h2>
@@ -72,7 +72,7 @@ describe('complex render tests', () => {
       },
     };
 
-    const result = eta.render('complex-3', data, { formatDate });
+    const result = tao.render('complex-3', data, { formatDate });
 
     expect(result).toContain('<h1>Welcome, Alice</h1>');
     expect(result).toContain('Last login: 2024-12-01');
