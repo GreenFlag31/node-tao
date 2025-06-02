@@ -1,3 +1,4 @@
+import { isTemplateDynamicallyDefined } from './checks';
 import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import {
   AstObject,
@@ -93,6 +94,8 @@ function compileContent(type: TagType, content: string, config: DefinitiveOption
 }
 
 function getPathWithExtension(filePath: string, extension: string) {
+  if (isTemplateDynamicallyDefined(filePath)) return filePath;
+
   const pathContainsExtension = path.extname(filePath);
   if (pathContainsExtension) return filePath;
 

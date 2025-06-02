@@ -6,16 +6,16 @@ const htmlLines = sourceCode.querySelectorAll('span.html');
 
 errorLine?.scrollIntoView();
 
-const minWidth = errorContainer.clientWidth;
-// 10 padding on each side
-const maxWidth = window.innerWidth - 20;
-
 resizeHandlers.forEach((resizer) => {
   resizer.addEventListener('mousedown', (e) => {
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = errorContainer.offsetWidth;
     const isLeft = resizer.classList.contains('left');
+
+    const minWidth = errorContainer.clientWidth;
+    // 10 padding on each side
+    const maxWidth = window.innerWidth - 20;
 
     const onMouseMove = (event) => {
       const dx = event.clientX - startX;

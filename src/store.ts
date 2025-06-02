@@ -1,9 +1,9 @@
 export class Store<T> {
   private store: Record<string, T> = {};
   /**
-   * Define a new cache entry.
+   * Set a new cache entry.
    */
-  define(key: string, value: T) {
+  set(key: string, value: T) {
     this.store[key] = value;
   }
 

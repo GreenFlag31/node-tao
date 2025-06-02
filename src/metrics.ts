@@ -1,4 +1,3 @@
-import { log } from 'console';
 import { Metrics } from './interfaces';
 
 function includeRenderTime(metrics: boolean, isAChild: boolean) {
@@ -7,20 +6,29 @@ function includeRenderTime(metrics: boolean, isAChild: boolean) {
   return `const ɵɵrenderDuration = (performance.now() - ɵɵstart).toFixed(2);`;
 }
 
-function includeChildTemplatesCount(metrics: boolean, isAChild: boolean) {
+function includeChildren(metrics: boolean, isAChild: boolean) {
   if (!metrics || isAChild) return '';
 
-  return `const ɵɵchildTemplates = this.childCopy;`;
+  return `const ɵɵchildren = this.childrenStore.get(this.parentTemplate);`;
 }
 
-function isAChildTemplate(templateName: string, childTemplates: string[]) {
-  return childTemplates.includes(templateName);
+function resetParentTemplateAtEndOfExecution(parentTemplate: string, filename: string) {
+  if (isAChildTemplate(parentTemplate, filename)) return parentTemplate;
+
+  return '';
 }
 
-function resetChildTemplatesIfParentTemplates(filename: string, childTemplates: string[]) {
-  if (isAChildTemplate(filename, childTemplates)) return childTemplates;
+function getUniqueChildren(parentStored: string[], children: string[]) {
+  const allChildren = parentStored.concat(children);
+  return Array.from(new Set(allChildren));
+}
 
-  return [];
+function isAParentTemplate(parentTemplate: string, filename: string) {
+  return parentTemplate === filename;
+}
+
+function isAChildTemplate(parentTemplate: string, filename: string) {
+  return !isAParentTemplate(parentTemplate, filename);
 }
 
 /**
@@ -77,7 +85,7 @@ function logRendered(template: string) {
 }
 
 function logChildTemplatesCount() {
-  return `console.log("%c[CHILDREN]%c   ' + ɵɵchildTemplates.join(', ') + ' (' + ɵɵchildTemplates.length + ')' + '", "color: #66ccff;font-weight:bold",${getNormalStyle()})`;
+  return `console.log("%c[CHILDREN]%c    ' + ɵɵchildren.join(', ') + ' (' + ɵɵchildren.length + ')' + '", "color: #66ccff;font-weight:bold",${getNormalStyle()})`;
 }
 
 function logCacheHit() {
@@ -111,7 +119,9 @@ export {
   getNormalStyle,
   includeMetrics,
   includeRenderTime,
-  includeChildTemplatesCount,
-  resetChildTemplatesIfParentTemplates,
   isAChildTemplate,
+  isAParentTemplate,
+  resetParentTemplateAtEndOfExecution,
+  includeChildren,
+  getUniqueChildren,
 };

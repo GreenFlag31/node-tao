@@ -16,23 +16,11 @@ const tao = new Tao({
 });
 
 app.get('/', (req, res) => {
-  const headerPartial = `
-    <header>
-      <h1><%= title %></h1>
-    </header>
-  `;
-  // const partialData = { title: 'this is my t' };
-  tao.loadTemplate('@header', headerPartial);
-  // const renderedTemplate = eta.render('@header', partialData, { nPlusOne });
-
-  const simple = {
-    name: `ben`,
-    includePage: `this is included in include page`,
-    heading: 'this is a heading',
-    content: 'this is a content',
-  };
-
-  const renderedTemplate = tao.render('simple', simple);
+  const renderedTemplate = tao.render('has-include', { name: `ben` });
+  res.status(200).send(renderedTemplate);
+});
+app.get('/more', (req, res) => {
+  const renderedTemplate = tao.render('partial', { name: `pa` });
   res.status(200).send(renderedTemplate);
 });
 

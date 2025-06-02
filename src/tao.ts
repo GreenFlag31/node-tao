@@ -4,7 +4,7 @@ import {
   checkPrefixTemplateTags,
   getPathWithExtension,
   isTemplateDynamicallyDefined,
-  includedTemplates,
+  getChildrenTemplatesName,
 } from './checks';
 import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
@@ -44,14 +44,17 @@ import { findOriginalLineNumberWithMessage, handleParseError, isAParseError } fr
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import {
-  resetChildTemplatesIfParentTemplates,
-  includeChildTemplatesCount,
+  getUniqueChildren,
+  includeChildren,
   includeMetrics,
   includeRenderTime,
   isAChildTemplate,
+  isAParentTemplate,
+  resetParentTemplateAtEndOfExecution,
 } from './metrics';
 import { assignParse, assignTags, givenExtensionShouldNotStartWithADot } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
+import { isatty } from 'node:tty';
 
 export class Tao {
   private config: DefinitiveOptions;
@@ -64,8 +67,8 @@ export class Tao {
     message: '',
     lineNumber: 1,
   };
-  private childTemplates: string[] = [];
-  private childCopy: string[] = [];
+  private parentTemplate = '';
+  private childrenStore = new Store<string[]>();
 
   /**
    * Stores dynamically defined templates.
@@ -148,16 +151,18 @@ export class Tao {
   ) {
     const { metrics } = this.config;
     const compiledData: AstObject[] = this.parse(content, filename);
+    const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
     this.compiledAST = compiledData;
 
-    const templatesCount = includedTemplates(content, this.config.extension);
-    const containsInclude = templatesCount.length > 0;
-    this.childTemplates = this.childTemplates.concat(templatesCount);
-    const isAChild = isAChildTemplate(filename, this.childTemplates);
+    const children = getChildrenTemplatesName(content, this.config.extension);
+    const containsInclude = children.length > 0;
 
-    const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
+    const parentStored = this.childrenStore.get(this.parentTemplate) || [];
+    const uniqueChildren = getUniqueChildren(parentStored, children);
+    this.childrenStore.set(this.parentTemplate, uniqueChildren);
+
+    const isAChild = isAChildTemplate(this.parentTemplate, filename);
     const metricsData = this.getMetrics(filename, isAChild);
-    this.childCopy = this.childTemplates.slice();
 
     const result = `
     ${includeFn(containsInclude)}
@@ -171,9 +176,10 @@ export class Tao {
     ${compileBody(compiledData, this.config)}
 
 
+    ${includeChildren(metrics, isAChild)}
     ${includeRenderTime(metrics, isAChild)}
-    ${includeChildTemplatesCount(metrics, isAChild)}
     ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(metricsData)}
+
 
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
@@ -283,6 +289,9 @@ export class Tao {
     let ɵɵcacheHit = false;
     let filename = template;
 
+    const pathWithExtension = getPathWithExtension(template, extension);
+    if (!this.parentTemplate) this.parentTemplate = pathWithExtension;
+
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.handleCachedLoadedTemplate(template);
 
@@ -325,7 +334,6 @@ export class Tao {
       return '';
     }
 
-    const pathWithExtension = getPathWithExtension(template, extension);
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
     filename = fullPath.split('/').at(-1)!;
 
@@ -375,7 +383,8 @@ export class Tao {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
-      this.childTemplates = resetChildTemplatesIfParentTemplates(filename, this.childTemplates);
+      this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
+
       return html;
     } catch (error: any) {
       error.filename = filename;
@@ -392,6 +401,8 @@ export class Tao {
     try {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+      this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
+
       return html;
     } catch (error: any) {
       error.filename = filename;
@@ -457,7 +468,7 @@ export class Tao {
     );
 
     if (this.config.cache) {
-      this.templatesStore.define(resolvedPath, templateFn);
+      this.templatesStore.set(resolvedPath, templateFn);
     }
 
     return templateFn;
@@ -490,7 +501,7 @@ export class Tao {
       const templateFn = this.compileLoadedTemplate(templateLoaded, data, helpers, filename);
 
       if (this.config.cache) {
-        this.templatesStore.define(template, templateFn);
+        this.templatesStore.set(template, templateFn);
       }
 
       const immutableData = structuredClone(data);
@@ -527,7 +538,7 @@ export class Tao {
       if (!Object.prototype.hasOwnProperty.call(helpers, key)) continue;
       const fn = helpers[key];
 
-      this.helpersStore.define(key, fn);
+      this.helpersStore.set(key, fn);
     }
   }
 
@@ -542,6 +553,6 @@ export class Tao {
       return;
     }
 
-    this.dynamictemplatesStore.define(name, template);
+    this.dynamictemplatesStore.set(name, template);
   }
 }

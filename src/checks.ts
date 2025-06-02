@@ -6,11 +6,22 @@ function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
 }
 
-function includedTemplates(content: string, extension: string) {
+/**
+ * Retrieve included template names.
+ * Example: include('simple', ...) => simple.html
+ */
+function getChildrenTemplatesName(content: string, extension: string) {
   const includeToken = new RegExp(/include\(\s*([^,)]+)/, 'g');
   return [...content.matchAll(includeToken)].map((match) => {
     const matchWithoutQuotes = match[1].replace(/'|"|`/g, '');
     return getPathWithExtension(matchWithoutQuotes, extension);
+  });
+}
+
+function getChildrenTemplatesName2(content: string, extension: string) {
+  const includeToken = new RegExp(/include\(\s*([^,)]+)/, 'g');
+  return [...content.matchAll(includeToken)].map((match) => {
+    return getPathWithExtension(match[1], extension);
   });
 }
 
@@ -50,5 +61,6 @@ export {
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
   templateContainsInclude,
-  includedTemplates,
+  getChildrenTemplatesName,
+  getChildrenTemplatesName2,
 };
