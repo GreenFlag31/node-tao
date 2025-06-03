@@ -19,7 +19,7 @@ describe('error render', () => {
   });
 
   it('should return nothing when there is an error inside a template with debug set to false (execution error)', () => {
-    const result = tao.render('error');
+    const result = tao.render('execution-error');
 
     expect(result).toContain('');
   });
@@ -28,5 +28,12 @@ describe('error render', () => {
     const result = tao.render('compilation-error');
 
     expect(result).toContain('');
+  });
+
+  it('should return the error template provided in the library when debug is set to true (compilation error)', () => {
+    const tao = new Tao({ views: templateViews, debug: true });
+    const result = tao.render('compilation-error');
+
+    expect(result).toContain('<h2>An error occurred</h2>');
   });
 });

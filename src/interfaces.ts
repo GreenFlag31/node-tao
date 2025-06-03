@@ -39,12 +39,7 @@ export interface TemplateData {
   content: string;
 }
 
-export type TemplateFunction = (
-  data: object,
-  helpers: Helpers,
-  ɵɵstart: number,
-  ɵɵcacheHit: boolean
-) => string;
+export type TemplateFunction = (data: object, helpers: Helpers, ɵɵstart: number) => string;
 
 export interface Debug {
   fileContent: string;
@@ -65,29 +60,27 @@ export type HelperFunction = (...args: any[]) => any;
 export interface Metrics {
   metrics: boolean;
   files: string[];
-  filename: string;
   cacheEnabled: boolean;
   templateLoaded: string[];
   isAChild: boolean;
+  filename: string;
 }
 
 export interface LoadedTemplateData {
-  filename: string;
   template: string;
   templateLoaded: string;
   data: Data;
   helpers: Helpers;
   ɵɵstart: number;
-  ɵɵcacheHit: boolean;
+  filename: string;
 }
 
 export interface CompileExecuteData {
-  filename: string;
   fullPath: string;
   data: Data;
   helpers: Helpers;
   ɵɵstart: number;
-  ɵɵcacheHit: boolean;
+  filename: string;
 }
 
 export interface ExecuteFunction {
@@ -95,7 +88,6 @@ export interface ExecuteFunction {
   data: Data;
   helpers: Helpers;
   ɵɵstart: number;
-  ɵɵcacheHit: boolean;
   filename: string;
 }
 

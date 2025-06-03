@@ -99,7 +99,7 @@ describe('XMLEscape', () => {
     expect(XMLEscape(`&<>"'`)).toBe('&amp;&lt;&gt;&quot;&#39;');
   });
 
-  it('should convert non-string inputs to string before escaping', () => {
+  it('should convert non-string inputs to string', () => {
     expect(XMLEscape(42)).toBe('42');
     expect(XMLEscape(true)).toBe('true');
     expect(XMLEscape(null)).toBe('null');

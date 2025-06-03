@@ -35,31 +35,24 @@ function isAChildTemplate(parentTemplate: string, filename: string) {
  * Logs metrics in the browser. Do not include logs if disabled or if the current template is included in another template.
  */
 function includeMetrics(metricsData: Metrics) {
-  const { cacheEnabled, filename, files, metrics, templateLoaded, isAChild } = metricsData;
+  const {
+    cacheEnabled,
+    filename: filename,
+    files,
+    metrics,
+    templateLoaded,
+    isAChild,
+  } = metricsData;
 
   if (!metrics || isAChild) return '""';
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);
-  const includeDynamicalTemplates = includeDynamicalDefinedTemplate(templateLoaded);
-  const filesNumber = templatesPathWithDirectory.length;
 
   return `'<script>console.log(${logRendered(
     filename
   )});${logChildTemplatesCount()};${logRenderTime()};console.log(${logCache(
     cacheEnabled
-  )});${logCacheHit()};console.log(${logTemplatesMapped(
-    filesNumber
-  )});${includeDynamicalTemplates};${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
-}
-
-function includeDynamicalDefinedTemplate(templateLoaded: string[]) {
-  // const dynamicalTemplateNumber = templateLoaded.length;
-  // if (dynamicalTemplateNumber === 0) return '""';
-  // const dynamicalTemplate = `DYNAMIC TEMPLATE${dynamicalTemplateNumber > 1 ? 'S' : ''}`;
-  // return `console.log(${setTitleStyle(
-  //   dynamicalTemplate,
-  //   dynamicalTemplateNumber
-  // )});console.table(${JSON.stringify(templateLoaded)});`;
+  )});${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
 }
 
 function logMappedTemplates(templates: string[]) {
@@ -73,11 +66,7 @@ function logMappedTemplates(templates: string[]) {
 function logCache(cacheEnabled: boolean) {
   const isEnabled = cacheEnabled ? 'enabled' : 'disabled';
 
-  return `"%c[CACHE]%c       ${isEnabled}", "color: #00bfff;font-weight:bold", ${getNormalStyle()}`;
-}
-
-function logTemplatesMapped(templateNumber: number) {
-  return `"%c[TEMPLATES]%c   ${templateNumber}", "color: #bb86fc;font-weight:bold", ${getNormalStyle()}`;
+  return `"%c[CACHE]%c       ${isEnabled}", "color: #ff4d4d;font-weight:bold", ${getNormalStyle()}`;
 }
 
 function logRendered(template: string) {
@@ -86,10 +75,6 @@ function logRendered(template: string) {
 
 function logChildTemplatesCount() {
   return `console.log("%c[CHILDREN]%c    ' + ɵɵchildren.join(', ') + ' (' + ɵɵchildren.length + ')' + '", "color: #66ccff;font-weight:bold",${getNormalStyle()})`;
-}
-
-function logCacheHit() {
-  return `console.log("%c[CACHE HIT]%c   ' + ɵɵcacheHit + '", "color: #ff4d4d;font-weight:bold",${getNormalStyle()})`;
 }
 
 function logRenderTime() {

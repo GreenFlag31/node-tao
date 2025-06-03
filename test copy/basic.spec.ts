@@ -3,6 +3,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { DEFAULT_EXTENSION } from '../src/const';
 import { defaultConfig } from '../src/default-config';
+import { log } from 'console';
 
 describe('eta constructor', () => {
   it('initialisation', () => {
@@ -52,5 +53,14 @@ describe('eta constructor', () => {
       .replace(/\\/g, '/');
 
     expect(tao['templatePaths']).toContain(pathWithSimpleSlash);
+  });
+
+  it('Metrics should be available when enabled', () => {
+    const templateViews = path.join(process.cwd(), 'test copy/templates');
+    const tao = new Tao({ views: templateViews, metrics: true });
+
+    const result = tao.render('simple', { name: 'test' });
+
+    expect(result).toContain('%c[RENDERED]%c');
   });
 });

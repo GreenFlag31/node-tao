@@ -119,7 +119,6 @@ export class Tao {
         TEMPLATE_VARNAME,
         'hp',
         'ɵɵstart',
-        'ɵɵcacheHit',
         this.compile(content, variablesOfData, variablesOfHelpers, filename)
       ) as TemplateFunction;
     } catch (error: any) {
@@ -150,7 +149,7 @@ export class Tao {
     filename: string
   ) {
     const { metrics } = this.config;
-    const compiledData: AstObject[] = this.parse(content, filename);
+    const compiledData: AstObject[] = this.parse(content);
     const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
     this.compiledAST = compiledData;
 
@@ -188,7 +187,7 @@ export class Tao {
     return result;
   }
 
-  private parse(expression: string, filename: string): AstObject[] {
+  private parse(expression: string): AstObject[] {
     const { parse, tags } = this.config;
     const { closing, opening } = tags;
 
@@ -254,8 +253,7 @@ export class Tao {
           expression,
           originalClose,
           closeResult.index,
-          this.debug,
-          filename
+          this.debug
         );
       }
 
@@ -264,8 +262,7 @@ export class Tao {
         expression,
         originalOpen,
         openingResult.index,
-        this.debug,
-        filename
+        this.debug
       );
 
       compiledData.push(templateData!);
@@ -286,7 +283,6 @@ export class Tao {
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
-    let ɵɵcacheHit = false;
     let filename = template;
 
     const pathWithExtension = getPathWithExtension(template, extension);
@@ -296,14 +292,12 @@ export class Tao {
       const cachedTemplate = this.handleCachedLoadedTemplate(template);
 
       if (cachedTemplate) {
-        ɵɵcacheHit = true;
         const executeData: ExecuteFunction = {
           templateFn: cachedTemplate,
           data,
           helpers,
           ɵɵstart,
-          ɵɵcacheHit,
-          filename,
+          filename: filename,
         };
         return this.executeFunction(executeData);
       }
@@ -323,8 +317,8 @@ export class Tao {
         data,
         helpers,
         ɵɵstart,
-        ɵɵcacheHit,
-        filename,
+
+        filename: filename,
       };
       return this.handleLoadedTemplate(templateData);
     }
@@ -342,7 +336,6 @@ export class Tao {
 
     const cachedTemplate = this.templatesStore.get(fileFound);
     if (cachedTemplate) {
-      ɵɵcacheHit = true;
       log(`${template} cache hit`);
 
       const executeData: ExecuteFunction = {
@@ -350,7 +343,6 @@ export class Tao {
         data,
         helpers,
         ɵɵstart,
-        ɵɵcacheHit,
         filename,
       };
       return this.executeFunction(executeData);
@@ -362,14 +354,13 @@ export class Tao {
       data,
       helpers,
       ɵɵstart,
-      ɵɵcacheHit,
     };
 
     return this.compileAndExecute(compileData);
   }
 
   private compileAndExecute(compileData: CompileExecuteData) {
-    const { ɵɵcacheHit, data, filename, fullPath, helpers, ɵɵstart } = compileData;
+    const { data, filename, fullPath, helpers, ɵɵstart } = compileData;
 
     try {
       const variablesOfData = initVariablesAndHelpers(data);
@@ -381,7 +372,7 @@ export class Tao {
         filename
       );
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
 
       this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
 
@@ -396,11 +387,11 @@ export class Tao {
   }
 
   private executeFunction(executeData: ExecuteFunction) {
-    const { data, filename, helpers, ɵɵstart, templateFn, ɵɵcacheHit } = executeData;
+    const { data, filename, helpers, ɵɵstart, templateFn } = executeData;
 
     try {
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
       this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
 
       return html;
@@ -443,7 +434,7 @@ export class Tao {
     return errorData;
   }
 
-  private initErrorTemplate(errorData: Data): string {
+  private initErrorTemplate(errorData: Data) {
     if (!this.config.debug) return '';
 
     const templatesPath = path.join(__dirname, 'public');
@@ -467,7 +458,10 @@ export class Tao {
       filename
     );
 
-    if (this.config.cache) {
+    if (this.config.cache && !this.config.metrics) {
+      // Do not store when metrics is enabled
+      // This will skew the results of children names
+      // since template is not reevaluated
       this.templatesStore.set(resolvedPath, templateFn);
     }
 
@@ -495,7 +489,7 @@ export class Tao {
   }
 
   private handleLoadedTemplate(templateData: LoadedTemplateData) {
-    const { ɵɵcacheHit, data, filename, helpers, ɵɵstart, template, templateLoaded } = templateData;
+    const { data, filename, helpers, ɵɵstart, template, templateLoaded } = templateData;
 
     try {
       const templateFn = this.compileLoadedTemplate(templateLoaded, data, helpers, filename);
@@ -505,7 +499,9 @@ export class Tao {
       }
 
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
+      this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
+
       return html;
     } catch (error: any) {
       error.filename = filename;

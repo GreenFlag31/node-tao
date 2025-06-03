@@ -13,12 +13,14 @@ const tao = new Tao({
   views: templatesPath,
   debug: true,
   metrics: true,
+  // cache: false,
 });
 
 app.get('/', (req, res) => {
-  const renderedTemplate = tao.render('has-include', { name: `ben` });
+  const renderedTemplate = tao.render('simple', { name: `ben` });
   res.status(200).send(renderedTemplate);
 });
+
 app.get('/more', (req, res) => {
   const renderedTemplate = tao.render('partial', { name: `pa` });
   res.status(200).send(renderedTemplate);
