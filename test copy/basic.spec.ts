@@ -1,9 +1,8 @@
-import { options, Tao } from '../src/index copy';
+import { options, Tao } from '../src';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { DEFAULT_EXTENSION } from '../src/const';
 import { defaultConfig } from '../src/default-config';
-import { log } from 'console';
 
 describe('eta constructor', () => {
   it('initialisation', () => {

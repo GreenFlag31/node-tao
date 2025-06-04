@@ -7,6 +7,7 @@ import {
   initVariablesAndHelpers,
   XMLEscape,
 } from '../src/utils';
+import { normalizeFilesPath } from '../src/templates-access';
 
 describe('initVariablesAndHelpers', () => {
   it('getFullPath should return a complete path when the path is not absolute', () => {
@@ -14,7 +15,8 @@ describe('initVariablesAndHelpers', () => {
     const template = 'simple.eta';
 
     const result = getFullPath(views, template, 'strict');
-    expect(result).toBe(path.join(views, template));
+    const normalized = normalizeFilesPath(path.join(views, template));
+    expect(result).toBe(normalized);
   });
 
   it('getFullPath should return a complete path when the path is absolute', () => {

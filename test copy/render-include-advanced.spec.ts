@@ -1,4 +1,4 @@
-import { Tao } from '../src/index copy';
+import { Tao } from '../src/index';
 import path from 'path';
 
 const templateViews = path.join(process.cwd(), 'test copy/templates');

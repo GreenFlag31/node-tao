@@ -10,6 +10,7 @@ import {
   TagType,
 } from './interfaces';
 import path from 'node:path';
+import { normalizeFilesPath } from './templates-access';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -111,7 +112,8 @@ function getFullPath(views: string, pathWithExtension: string, fileResolution: F
   const isAbsolutePath = path.isAbsolute(pathWithExtension);
   if (isAbsolutePath) return pathWithExtension;
 
-  return path.join(views, pathWithExtension);
+  const fullPath = path.join(views, pathWithExtension);
+  return normalizeFilesPath(fullPath);
 }
 
 function buildPrefixRegex(parseOptions: Parse) {

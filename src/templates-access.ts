@@ -12,8 +12,15 @@ function getFilesFromDirectory(directory: string, extension: string) {
     ignore: ['node_modules/**'],
   });
 
-  const normalizedPaths = files.map((file) => file.replace(/\\/g, '/'));
+  const normalizedPaths = files.map((file) => normalizeFilesPath(file));
   return normalizedPaths;
+}
+
+/**
+ * Normalize file path on windows.
+ */
+function normalizeFilesPath(file: string) {
+  return file.replace(/\\/g, '/');
 }
 
 /**
@@ -40,4 +47,9 @@ function checkAccessPermission(templatePaths: string[], templateFile: string) {
   return filesFound[0];
 }
 
-export { getFilesFromDirectory, checkAccessPermission, isTemplateFileInsideGivenDirectory };
+export {
+  getFilesFromDirectory,
+  checkAccessPermission,
+  isTemplateFileInsideGivenDirectory,
+  normalizeFilesPath,
+};

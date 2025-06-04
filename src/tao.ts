@@ -49,12 +49,10 @@ import {
   includeMetrics,
   includeRenderTime,
   isAChildTemplate,
-  isAParentTemplate,
   resetParentTemplateAtEndOfExecution,
 } from './metrics';
 import { assignParse, assignTags, givenExtensionShouldNotStartWithADot } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
-import { isatty } from 'node:tty';
 
 export class Tao {
   private config: DefinitiveOptions;

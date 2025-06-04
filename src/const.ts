@@ -1,6 +1,7 @@
 const DEFAULT_EXTENSION = 'html';
 const DEFAULT_OPENING = '<%';
 const DEFAULT_CLOSING = '%>';
+
 const DEFAULT_EXEC = '';
 const DEFAULT_INTERPOLATE = '=';
 const DEFAULT_RAW = '~';
