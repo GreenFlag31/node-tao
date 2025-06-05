@@ -54,7 +54,6 @@ describe('Initialisation option', () => {
     };
 
     const tao = new Tao(options);
-    log(tao.mappedFiles);
     const result = tao.render('templates/simple', { name: 'my title' });
 
     expect(result).toContain('Hi my title');

@@ -1,4 +1,5 @@
 import { globSync } from 'glob';
+import { normalizeFilesPath } from './utils';
 
 /**
  * Perform once.
@@ -14,13 +15,6 @@ function getFilesFromDirectory(directory: string, extension: string) {
 
   const normalizedPaths = files.map((file) => normalizeFilesPath(file));
   return normalizedPaths;
-}
-
-/**
- * Normalize file path on windows.
- */
-function normalizeFilesPath(file: string) {
-  return file.replace(/\\/g, '/');
 }
 
 /**

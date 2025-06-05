@@ -48,9 +48,9 @@ function includeMetrics(metricsData: Metrics) {
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);
 
-  return `'<script>console.log(${logRendered(
+  return `'<script>const data = ' + JSON.stringify(it) + ';console.log(${logRendered(
     filename
-  )});${logChildTemplatesCount()};${logRenderTime()};console.log(${logCache(
+  )});${logChildTemplatesCount()};${logRenderTime()};${logData()};console.log(${logCache(
     cacheEnabled
   )});${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
 }
@@ -73,8 +73,14 @@ function logRendered(template: string) {
   return `"%c[RENDERED]%c    ${template}", "color: #00ff99;font-weight:bold", ${getNormalStyle()}`;
 }
 
+function logData() {
+  // return `console.log(\`' + JSON.stringify(it) + '\`)`;
+}
+
 function logChildTemplatesCount() {
-  return `console.log("%c[CHILDREN]%c    ' + ɵɵchildren.join(', ') + ' (' + ɵɵchildren.length + ')' + '", "color: #66ccff;font-weight:bold",${getNormalStyle()})`;
+  const children = `(ɵɵchildren.length ? ɵɵchildren.join(", ") : "")`;
+
+  return `console.log("%c[CHILDREN]%c    ' + ${children} + '", "color: #66ccff;font-weight:bold",${getNormalStyle()})`;
 }
 
 function logRenderTime() {

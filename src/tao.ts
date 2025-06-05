@@ -19,6 +19,7 @@ import {
   initVariablesAndHelpers,
   getFullPath,
   escapeRegExp,
+  getFileName,
 } from './utils';
 import { TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -278,13 +279,13 @@ export class Tao {
    * @param data Provide data to inject.
    * @param helpers Provide helper functions to inject.
    */
-  render(template: string, data: Data = {}, helpers: Helpers = {}): string {
+  render(template = '', data: Data = {}, helpers: Helpers = {}): string {
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let filename = template;
 
     const pathWithExtension = getPathWithExtension(template, extension);
-    if (!this.parentTemplate) this.parentTemplate = pathWithExtension;
+    if (!this.parentTemplate) this.parentTemplate = getFileName(pathWithExtension);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.handleCachedLoadedTemplate(template);
@@ -327,7 +328,7 @@ export class Tao {
     }
 
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
-    filename = fullPath.split('/').at(-1)!;
+    filename = getFileName(fullPath);
 
     const fileFound = checkAccessPermission(this.templatePaths, fullPath);
     if (!fileFound) return '';

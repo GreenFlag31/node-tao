@@ -11,22 +11,19 @@ const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
 const option: options = {
-  tags: {
-    opening: '{{',
-    closing: '}}',
-  },
+  debug: true,
+  metrics: true,
   views: templatesPath,
 };
 
-// {
-//   views: templatesPath,
-//   debug: true,
-//   metrics: true,
-// }
 const tao = new Tao(option);
 
 app.get('/', (req, res) => {
-  const renderedTemplate = tao.render('/simple', { name: `ben` });
+  function nPlusOne(n: number) {
+    return n + 1;
+  }
+
+  const renderedTemplate = tao.render('simple', { name: `ben` }, { nPlusOne });
   res.status(200).send(renderedTemplate);
 });
 

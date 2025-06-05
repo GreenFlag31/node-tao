@@ -10,12 +10,11 @@ import {
   TagType,
 } from './interfaces';
 import path from 'node:path';
-import { normalizeFilesPath } from './templates-access';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
-
   let variables = '';
+
   for (const [key, value] of dataEntries) {
     variables += `const ${key} = ${getValueType(value)};`;
   }
@@ -116,6 +115,17 @@ function getFullPath(views: string, pathWithExtension: string, fileResolution: F
   return normalizeFilesPath(fullPath);
 }
 
+/**
+ * Normalize file path on windows.
+ */
+function normalizeFilesPath(file: string) {
+  return file.replace(/\\/g, '/');
+}
+
+function getFileName(filename: string) {
+  return filename.split('/').at(-1)!;
+}
+
 function buildPrefixRegex(parseOptions: Parse) {
   const options: string[] = [];
 
@@ -168,4 +178,6 @@ export {
   getFullPath,
   escapeRegExp,
   getPathWithExtension,
+  normalizeFilesPath,
+  getFileName,
 };
