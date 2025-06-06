@@ -19,11 +19,10 @@ const option: options = {
 const tao = new Tao(option);
 
 app.get('/', (req, res) => {
-  function nPlusOne(n: number) {
-    return n + 1;
-  }
-
-  const renderedTemplate = tao.render('simple', { name: `ben` }, { nPlusOne });
+  const data = {
+    name: 'Ben',
+  };
+  const renderedTemplate = tao.render('simple', data);
   res.status(200).send(renderedTemplate);
 });
 

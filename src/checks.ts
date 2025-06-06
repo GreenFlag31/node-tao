@@ -2,6 +2,15 @@ import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
 import { getPathWithExtension } from './utils';
 
+function templateShouldBeOfTypeString(template: string) {
+  if (typeof template !== 'string') {
+    console.error('Provided template should be of type string');
+    return undefined;
+  }
+
+  return template;
+}
+
 function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
 }
@@ -15,13 +24,6 @@ function getChildrenTemplatesName(content: string, extension: string) {
   return [...content.matchAll(includeToken)].map((match) => {
     const matchWithoutQuotes = match[1].replace(/'|"|`/g, '');
     return getPathWithExtension(matchWithoutQuotes, extension);
-  });
-}
-
-function getChildrenTemplatesName2(content: string, extension: string) {
-  const includeToken = new RegExp(/include\(\s*([^,)]+)/, 'g');
-  return [...content.matchAll(includeToken)].map((match) => {
-    return getPathWithExtension(match[1], extension);
   });
 }
 
@@ -62,5 +64,5 @@ export {
   checkPrefixTemplateTags,
   templateContainsInclude,
   getChildrenTemplatesName,
-  getChildrenTemplatesName2,
+  templateShouldBeOfTypeString,
 };

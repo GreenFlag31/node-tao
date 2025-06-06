@@ -61,7 +61,6 @@ export interface Metrics {
   metrics: boolean;
   files: string[];
   cacheEnabled: boolean;
-  templateLoaded: string[];
   isAChild: boolean;
   filename: string;
 }

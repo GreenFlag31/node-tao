@@ -5,6 +5,7 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   getChildrenTemplatesName,
+  templateShouldBeOfTypeString,
 } from './checks';
 import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
@@ -134,7 +135,6 @@ export class Tao {
       files: this.mappedFiles,
       filename,
       cacheEnabled: cache,
-      templateLoaded: Object.keys(this.dynamictemplatesStore.getAll()),
       isAChild,
     };
 
@@ -168,11 +168,9 @@ export class Tao {
     ${variablesOfHelpers}
     ${globalHelpers}
 
-
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction};
     
     ${compileBody(compiledData, this.config)}
-
 
     ${includeChildren(metrics, isAChild)}
     ${includeRenderTime(metrics, isAChild)}
@@ -279,7 +277,8 @@ export class Tao {
    * @param data Provide data to inject.
    * @param helpers Provide helper functions to inject.
    */
-  render(template = '', data: Data = {}, helpers: Helpers = {}): string {
+  render(template: string, data: Data = {}, helpers: Helpers = {}): string {
+    if (!templateShouldBeOfTypeString(template)) return '';
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let filename = template;

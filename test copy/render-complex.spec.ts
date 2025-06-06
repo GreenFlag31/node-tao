@@ -82,3 +82,18 @@ describe('complex render tests', () => {
     expect(result).toContain('<article class="project archived">');
   });
 });
+
+const data = {
+  name: 'Ben',
+  notifications: [
+    { title: 'Message from Alice', time: '2h ago' },
+    { title: 'Server restarted', time: '5h ago' },
+    { title: 'New comment on your post', time: '1d ago' },
+  ],
+  profile: {
+    age: 32,
+    email: 'ben@example.com',
+    roles: ['admin', 'editor'],
+    active: true,
+  },
+};

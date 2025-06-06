@@ -1,3 +1,4 @@
+import { TEMPLATE_VARNAME } from './const';
 import { Metrics } from './interfaces';
 
 function includeRenderTime(metrics: boolean, isAChild: boolean) {
@@ -35,22 +36,15 @@ function isAChildTemplate(parentTemplate: string, filename: string) {
  * Logs metrics in the browser. Do not include logs if disabled or if the current template is included in another template.
  */
 function includeMetrics(metricsData: Metrics) {
-  const {
-    cacheEnabled,
-    filename: filename,
-    files,
-    metrics,
-    templateLoaded,
-    isAChild,
-  } = metricsData;
+  const { cacheEnabled, filename: filename, files, metrics, isAChild } = metricsData;
 
   if (!metrics || isAChild) return '""';
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);
 
-  return `'<script>const data = ' + JSON.stringify(it) + ';console.log(${logRendered(
+  return `'<script>const data = ' + JSON.stringify(${TEMPLATE_VARNAME}) + ';console.log(${logRendered(
     filename
-  )});${logChildTemplatesCount()};${logRenderTime()};${logData()};console.log(${logCache(
+  )});${logChildTemplatesCount()};${logRenderTime()};console.log(${logCache(
     cacheEnabled
   )});${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
 }
@@ -71,10 +65,6 @@ function logCache(cacheEnabled: boolean) {
 
 function logRendered(template: string) {
   return `"%c[RENDERED]%c    ${template}", "color: #00ff99;font-weight:bold", ${getNormalStyle()}`;
-}
-
-function logData() {
-  // return `console.log(\`' + JSON.stringify(it) + '\`)`;
 }
 
 function logChildTemplatesCount() {

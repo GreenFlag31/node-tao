@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard - <%= name %></title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        background: #f4f4f4;
+      }
+      header,
+      footer {
+        background: #333;
+        color: white;
+        padding: 1em;
+      }
+      nav {
+        background: #444;
+        color: white;
+        padding: 1em;
+      }
+      main {
+        display: flex;
+        padding: 1em;
+      }
+      aside {
+        width: 200px;
+        background: #ddd;
+        padding: 1em;
+      }
+      section {
+        flex: 1;
+        padding: 1em;
+        background: white;
+        margin-left: 1em;
+      }
+      .card {
+        background: #fafafa;
+        border: 1px solid #ccc;
+        margin-bottom: 1em;
+        padding: 1em;
+        border-radius: 4px;
+      }
+      .tag {
+        background: #87cefa;
+        color: white;
+        padding: 2px 6px;
+        margin-right: 4px;
+        border-radius: 3px;
+        font-size: 0.8em;
+      }
+      ul {
+        padding-left: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Welcome back, <%= name %>!</h1>
+    </header>
+
+    <nav><span>Dashboard</span> | <span>Settings</span> | <span>Logout</span></nav>
+
+    <main>
+      <aside>
+        <h3>Sidebar</h3>
+        <ul>
+          <li><a href="#">Profile</a></li>
+          <li><a href="#">Notifications</a></li>
+          <li><a href="#">Admin Panel</a></li>
+        </ul>
+      </aside>
+
+      <section>
+        <div class="card">
+          <h2>User Info</h2>
+          <p><strong>Email:</strong> <%= profile.email %></p>
+          <p><strong>Age:</strong> <%= profile.age %></p>
+          <p><strong>Status:</strong> <%= profile.active ? 'Active' : 'Inactive' %></p>
+          <p>
+            <strong>Roles:</strong>
+            <% for (let role of profile.roles) { %>
+            <span class="tag"><%= role %></span>
+            <% } %>
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Recent Notifications</h2>
+          <% if (notifications.length === 0) { %>
+          <p>No new notifications.</p>
+          <% } else { %>
+          <ul>
+            <% for (let note of notifications) { %>
+            <li>
+              <strong><%= note.title %></strong>
+              <span style="color: gray"> - <%= note.time %></span>
+            </li>
+            <% } %>
+          </ul>
+          <% } %>
+        </div>
+
+        <div class="card">
+          <h2>Statistics</h2>
+          <p>Rendered at: <%= new Date().toLocaleString() %></p>
+          <p>Notifications count: <%= notifications.length %></p>
+        </div>
+      </section>
+    </main>
+
+    <footer>&copy; <%= new Date().getFullYear() %> Your Company. All rights reserved.</footer>
+  </body>
+</html>

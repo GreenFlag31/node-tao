@@ -158,6 +158,10 @@ Metrics are also available, so you get usefull informations about the template r
 
 ![Metrics](metrics.png)
 
+If you want to see / inspect the data you have provided, it is available directly in your browser console.
+
+![Data](data.png)
+
 NB: _set `metrics: true` to activate this option. Do not activate this option in production._
 
 ## FAQs
