@@ -2,7 +2,7 @@ import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
 import { getPathWithExtension } from './utils';
 
-function templateShouldBeOfTypeString(template: string) {
+function templateIsOfTypeString(template: string) {
   if (typeof template !== 'string') {
     console.error('Provided template should be of type string');
     return false;
@@ -57,6 +57,12 @@ function checkPrefixTemplateTags(parse: Parse) {
   }
 }
 
+function givenExtensionShouldNotStartWithADot(extension: string) {
+  if (extension.startsWith('.')) return extension.slice(1);
+
+  return extension;
+}
+
 export {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
@@ -64,5 +70,6 @@ export {
   checkPrefixTemplateTags,
   templateContainsInclude,
   getChildrenTemplatesName,
-  templateShouldBeOfTypeString,
+  templateIsOfTypeString,
+  givenExtensionShouldNotStartWithADot,
 };

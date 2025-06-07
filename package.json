@@ -1,23 +1,21 @@
 {
-  "name": "eta",
+  "name": "node-tao",
   "version": "0.0.1",
   "description": "Lightweight, fast, and powerful embedded JS template engine",
   "keywords": [
-    "handlebars",
-    "ejs",
-    "eta",
     "template engine",
     "embedded template engine",
-    "partials"
+    "partials",
+    "node template engine"
   ],
   "main": "index",
   "author": "Manu Claeys <unam31@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eta-dev/eta.git"
+    "url": "git+https://github.com/node-tao/node-tao.git"
   },
   "bugs": {
-    "url": "https://github.com/eta-dev/eta/issues"
+    "url": "https://github.com/node-tao/node-tao/issues"
   },
   "license": "MIT",
   "engines": {
@@ -27,7 +25,7 @@
     "postversion": "node ./jsr.release.js",
     "test": "jest",
     "build": "rimraf dist && tsc && cpx src/public/**/* dist/public && cpx \"src/templates/**/*\" dist/templates",
-    "startNodemon": "nodemon --ext ts,eta,js,json,css,html --watch src --watch package.json --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/public/**/* dist/public && node dist/server.js\""
+    "startNodemon": "nodemon --ext ts,js,json,css,html --watch src --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/public/**/* dist/public && node dist/server.js\""
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

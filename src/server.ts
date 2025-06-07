@@ -20,15 +20,10 @@ const tao = new Tao(option);
 
 app.get('/', (req, res) => {
   const data = {
-    name: 'Ben',
+    name: 'aaaqq',
   };
-  const renderedTemplate = tao.render('simple', data);
-  res.status(200).send(renderedTemplate);
-});
-
-app.get('/more', (req, res) => {
-  const renderedTemplate = tao.render('partial', { name: `pa` });
-  res.status(200).send(renderedTemplate);
+  const result = tao.render('simple', data);
+  res.status(200).send(result);
 });
 
 app.listen(PORT, () => {

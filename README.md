@@ -158,7 +158,7 @@ Metrics are also available, so you get usefull informations about the template r
 
 ![Metrics](metrics.png)
 
-If you want to inspect the data you have provided, it is available directly in your browser console under the object `data`.
+If you want to inspect the data provided to the template, it is available directly in your browser console under the object `data`.
 
 ![Data](data.png)
 
@@ -171,7 +171,7 @@ NB: _set `metrics: true` to activate this option. Do not activate this option in
     <b>Some words about this library</b>
   </summary>
 
-It started as a fork of `eta`, but became a complete rewrite of the library because the changes made were too significant. Some parts are still based on `eta`, especially the template parsing, and if you know `eta`, the API will be familiar.
+It started as a fork of `eta`, but became a dedicated library because the changes made were too significant. Some parts are still based on `eta`, especially the template parsing, and if you know `eta`, the API will be familiar.
 
 </details>
 

@@ -5,7 +5,8 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   getChildrenTemplatesName,
-  templateShouldBeOfTypeString,
+  templateIsOfTypeString,
+  givenExtensionShouldNotStartWithADot,
 } from './checks';
 import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
@@ -54,7 +55,7 @@ import {
   isAChildTemplate,
   resetParentTemplateAtEndOfExecution,
 } from './metrics';
-import { assignParse, assignTags, givenExtensionShouldNotStartWithADot } from './init';
+import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
 export class Tao {
@@ -70,6 +71,7 @@ export class Tao {
   };
   private parentTemplate = '';
   private childrenStore = new Store<string[]>();
+  private errorHTML: undefined | string = undefined;
 
   /**
    * Stores dynamically defined templates.
@@ -96,7 +98,7 @@ export class Tao {
     this.config.extension = givenExtensionShouldNotStartWithADot(extension);
 
     checkOpeningAndClosingTag(this.config.tags);
-    checkPrefixTemplateTags(parse);
+    checkPrefixTemplateTags(this.config.parse);
 
     this.prefixBuild = buildPrefixRegex(parse);
     this.templatePaths = getFilesFromDirectory(views, extension);
@@ -279,10 +281,11 @@ export class Tao {
    * @param helpers Provide helper functions to inject.
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
-    if (!templateShouldBeOfTypeString(template)) return '';
+    if (!templateIsOfTypeString(template)) return '';
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let filename = template;
+    this.errorHTML = undefined;
 
     const pathWithExtension = getPathWithExtension(template, extension);
     if (!this.parentTemplate) this.parentTemplate = getFileName(pathWithExtension);
@@ -375,13 +378,14 @@ export class Tao {
 
       this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
 
-      return html;
+      return this.errorHTML ?? html;
     } catch (error: any) {
       error.filename = filename;
       const errorData = this.handleErrorMessage(error);
       // by default, no error should be returned
       console.error(errorData);
-      return this.initErrorTemplate(errorData);
+      this.errorHTML = this.initErrorTemplate(errorData);
+      return this.errorHTML;
     }
   }
 
@@ -437,8 +441,8 @@ export class Tao {
     if (!this.config.debug) return '';
 
     const templatesPath = path.join(__dirname, 'public');
-    const eta = new Tao({ views: templatesPath, extension: 'html', cache: true, metrics: false });
-    return eta.render('error', errorData);
+    const tao = new Tao({ views: templatesPath, cache: true, metrics: false });
+    return tao.render('error', errorData);
   }
 
   private readFileAndCompile(
