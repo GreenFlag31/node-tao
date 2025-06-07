@@ -1,2 +1,0 @@
-This is a partial.
-<%~ include('./simple', {name: 'Test Runner'}) %>

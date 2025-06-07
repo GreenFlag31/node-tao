@@ -13,14 +13,14 @@ describe('checks function tests', () => {
   });
 
   it('isTemplateFileInsideGivenDirectory should contains templatePath', () => {
-    const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test copy\\simple.eta'];
+    const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test\\simple.eta'];
     const templateFile = 'simple.eta';
     const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
     expect(result).toMatchObject(templatePaths);
   });
 
   it('isTemplateFileInsideGivenDirectory should be empty', () => {
-    const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test copy\\simple.eta'];
+    const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test\\simple.eta'];
     const templateFile = 'unexistant.eta';
     const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
     expect(result).toMatchObject([]);

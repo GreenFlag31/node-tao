@@ -1,7 +1,7 @@
 import { Tao } from '../src/index';
 import path from 'path';
 
-const templateViews = path.join(process.cwd(), 'test copy/templates');
+const templateViews = path.join(process.cwd(), 'test/templates');
 
 describe('advanced render tests (helpers, etc)', () => {
   it('should support local and global helpers in templates', () => {

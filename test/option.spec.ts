@@ -47,7 +47,7 @@ describe('Initialisation option', () => {
   });
 
   it('should render a template with fileResolution set to strict', () => {
-    const templateViews = path.join(process.cwd(), 'test copy');
+    const templateViews = path.join(process.cwd(), 'test');
     const options: options = {
       fileResolution: 'strict',
       views: templateViews,

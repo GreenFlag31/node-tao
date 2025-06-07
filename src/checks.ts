@@ -5,10 +5,10 @@ import { getPathWithExtension } from './utils';
 function templateShouldBeOfTypeString(template: string) {
   if (typeof template !== 'string') {
     console.error('Provided template should be of type string');
-    return undefined;
+    return false;
   }
 
-  return template;
+  return true;
 }
 
 function isTemplateDynamicallyDefined(template: string) {

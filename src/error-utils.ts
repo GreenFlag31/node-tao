@@ -44,7 +44,7 @@ function getErrorMessageAndSource(error: any): [string, string] {
 
 function getLineFromAnonymousFunction(source: string) {
   const splitLastLineError = source.split('<anonymous>');
-  const [_, line, column] = splitLastLineError[1].split(':');
+  const [_, line] = splitLastLineError[1].split(':');
 
   return Number(line);
 }
@@ -136,8 +136,8 @@ function getParsingErrorData(
 }
 
 function getTemplateParsedLineNumber(expression: string, index: number) {
-  const whitespace = expression.slice(0, index).split(/\n/);
-  const line = whitespace.length;
+  const splitIntoLines = expression.slice(0, index).split(/\n/);
+  const line = splitIntoLines.length;
   return line;
 }
 

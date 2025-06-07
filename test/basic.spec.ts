@@ -44,7 +44,7 @@ describe('eta constructor', () => {
   });
 
   it('Simple template files should be found', () => {
-    const templateViews = path.join(process.cwd(), 'test copy/templates');
+    const templateViews = path.join(process.cwd(), 'test/templates');
     const tao = new Tao({ views: templateViews });
 
     const pathWithSimpleSlash = path
@@ -55,7 +55,7 @@ describe('eta constructor', () => {
   });
 
   it('Metrics should be available when enabled', () => {
-    const templateViews = path.join(process.cwd(), 'test copy/templates');
+    const templateViews = path.join(process.cwd(), 'test/templates');
     const tao = new Tao({ views: templateViews, metrics: true });
 
     const result = tao.render('simple', { name: 'test' });

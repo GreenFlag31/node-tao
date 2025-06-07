@@ -1,7 +1,7 @@
 import { Tao } from '../src';
 import path from 'path';
 
-const templateViews = path.join(process.cwd(), 'test copy/templates');
+const templateViews = path.join(process.cwd(), 'test/templates');
 const tao = new Tao({ views: templateViews, metrics: false });
 
 describe('complex render tests', () => {
@@ -81,19 +81,36 @@ describe('complex render tests', () => {
     expect(result).toContain('<span class="member lead">Clara</span>');
     expect(result).toContain('<article class="project archived">');
   });
-});
 
-const data = {
-  name: 'Ben',
-  notifications: [
-    { title: 'Message from Alice', time: '2h ago' },
-    { title: 'Server restarted', time: '5h ago' },
-    { title: 'New comment on your post', time: '1d ago' },
-  ],
-  profile: {
-    age: 32,
-    email: 'ben@example.com',
-    roles: ['admin', 'editor'],
-    active: true,
-  },
-};
+  it('should render a complete template', () => {
+    const data = {
+      name: 'Alice',
+      profile: {
+        email: 'alice@example.com',
+        age: 32,
+        active: true,
+        roles: ['admin', 'editor'],
+      },
+      notifications: [
+        { title: 'System update available', time: '2025-06-01 10:00' },
+        { title: 'New login from unknown device', time: '2025-06-02 08:45' },
+      ],
+    };
+
+    const result = tao.render('complete', data);
+
+    expect(result).toContain('<title>Dashboard - Alice</title>');
+    expect(result).toContain('<h1>Welcome back, Alice!</h1>');
+    expect(result).toContain('<strong>Email:</strong> alice@example.com');
+    expect(result).toContain('<strong>Age:</strong> 32');
+    expect(result).toContain('<strong>Status:</strong> Active');
+    expect(result).toContain('<span class="tag">admin</span>');
+    expect(result).toContain('<span class="tag">editor</span>');
+
+    expect(result).toContain('<h2>Recent Notifications</h2>');
+    expect(result).toContain('<strong>System update available</strong>');
+    expect(result).toContain('<strong>New login from unknown device</strong>');
+    expect(result).toContain('Notifications count: 2');
+    expect(result).toContain(`&copy; ${new Date().getFullYear()} Your Company`);
+  });
+});
