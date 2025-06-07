@@ -23,10 +23,13 @@ function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
 }
 
 function getValueType(value: any) {
-  const isAFunction = typeof value === 'function';
-  if (isAFunction) return value;
+  if (valueIsAFunction(value)) return value;
 
   return JSON.stringify(value);
+}
+
+function valueIsAFunction(value: Function) {
+  return typeof value === 'function';
 }
 
 function includeFn(isInclude: boolean) {
@@ -180,4 +183,5 @@ export {
   getPathWithExtension,
   normalizeFilesPath,
   getFileName,
+  valueIsAFunction,
 };

@@ -21,6 +21,7 @@ import {
   getFullPath,
   escapeRegExp,
   getFileName,
+  valueIsAFunction,
 } from './utils';
 import { TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -530,7 +531,11 @@ export class Tao {
   defineHelpers(helpers: Helpers = {}) {
     for (const key in helpers) {
       if (!Object.prototype.hasOwnProperty.call(helpers, key)) continue;
+
       const fn = helpers[key];
+      if (!valueIsAFunction(fn)) {
+        throw new Error(`Provided helper ${key} is not a function`);
+      }
 
       this.helpersStore.set(key, fn);
     }
@@ -543,8 +548,7 @@ export class Tao {
    */
   loadTemplate(name: string, template: string) {
     if (!isTemplateDynamicallyDefined(name)) {
-      console.error("Dynamically loaded template should start with a '@'");
-      return;
+      throw new Error("Dynamically loaded template should start with a '@'");
     }
 
     this.dynamictemplatesStore.set(name, template);

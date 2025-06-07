@@ -158,7 +158,7 @@ Metrics are also available, so you get usefull informations about the template r
 
 ![Metrics](metrics.png)
 
-If you want to see / inspect the data you have provided, it is available directly in your browser console.
+If you want to inspect the data you have provided, it is available directly in your browser console under the object `data`.
 
 ![Data](data.png)
 
@@ -180,13 +180,13 @@ It started as a fork of `eta`, but became a complete rewrite of the library beca
     <b>If you want to compare "tao" with "eta"</b>
   </summary>
 
-- Tao set security by design: Stack traces are not visible in the browser. Increased security in mapping files.
-- Increased developer experience: Visual error representation, metrics, configuration options are checked.
-- Immutability: Data provided in the template is immutable, ie. template data modification does not affect original data.
-- Clearer API: Scope is well defined and restricted, which also improves security. Clean code practices are enforced.
-- Clearer template syntax: No prefix are needed.
-- Helpers: Global and local helpers, which are clearer and more suitable for little template logic.
-- Flexible template path resolution: With `fileResolution` mode set to `flexible`, only end unique paths can be provided, which increases file path readability (aka. `namespaces`).
+- **Tao set security by design**: Stack traces are not visible in the browser. Increased security in mapping files.
+- **Increased developer experience**: Visual error representation, metrics, configuration options are checked.
+- **Immutability**: Data provided in the template is immutable, ie. template data modification does not affect original data.
+- **Clearer API**: Scope is well defined and restricted, which also improves security. Clean code practices are enforced.
+- **Clearer template syntax**: No prefix are needed.
+- **Helpers**: Global and local helpers, which are clearer and more suitable for little template logic.
+- **Flexible template path resolution**: With `fileResolution` mode set to `flexible`, only end unique paths can be provided, which increases file path readability (aka. `namespaces`).
 
 </details>
 
@@ -195,11 +195,11 @@ It started as a fork of `eta`, but became a complete rewrite of the library beca
     <b>Choices</b>
   </summary>
 
-- No async support: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and can be considered as an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity. Logic in templates is untestable, undebuggable, and hard to read. In short: if you have async data, fetch it beforehand and render it synchronously.
+- **No async support**: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and can be considered as an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity. Logic in templates is difficult to test, debug, and hard to read. In short: if you have async data, fetch it beforehand and render it synchronously.
 
-- No `layouts`: Layouts are essentially includes and add unnecessary complexity to the rendering process.
+- **No `layouts`**: Layouts are essentially includes and add unnecessary complexity to the rendering process.
 
-- No `rmWhitespace`: Stripping whitespace at the template level yields negligible HTML size savings. Using compression (e.g., via Nginx or other proxies) is far more effective and scalable.
+- **No `rmWhitespace`**: Stripping whitespace at the template level yields negligible HTML size savings. Using compression (e.g., via Nginx or other proxies) is far more effective and scalable.
 
 _If you think those features are absolutely necessary, please open a new discussion on github and provide an example._
 

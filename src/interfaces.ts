@@ -94,7 +94,6 @@ export interface options {
   /**
    * Automatically XML-escape interpolations.
    *
-   * Default true.
    * @default true
    */
   autoEscape?: boolean;
@@ -102,54 +101,57 @@ export interface options {
   /**
    * Enable template cache.
    *
-   * Default true.
+   * @default true
    */
   cache?: boolean;
 
   /**
-   * Pretty-format error messages.
+   * Display an error box in your browser with debug information.
    *
-   * Default false.
+   * @default false
    */
   debug?: boolean;
 
   /**
-   * Function to XML-sanitize interpolations
+   * Function to XML-sanitize interpolations.
    */
   escapeFunction?: (str: unknown) => string;
 
-  /** Parsing options */
+  /**
+   * Parsing options.
+   */
   parse?: Parse;
 
   /**
-   * Default opening '<%', default closing '%>'
+   * Default opening '<%', default closing '%>'.
    */
   tags?: Tags;
 
   /**
-   * Directory that contains templates
-   * Default to process.cwd()
+   * Directory that contains templates.
+   *
    * @default process.cwd()
    */
   views?: string;
 
   /**
-   * Control template file extension defaults.
-   * @default 'eta'
+   * Control template file extension.
+   *
+   * @default 'html'
    */
   extension?: string;
 
   /**
    * Display console logs inside your browser with several informations.
    *
-   * Default false.
+   * @default false
    */
   metrics?: boolean;
 
   /**
-   * File mode resolution. Strict means you have to defined the template path relative to the view defined, flexible allow you to define only the end of your path (make sure it is unique!).
+   * File mode resolution. Strict means you have to define the template path relative to the view provided, flexible allow you to define only the end of your path (make sure it is unique).
    *
-   * Default "flexible"
+   * @default "flexible"
    */
   fileResolution?: FileResolution;
 }
@@ -157,61 +159,14 @@ export interface options {
 export type FileResolution = 'strict' | 'flexible';
 
 export interface DefinitiveOptions {
-  /**
-   * Automatically XML-escape interpolations.
-   * Default true.
-   * @default true
-   */
   autoEscape: boolean;
-
-  /**
-   * Enable lazy template cache.
-   */
   cache: boolean;
-
-  /**
-   * Pretty-format error messages.
-   */
   debug: boolean;
-
-  /**
-   * Function to XML-sanitize interpolations
-   */
   escapeFunction: (str: unknown) => string;
-
-  /** Parsing options */
   parse: Required<Parse>;
-
-  /**
-   * Default opening '<%', default closing '%>'
-   */
   tags: Required<Tags>;
-
-  /**
-   * Directory that contains templates
-   * Default to process.cwd()
-   * @default process.cwd()
-   */
   views: string;
-
-  /**
-   * Control template file extension defaults.
-   * Default tao.
-   * @default 'tao'
-   */
   extension: string;
-
-  /**
-   * Display console logs inside your browser with several informations.
-   *
-   * Default false.
-   */
   metrics: boolean;
-
-  /**
-   * File mode resolution. Strict means you have to defined the template path relative to the view defined, flexible allow you to define only the end of your path (make sure it is unique!).
-   *
-   * Default "flexible".
-   */
   fileResolution: FileResolution;
 }
