@@ -2,7 +2,7 @@ import { TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Debug, ErrorType } from './interfaces';
 
 /**
- * Two possible exceptions
+ * Two possible exceptions:
  * There is no content => an error occurred while reading the file
  * There is no line number => there is a syntax error
  */
@@ -42,6 +42,9 @@ function getErrorMessageAndSource(error: any): [string, string] {
   return [message, source];
 }
 
+/**
+ * Calling new Function(...) is an anonymous function.
+ */
 function getLineFromAnonymousFunction(source: string) {
   const splitLastLineError = source.split('<anonymous>');
   const [_, line] = splitLastLineError[1].split(':');
@@ -100,7 +103,7 @@ function trimEmptySpaceAndDecrementLine(
 }
 
 /**
- * Error occurred while parsing the template.
+ * Error occurred while parsing the template (unclosed string)
  */
 function isAParseError(error: any) {
   return error.type === 'Parse Error';

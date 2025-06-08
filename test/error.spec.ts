@@ -36,4 +36,19 @@ describe('error render', () => {
 
     expect(result).toContain('<h2>An error occurred</h2>');
   });
+
+  it('should not return any content of the parent template if there is a bug in a child template with debug set to false', () => {
+    const tao = new Tao({ views: templateViews });
+    const result = tao.render('include-error-child', { name: 'parent data' });
+
+    expect(result).toContain('');
+  });
+
+  it('should not return any content of the parent template if there is a bug in a child template with debug set to true', () => {
+    const tao = new Tao({ views: templateViews, debug: true });
+    const data = { name: 'parent data' };
+    const result = tao.render('include-error-child', data);
+
+    expect(result).not.toContain(`<h1>Hi ${data.name} %></h1>`);
+  });
 });

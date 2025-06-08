@@ -10,7 +10,6 @@ import {
 } from './checks';
 import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
-
 import { log } from 'node:console';
 import {
   buildPrefixRegex,
@@ -42,7 +41,6 @@ import {
   CompileExecuteData,
   ExecuteFunction,
 } from './interfaces';
-import assert from 'node:assert';
 import { Store } from './store';
 import { findOriginalLineNumberWithMessage, handleParseError, isAParseError } from './error-utils';
 import path from 'node:path';
@@ -74,11 +72,11 @@ export class Tao {
   private errorHTML: undefined | string = undefined;
 
   /**
-   * Stores dynamically defined templates.
+   * Stores cached templates.
    */
   public templatesStore = new Store<TemplateFunction>();
   /**
-   * Stores cached templates.
+   * Stores dynamically defined templates.
    */
   public dynamictemplatesStore = new Store<string>();
   /**
@@ -191,26 +189,9 @@ export class Tao {
     const { parse, tags } = this.config;
     const { closing, opening } = tags;
 
+    let openingResult: RegExpExecArray | null = null;
     const compiledData: AstObject[] = [];
     let lastIndex = 0;
-
-    const prefixes = [parse.exec, parse.interpolate, parse.raw].reduce(function (
-      accumulator,
-      prefix
-    ) {
-      if (accumulator && prefix) {
-        return accumulator + '|' + escapeRegExp(prefix);
-      } else if (prefix) {
-        // accumulator is falsy
-        return escapeRegExp(prefix);
-      } else {
-        // prefix and accumulator are both falsy
-        return accumulator;
-      }
-    },
-    '');
-
-    assert(this.prefixBuild === prefixes, 'buildprefixregex not the same');
 
     const parseOpenReg = new RegExp(
       escapeRegExp(opening) + '\\s*(' + this.prefixBuild + ')?\\s*',
@@ -218,8 +199,6 @@ export class Tao {
     );
 
     const parseCloseReg = new RegExp('\'|"|`|\\/\\*|(\\s*' + escapeRegExp(closing) + ')', 'g');
-
-    let openingResult: RegExpExecArray | null = null;
 
     while ((openingResult = parseOpenReg.exec(expression))) {
       const [originalOpen, openingPrefix = ''] = openingResult;
@@ -232,7 +211,6 @@ export class Tao {
       const prefix = openingPrefix; // by default either ~, =, or empty
 
       compiledData.push(escapeJSLiteral(precedingExpression));
-
       parseCloseReg.lastIndex = lastIndex;
 
       while ((closeResult = parseCloseReg.exec(expression))) {
@@ -301,13 +279,16 @@ export class Tao {
           ɵɵstart,
           filename,
         };
+
         return this.executeFunction(executeData);
       }
 
       // preloaded with 'loadTemplate'
       const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
-        console.error(`Failed to get programmaticaly defined template ${template} from cache`);
+        console.error(
+          new Error(`Failed to get programmaticaly defined template ${template} from cache`)
+        );
         return '';
       }
 
@@ -323,7 +304,7 @@ export class Tao {
     }
 
     if (this.templatePaths.length === 0) {
-      console.error(`No template files found in ${views} with extension ${extension}`);
+      console.error(new Error(`No template files found in ${views} with extension ${extension}`));
       return '';
     }
 
@@ -335,8 +316,6 @@ export class Tao {
 
     const cachedTemplate = this.templatesStore.get(fileFound);
     if (cachedTemplate) {
-      log(`${template} cache hit`);
-
       const executeData: ExecuteFunction = {
         templateFn: cachedTemplate,
         data,
@@ -344,6 +323,7 @@ export class Tao {
         ɵɵstart,
         filename,
       };
+
       return this.executeFunction(executeData);
     }
 
@@ -381,13 +361,16 @@ export class Tao {
     }
   }
 
+  /**
+   * By default, no error should be returned
+   */
   private manageError(error: any, filename: string) {
     this.templatesStore.remove(filename);
     error.filename = filename;
     const errorData = this.handleErrorMessage(error);
-    // by default, no error should be returned
     console.error(new Error(errorData.message));
     this.errorHTML = this.initErrorTemplate(errorData);
+
     return this.errorHTML;
   }
 
@@ -439,7 +422,7 @@ export class Tao {
     if (!this.config.debug) return '';
 
     const templatesPath = path.join(__dirname, 'public');
-    const tao = new Tao({ views: templatesPath, cache: true, metrics: false });
+    const tao = new Tao({ views: templatesPath });
     return tao.render('error', errorData);
   }
 
@@ -469,6 +452,9 @@ export class Tao {
     return templateFn;
   }
 
+  /**
+   * Sync version is preferable, since HTML file are normally small (<300 Ko)
+   */
   private readFile(path: string) {
     try {
       const file = fs.readFileSync(path, 'utf8');
@@ -482,10 +468,8 @@ export class Tao {
 
   private handleCachedLoadedTemplate(template: string) {
     const cachedTemplate = this.templatesStore.get(template);
-
     if (!cachedTemplate) return undefined;
 
-    log(`${template} cache hit`);
     return cachedTemplate;
   }
 
@@ -503,7 +487,7 @@ export class Tao {
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
       this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
 
-      return html;
+      return this.errorHTML ?? html;
     } catch (error: any) {
       return this.manageError(error, filename);
     }
@@ -545,8 +529,13 @@ export class Tao {
    * @param template The template content.
    */
   loadTemplate(name: string, template: string) {
+    const duplicate = this.dynamictemplatesStore.get(name);
     if (!isTemplateDynamicallyDefined(name)) {
       throw new Error(`Dynamically loaded template ${name} should start with a '@'`);
+    }
+
+    if (duplicate) {
+      console.warn(`Duplicate template name ${name} provided. Template content have been erased.`);
     }
 
     this.dynamictemplatesStore.set(name, template);

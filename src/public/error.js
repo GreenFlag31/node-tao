@@ -3,7 +3,7 @@ const sourceCode = document.querySelector('.source-code-container');
 const errorLine = sourceCode.querySelector('.error-line-container .line-number.active');
 const resizeHandlers = document.querySelectorAll('.resize-handle');
 const htmlLines = sourceCode.querySelectorAll('span.html');
-
+const minWidth = errorContainer.clientWidth;
 errorLine?.scrollIntoView();
 
 resizeHandlers.forEach((resizer) => {
@@ -13,7 +13,6 @@ resizeHandlers.forEach((resizer) => {
     const startWidth = errorContainer.offsetWidth;
     const isLeft = resizer.classList.contains('left');
 
-    const minWidth = errorContainer.clientWidth;
     // 10 padding on each side
     const maxWidth = window.innerWidth - 20;
 

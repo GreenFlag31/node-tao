@@ -1,5 +1,7 @@
 import { Tao } from '../src/index';
 import path from 'path';
+import { normalizeFilesPath } from '../src/utils';
+import { log } from 'console';
 
 const templateViews = path.join(process.cwd(), 'test/templates');
 const tao = new Tao({ views: templateViews });
@@ -39,6 +41,23 @@ describe('basic render tests', () => {
     expect(tao.templatesStore.get(templateNameWithExtension)).toBeTruthy();
   });
 
+  it('should remove cache key if error in template', () => {
+    const templateNameWithExtension = 'execution-error.html';
+    tao.render('execution-error');
+
+    expect(tao.templatesStore.get(templateNameWithExtension)).toBeFalsy();
+  });
+
+  it('should remove cache key if error in cached template', () => {
+    const templateNameWithExtension = 'simple.html';
+    const data = { name: 'test included' };
+    tao.render(templateNameWithExtension, data);
+    // not providing any data cause the error
+    tao.render(templateNameWithExtension);
+
+    expect(tao.templatesStore.get(templateNameWithExtension)).toBeFalsy();
+  });
+
   it('dynamictemplatesStore should store dynamical defined template', () => {
     const templateName = '@header';
     const headerPartial = `
@@ -64,8 +83,23 @@ describe('basic render tests', () => {
     expect(result).toContain(`<h1>${data.title}</h1>`);
   });
 
+  it('should render dynamically defined template with an include', () => {
+    const headerPartial = `
+    <header>
+      <h1><%= title %></h1>
+      <%~ include('simple') %>
+    </header>
+  `;
+    const data = { title: 'this is my partial', name: 'included' };
+    tao.loadTemplate('@header2', headerPartial);
+    const result = tao.render('@header2', data);
+
+    expect(result).toContain(`<h1>${data.title}</h1>`);
+    expect(result).toContain(`Hi ${data.name}`);
+  });
+
   it('should render fullpath defined templates', () => {
-    const fullPath = path.join(templateViews, 'simple.html').replace(/\\/g, '/');
+    const fullPath = normalizeFilesPath(path.join(templateViews, 'simple.html'));
     const data = { name: 'test' };
     const result = tao.render(fullPath, data);
     expect(result).toBe(`Hi ${data.name}`);

@@ -12,7 +12,7 @@ app.use(express.static(publicPath));
 
 const option: options = {
   debug: true,
-  // metrics: true,
+  metrics: true,
   views: templatesPath,
 };
 
@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
   const data = {
     name: 'aaaqq',
   };
-  const result = tao.render('has-include', data);
+  const result = tao.render('simple', data);
   res.status(200).send(result);
 });
 

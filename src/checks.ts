@@ -4,7 +4,7 @@ import { getPathWithExtension } from './utils';
 
 function templateIsOfTypeString(template: string) {
   if (typeof template !== 'string') {
-    console.error('Provided template should be of type string');
+    console.error(new Error('Provided template should be of type string'));
     return false;
   }
 
@@ -16,7 +16,7 @@ function isTemplateDynamicallyDefined(template: string) {
 }
 
 /**
- * Retrieve included template names.
+ * Retrieve children template names.
  * Example: include('simple', ...) => simple.html
  */
 function getChildrenTemplatesName(content: string, extension: string) {

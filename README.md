@@ -181,7 +181,7 @@ It started as a fork of `eta`, but became a dedicated library because the change
 
 <details>
   <summary>
-    <b>If you want to compare "tao" with "eta"</b>
+    <b>If you want to compare tao with eta</b>
   </summary>
 
 - **Tao set security by design**: Stack traces are not visible in the browser. Increased security in files mapping.
@@ -211,6 +211,8 @@ _If you think those features are absolutely necessary, please open a new discuss
 </details>
 
 <br />
+
+## Change logs
 
 ## Credits
 

@@ -47,14 +47,14 @@ function escapeJSLiteral(value: string) {
   return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 }
 
-function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse']): TagType {
+function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse']) {
   const parseOptions: Record<string, TagType> = {
     [parse.exec]: 'execute',
     [parse.raw]: 'raw',
     [parse.interpolate]: 'interpolate',
   };
 
-  // escaping if not null | undefined
+  // escaping by default if null | undefined
   return parseOptions[prefix] ?? parse.interpolate;
 }
 
@@ -64,7 +64,7 @@ function compileBody(templateValues: AstObject[], config: DefinitiveOptions) {
   for (const value of templateValues) {
     if (typeof value === 'string') {
       // HTML content
-      result += `__${TEMPLATE_VARNAME}.res+='${value}';\n`;
+      result += `${TP_VARNAME_WITH_PREFIX}.res+='${value}';\n`;
       continue;
     }
 

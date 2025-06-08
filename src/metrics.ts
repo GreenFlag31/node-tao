@@ -33,11 +33,10 @@ function isAChildTemplate(parentTemplate: string, filename: string) {
 }
 
 /**
- * Logs metrics in the browser. Do not include logs if disabled or if the current template is included in another template.
+ * Display metrics in the browser. Do not include logs if disabled or if the current template is included in another template. Make data available in the console.
  */
 function includeMetrics(metricsData: Metrics) {
   const { cacheEnabled, filename: filename, files, metrics, isAChild } = metricsData;
-
   if (!metrics || isAChild) return '""';
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);

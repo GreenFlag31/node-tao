@@ -28,12 +28,16 @@ function checkAccessPermission(templatePaths: string[], templateFile: string) {
   const filesFound = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
 
   if (filesFound.length === 0) {
-    console.error(`Non existing template or template out of scope (reading "${templateFile}")`);
+    console.error(
+      new Error(`Non existing template or template out of scope (reading "${templateFile}")`)
+    );
     return undefined;
   }
   if (filesFound.length > 1) {
     console.error(
-      `Non unique template given "${templateFile}". Possible:\n- ${filesFound.join('\n- ')}`
+      new Error(
+        `Non unique template given "${templateFile}". Possible:\n- ${filesFound.join('\n- ')}`
+      )
     );
     return undefined;
   }

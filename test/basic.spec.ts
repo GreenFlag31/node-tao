@@ -3,6 +3,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { DEFAULT_EXTENSION } from '../src/const';
 import { defaultConfig } from '../src/default-config';
+import { normalizeFilesPath } from '../src/utils';
 
 describe('eta constructor', () => {
   it('initialisation', () => {
@@ -47,9 +48,9 @@ describe('eta constructor', () => {
     const templateViews = path.join(process.cwd(), 'test/templates');
     const tao = new Tao({ views: templateViews });
 
-    const pathWithSimpleSlash = path
-      .join(templateViews, `simple.${DEFAULT_EXTENSION}`)
-      .replace(/\\/g, '/');
+    const pathWithSimpleSlash = normalizeFilesPath(
+      path.join(templateViews, `simple.${DEFAULT_EXTENSION}`)
+    );
 
     expect(tao['templatePaths']).toContain(pathWithSimpleSlash);
   });

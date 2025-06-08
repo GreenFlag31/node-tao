@@ -3,28 +3,31 @@ export type ErrorType = 'Parse Error' | 'ReadFile Error' | 'Compilation Error' |
 
 export interface Parse {
   /**
-   * Which prefix to use for evaluation. Default `""`
+   * Which prefix to use for evaluation.
+   * @default ""
    */
   exec?: string;
 
   /**
-   * Which prefix to use for interpolation. Default `"="`
+   * Which prefix to use for interpolation.
+   * @default "="
    */
   interpolate?: string;
 
   /**
-   * Which prefix to use for raw interpolation. Default `"~"`
+   * Which prefix to use for raw interpolation.
+   * @default "~"
    */
   raw?: string;
 }
 
 export interface Tags {
   /**
-   * Default "<%"
+   * @default "<%"
    */
   opening?: string;
   /**
-   * Default "%>"
+   * @default "%>"
    */
   closing?: string;
 }
@@ -135,7 +138,7 @@ export interface options {
   views?: string;
 
   /**
-   * Control template file extension.
+   * Template file extension.
    *
    * @default 'html'
    */
