@@ -2,7 +2,7 @@ import { Tao } from '../src/index';
 import path from 'path';
 
 const templateViews = path.join(process.cwd(), 'test/templates');
-const tao = new Tao({ views: templateViews, metrics: false });
+const tao = new Tao({ views: templateViews });
 
 describe('basic render tests', () => {
   it('should render simple template', () => {
@@ -32,11 +32,11 @@ describe('basic render tests', () => {
   });
 
   it('should lazy cache template by default', () => {
+    const templateNameWithExtension = 'simple-2.html';
     const data = { name: 'test included' };
-    tao.render('simple-2', data);
+    tao.render(templateNameWithExtension, data);
 
-    const fullPath = path.join(templateViews, 'simple-2.html').replace(/\\/g, '/');
-    expect(tao.templatesStore.get(fullPath)).toBeTruthy();
+    expect(tao.templatesStore.get(templateNameWithExtension)).toBeTruthy();
   });
 
   it('dynamictemplatesStore should store dynamical defined template', () => {

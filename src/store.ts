@@ -23,11 +23,17 @@ export class Store<T> {
 
   /**
    * Remove keys from cache.
+   * Return the number of entries deleted.
    */
-  remove(...keys: string[]) {
+  remove(...keys: string[]): number {
+    let deletedCount = 0;
+
     for (const key of keys) {
       delete this.store[key];
+      deletedCount += 1;
     }
+
+    return deletedCount;
   }
 
   /**

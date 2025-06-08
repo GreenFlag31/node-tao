@@ -1,5 +1,9 @@
 ## Node Tao
 
+<p align="center">
+  <img src="./node-tao.jpg" alt="node-tao template engine representation" width="400" height="300"/>
+</p>
+
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.
 
 ### 🌟 Features
@@ -180,13 +184,14 @@ It started as a fork of `eta`, but became a dedicated library because the change
     <b>If you want to compare "tao" with "eta"</b>
   </summary>
 
-- **Tao set security by design**: Stack traces are not visible in the browser. Increased security in mapping files.
+- **Tao set security by design**: Stack traces are not visible in the browser. Increased security in files mapping.
 - **Increased developer experience**: Visual error representation, metrics, configuration options are checked.
 - **Immutability**: Data provided in the template is immutable, ie. template data modification does not affect original data.
 - **Clearer API**: Scope is well defined and restricted, which also improves security. Clean code practices are enforced.
 - **Clearer template syntax**: No prefix are needed.
 - **Helpers**: Global and local helpers, which are clearer and more suitable for little template logic.
 - **Flexible template path resolution**: With `fileResolution` mode set to `flexible`, only end unique paths can be provided, which increases file path readability (aka. `namespaces`).
+- **Performance**: Various performance optimization.
 
 </details>
 

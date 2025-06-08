@@ -299,7 +299,7 @@ export class Tao {
           data,
           helpers,
           ɵɵstart,
-          filename: filename,
+          filename,
         };
         return this.executeFunction(executeData);
       }
@@ -307,9 +307,7 @@ export class Tao {
       // preloaded with 'loadTemplate'
       const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
-        console.error(
-          `Failed to get programmaticaly defined template from cache at template '${template}'`
-        );
+        console.error(`Failed to get programmaticaly defined template ${template} from cache`);
         return '';
       }
 
@@ -319,8 +317,7 @@ export class Tao {
         data,
         helpers,
         ɵɵstart,
-
-        filename: filename,
+        filename,
       };
       return this.handleLoadedTemplate(templateData);
     }
@@ -380,13 +377,18 @@ export class Tao {
 
       return this.errorHTML ?? html;
     } catch (error: any) {
-      error.filename = filename;
-      const errorData = this.handleErrorMessage(error);
-      // by default, no error should be returned
-      console.error(errorData);
-      this.errorHTML = this.initErrorTemplate(errorData);
-      return this.errorHTML;
+      return this.manageError(error, filename);
     }
+  }
+
+  private manageError(error: any, filename: string) {
+    this.templatesStore.remove(filename);
+    error.filename = filename;
+    const errorData = this.handleErrorMessage(error);
+    // by default, no error should be returned
+    console.error(new Error(errorData.message));
+    this.errorHTML = this.initErrorTemplate(errorData);
+    return this.errorHTML;
   }
 
   private executeFunction(executeData: ExecuteFunction) {
@@ -399,11 +401,7 @@ export class Tao {
 
       return html;
     } catch (error: any) {
-      error.filename = filename;
-      const errorData = this.handleErrorMessage(error);
-      // by default, no error should be returned
-      console.error(errorData);
-      return this.initErrorTemplate(errorData);
+      return this.manageError(error, filename);
     }
   }
 
@@ -465,7 +463,7 @@ export class Tao {
       // Do not store when metrics is enabled
       // This will skew the results of children names
       // since template is not reevaluated
-      this.templatesStore.set(resolvedPath, templateFn);
+      this.templatesStore.set(filename, templateFn);
     }
 
     return templateFn;
@@ -507,11 +505,7 @@ export class Tao {
 
       return html;
     } catch (error: any) {
-      error.filename = filename;
-      const errorData = this.handleErrorMessage(error);
-      // by default, no error should be returned
-      console.error(errorData);
-      return this.initErrorTemplate(errorData);
+      return this.manageError(error, filename);
     }
   }
 
@@ -552,7 +546,7 @@ export class Tao {
    */
   loadTemplate(name: string, template: string) {
     if (!isTemplateDynamicallyDefined(name)) {
-      throw new Error("Dynamically loaded template should start with a '@'");
+      throw new Error(`Dynamically loaded template ${name} should start with a '@'`);
     }
 
     this.dynamictemplatesStore.set(name, template);
