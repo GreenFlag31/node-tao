@@ -7,8 +7,8 @@ const app = express();
 const PORT = 3000;
 
 const templatesPath = path.join(__dirname, 'templates');
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath));
+// const publicPath = path.join(__dirname, 'public');
+// app.use(express.static(publicPath));
 
 const option: options = {
   debug: true,
@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
   const data = {
     name: 'aaaqq',
   };
-  const result = tao.render('simple', data);
+  const result = tao.render('simple');
   res.status(200).send(result);
 });
 

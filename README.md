@@ -1,7 +1,7 @@
 ## Node Tao
 
 <p align="center">
-  <img src="./node-tao.jpg" alt="node-tao template engine representation" width="400" height="300"/>
+  <img src="./node-tao.jpg" alt="node-tao template engine representation" width="300" height="300"/>
 </p>
 
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.

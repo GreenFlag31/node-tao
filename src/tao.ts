@@ -368,7 +368,7 @@ export class Tao {
     this.templatesStore.remove(filename);
     error.filename = filename;
     const errorData = this.handleErrorMessage(error);
-    console.error(new Error(errorData.message));
+    console.error(new Error(`${errorData.message} in ${filename}`));
     this.errorHTML = this.initErrorTemplate(errorData);
 
     return this.errorHTML;
@@ -421,7 +421,7 @@ export class Tao {
   private initErrorTemplate(errorData: Data) {
     if (!this.config.debug) return '';
 
-    const templatesPath = path.join(__dirname, 'public');
+    const templatesPath = path.join(__dirname, 'error');
     const tao = new Tao({ views: templatesPath });
     return tao.render('error', errorData);
   }

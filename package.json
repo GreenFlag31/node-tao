@@ -22,10 +22,9 @@
     "node": ">=17.0.0"
   },
   "scripts": {
-    "postversion": "node ./jsr.release.js",
     "test": "jest",
     "build": "rimraf dist && tsc && cpx src/public/**/* dist/public && cpx \"src/templates/**/*\" dist/templates",
-    "startNodemon": "nodemon --ext ts,js,json,css,html --watch src --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/public/**/* dist/public && node dist/server.js\""
+    "startNodemon": "nodemon --ext ts,js,json,css,html --watch src --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/error/**/* dist/error && node dist/server.js\""
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
