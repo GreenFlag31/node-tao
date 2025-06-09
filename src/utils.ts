@@ -54,7 +54,7 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse'])
     [parse.interpolate]: 'interpolate',
   };
 
-  // escaping by default if null | undefined
+  // escaping by default
   return parseOptions[prefix] ?? parse.interpolate;
 }
 

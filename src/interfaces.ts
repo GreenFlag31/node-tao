@@ -1,4 +1,3 @@
-export type TagType = 'raw' | 'execute' | 'interpolate';
 export type ErrorType = 'Parse Error' | 'ReadFile Error' | 'Compilation Error' | 'Execution Error';
 
 export interface Parse {
@@ -36,6 +35,8 @@ export interface Tags {
  * HTML content or template data.
  */
 export type AstObject = string | TemplateData;
+
+export type TagType = 'raw' | 'execute' | 'interpolate';
 
 export interface TemplateData {
   type: TagType;

@@ -149,9 +149,8 @@ export class Tao {
     filename: string
   ) {
     const { metrics } = this.config;
-    const compiledData: AstObject[] = this.parse(content);
+    this.compiledAST = this.parse(content);
     const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
-    this.compiledAST = compiledData;
 
     const children = getChildrenTemplatesName(content, this.config.extension);
     const containsInclude = children.length > 0;
@@ -171,7 +170,7 @@ export class Tao {
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction};
     
-    ${compileBody(compiledData, this.config)}
+    ${compileBody(this.compiledAST, this.config)}
 
     ${includeChildren(metrics, isAChild)}
     ${includeRenderTime(metrics, isAChild)}
@@ -198,19 +197,19 @@ export class Tao {
       'g'
     );
 
-    const parseCloseReg = new RegExp('\'|"|`|\\/\\*|(\\s*' + escapeRegExp(closing) + ')', 'g');
+    const parseCloseReg = new RegExp('\'|"|`|(\\s*' + escapeRegExp(closing) + ')', 'g');
 
     while ((openingResult = parseOpenReg.exec(expression))) {
+      // openingPrefix by default either ~, =, or empty
       const [originalOpen, openingPrefix = ''] = openingResult;
       let closeResult: RegExpExecArray | null = null;
       let templateData: TemplateData | undefined = undefined;
 
       const precedingExpression = expression.slice(lastIndex, openingResult.index);
-
       lastIndex = originalOpen.length + openingResult.index;
-      const prefix = openingPrefix; // by default either ~, =, or empty
 
-      compiledData.push(escapeJSLiteral(precedingExpression));
+      const escapedExpression = escapeJSLiteral(precedingExpression);
+      compiledData.push(escapedExpression);
       parseCloseReg.lastIndex = lastIndex;
 
       while ((closeResult = parseCloseReg.exec(expression))) {
@@ -222,8 +221,9 @@ export class Tao {
           lastIndex = parseCloseReg.lastIndex;
           parseOpenReg.lastIndex = lastIndex;
 
-          const currentType: TagType = getCurrentPrefixType(prefix, parse);
+          const currentType = getCurrentPrefixType(openingPrefix, parse);
           templateData = { type: currentType, content };
+          compiledData.push(templateData);
           break;
         }
 
@@ -242,12 +242,11 @@ export class Tao {
         openingResult.index,
         this.debug
       );
-
-      compiledData.push(templateData!);
     }
 
     const endOfTemplate = expression.slice(lastIndex);
-    compiledData.push(escapeJSLiteral(endOfTemplate));
+    const escapedEndOfTemplate = escapeJSLiteral(endOfTemplate);
+    compiledData.push(escapedEndOfTemplate);
 
     return compiledData;
   }
