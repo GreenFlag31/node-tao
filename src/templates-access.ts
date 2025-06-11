@@ -25,24 +25,28 @@ function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFil
 }
 
 function checkAccessPermission(templatePaths: string[], templateFile: string) {
-  const filesFound = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+  const files = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
 
-  if (filesFound.length === 0) {
-    console.error(
-      new Error(`Non existing template or template out of scope (reading "${templateFile}")`)
-    );
-    return undefined;
-  }
-  if (filesFound.length > 1) {
-    console.error(
-      new Error(
-        `Non unique template given "${templateFile}". Possible:\n- ${filesFound.join('\n- ')}`
-      )
-    );
-    return undefined;
-  }
+  // if (files.length === 0) {
+  //   console.error(
+  //     new Error(`Non existing template or template out of scope (reading "${templateFile}")`)
+  //   );
+  //   return undefined;
+  // }
+  // if (files.length > 1) {
+  //   console.error(
+  //     new Error(
+  //       `Non unique template given "${templateFile}". Possible:\n- ${files.join('\n- ')}`
+  //     )
+  //   );
+  //   return undefined;
+  // }
 
-  return filesFound[0];
+  return files;
+}
+
+function fileIsUnique(files: string[]) {
+  return files.length === 1;
 }
 
 export {
@@ -50,4 +54,5 @@ export {
   checkAccessPermission,
   isTemplateFileInsideGivenDirectory,
   normalizeFilesPath,
+  fileIsUnique,
 };

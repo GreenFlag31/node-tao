@@ -1,5 +1,5 @@
 import { TP_VARNAME_WITH_PREFIX } from './const';
-import { AstObject, Debug, ErrorType } from './interfaces';
+import { AstObject, Debug, ErrorData, ErrorType } from './interfaces';
 
 /**
  * Two possible exceptions:
@@ -7,18 +7,24 @@ import { AstObject, Debug, ErrorType } from './interfaces';
  * There is no line number => there is a syntax error
  */
 function findOriginalLineNumberWithMessage(
-  error: string,
+  error: ErrorData,
   compiledAST: AstObject[],
   compiledAnonymousFnContent: string,
   originalFileContent: string
 ): [string, string[], number] {
-  if (!originalFileContent) {
-    return ['Error while reading template file', ['', '', '', 'No content', '', '', ''], NaN];
+  if (error.type === 'Precompilation Error') {
+    return [error.message, getNoContentData(), NaN];
+  }
+  if (error.type === 'ReadFile Error') {
+    return ['Error while reading template file', getNoContentData(), NaN];
+  }
+  if (error.type === 'Inclusion Error') {
+    return [error.message, getNoContentData(), NaN];
   }
 
   const [message, source] = getErrorMessageAndSource(error);
   const lineFromAnonymousFn = getLineFromAnonymousFunction(source);
-  if (isNaN(lineFromAnonymousFn)) {
+  if (error.type === 'Compilation Error') {
     const [fileContent, _] = trimEmptySpaceAndDecrementLine(
       originalFileContent,
       lineFromAnonymousFn
@@ -40,6 +46,10 @@ function getErrorMessageAndSource(error: any): [string, string] {
   const [message, source] = error.stack.split('\n');
 
   return [message, source];
+}
+
+function getNoContentData() {
+  return ['', '', '', 'No content', '', '', ''];
 }
 
 /**
@@ -124,7 +134,7 @@ function getParsingErrorData(
   index: number,
   message: string,
   debug: Debug
-): Error {
+): ErrorData {
   const { fileContent } = debug;
   const lineNumber = getTemplateParsedLineNumber(expression, index);
   const type: ErrorType = 'Parse Error';
@@ -144,6 +154,40 @@ function getTemplateParsedLineNumber(expression: string, index: number) {
   return line;
 }
 
+/**
+ * Detect infinite inclusion error.
+ * FileContent is left empty.
+ */
+function handleInfiniteInclusionError(allChildren: string[]) {
+  if (new Set(allChildren).size === allChildren.length) return;
+
+  const error: any = new Error();
+  error.message = `Possible infinite inclusion detected with children: ${allChildren.join(' - ')}`;
+  error.lineNumber = NaN;
+  error.fileContent = '';
+  const errorType: ErrorType = 'Inclusion Error';
+  error.type = errorType;
+
+  throw error;
+}
+
+function handleNonUniqueFile(files: string[], filename: string) {
+  let errorMessage = `Non existing template or template out of scope`;
+
+  if (files.length > 1) {
+    errorMessage = `Non unique template given "${filename}". Possible:\n- ${files.join('\n- ')}`;
+  }
+
+  const error: any = new Error();
+  error.message = errorMessage;
+  error.lineNumber = NaN;
+  error.fileContent = '';
+  const errorType: ErrorType = 'Precompilation Error';
+  error.type = errorType;
+
+  return error;
+}
+
 export {
   getErrorMessageAndSource,
   getLineFromAnonymousFunction,
@@ -153,4 +197,6 @@ export {
   isAParseError,
   handleParseError,
   getParsingErrorData,
+  handleInfiniteInclusionError,
+  handleNonUniqueFile,
 };

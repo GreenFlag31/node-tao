@@ -8,7 +8,7 @@ import {
   templateIsOfTypeString,
   givenExtensionShouldNotStartWithADot,
 } from './checks';
-import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
+import { checkAccessPermission, fileIsUnique, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
 import { log } from 'node:console';
 import {
@@ -40,9 +40,15 @@ import {
   LoadedTemplateData,
   CompileExecuteData,
   ExecuteFunction,
+  ErrorData,
 } from './interfaces';
 import { Store } from './store';
-import { findOriginalLineNumberWithMessage, handleParseError, isAParseError } from './error-utils';
+import {
+  findOriginalLineNumberWithMessage,
+  handleNonUniqueFile,
+  handleParseError,
+  isAParseError,
+} from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import {
@@ -65,7 +71,7 @@ export class Tao {
   private debug: Debug = {
     fileContent: '',
     message: '',
-    lineNumber: 1,
+    lineNumber: NaN,
   };
   private parentTemplate = '';
   private childrenStore = new Store<string[]>();
@@ -310,10 +316,14 @@ export class Tao {
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
     filename = getFileName(fullPath);
 
-    const fileFound = checkAccessPermission(this.templatePaths, fullPath);
-    if (!fileFound) return '';
+    const files = checkAccessPermission(this.templatePaths, fullPath);
+    if (!fileIsUnique(files)) {
+      const error = handleNonUniqueFile(files, filename);
+      return this.manageError(error, filename);
+    }
 
-    const cachedTemplate = this.templatesStore.get(fileFound);
+    const file = files[0];
+    const cachedTemplate = this.templatesStore.get(file);
     if (cachedTemplate) {
       const executeData: ExecuteFunction = {
         templateFn: cachedTemplate,
@@ -328,7 +338,7 @@ export class Tao {
 
     const compileData: CompileExecuteData = {
       filename,
-      fullPath: fileFound,
+      fullPath: file,
       data,
       helpers,
       ɵɵstart,
@@ -352,7 +362,11 @@ export class Tao {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
 
-      this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
+      this.parentTemplate = resetParentTemplateAtEndOfExecution(
+        this.parentTemplate,
+        filename,
+        this.childrenStore
+      );
 
       return this.errorHTML ?? html;
     } catch (error: any) {
@@ -379,7 +393,11 @@ export class Tao {
     try {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
-      this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
+      this.parentTemplate = resetParentTemplateAtEndOfExecution(
+        this.parentTemplate,
+        filename,
+        this.childrenStore
+      );
 
       return html;
     } catch (error: any) {
@@ -387,13 +405,15 @@ export class Tao {
     }
   }
 
-  private handleErrorMessage(error: any) {
+  /**
+   * Execution error is the last possible error.
+   */
+  private handleErrorMessage(error: ErrorData) {
     error.type = error.type ?? 'Execution Error';
     const parsingError = isAParseError(error);
     if (parsingError) return handleParseError(error);
 
     const { filename } = error;
-
     const { fileContent, lineNumber, message } = this.debug;
     const errorData = {
       filename,
@@ -484,7 +504,11 @@ export class Tao {
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
-      this.parentTemplate = resetParentTemplateAtEndOfExecution(this.parentTemplate, filename);
+      this.parentTemplate = resetParentTemplateAtEndOfExecution(
+        this.parentTemplate,
+        filename,
+        this.childrenStore
+      );
 
       return this.errorHTML ?? html;
     } catch (error: any) {

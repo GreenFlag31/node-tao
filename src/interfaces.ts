@@ -1,4 +1,10 @@
-export type ErrorType = 'Parse Error' | 'ReadFile Error' | 'Compilation Error' | 'Execution Error';
+export type ErrorType =
+  | 'Parse Error'
+  | 'ReadFile Error'
+  | 'Compilation Error'
+  | 'Execution Error'
+  | 'Inclusion Error'
+  | 'Precompilation Error';
 
 export interface Parse {
   /**
@@ -49,6 +55,14 @@ export interface Debug {
   fileContent: string;
   message: string;
   lineNumber: number;
+}
+
+export interface ErrorData {
+  filename: string;
+  fileContent: [string];
+  message: string;
+  lineNumber: number;
+  type: ErrorType;
 }
 
 export interface Data {

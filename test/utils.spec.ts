@@ -104,8 +104,8 @@ describe('XMLEscape', () => {
   it('should convert non-string inputs to string', () => {
     expect(XMLEscape(42)).toBe('42');
     expect(XMLEscape(true)).toBe('true');
-    expect(XMLEscape(null)).toBe('null');
-    expect(XMLEscape(undefined)).toBe('undefined');
+    expect(XMLEscape(null)).toBe('');
+    expect(XMLEscape(undefined)).toBe('');
   });
 
   it('should handle empty string', () => {

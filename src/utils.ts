@@ -80,7 +80,7 @@ function compileContent(type: TagType, content: string, config: DefinitiveOption
   const prefix = TP_VARNAME_WITH_PREFIX;
 
   if (type === 'raw') {
-    return `${prefix}.res+=${content};\n`;
+    return `${prefix}.res+=${content}\n`;
   }
 
   if (type === 'interpolate') {
@@ -156,17 +156,16 @@ function escapeRegExp(string: string) {
 }
 
 /**
- * XML-escapes an input value after converting it to a string
- * @param value - Input value (usually a string)
+ * XML-escapes an input value after converting it to a string.
+ * Defaulted to empty string to not render "null" or "undefined" in the template.
+ * @param value - Input value
  * @returns XML-escaped string
  */
 function XMLEscape(input: unknown): string {
-  const newStr = String(input);
-  if (/[&<>"']/.test(newStr)) {
-    return newStr.replace(/[&<>"']/g, replaceChar);
-  }
+  const defaultedToEmptyString = input ?? '';
+  const newStr = String(defaultedToEmptyString);
 
-  return newStr;
+  return newStr.replace(/[&<>"']/g, replaceChar);
 }
 
 export {

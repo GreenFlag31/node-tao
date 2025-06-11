@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
   const data = {
     name: 'aaaqq',
   };
-  const result = tao.render('simple');
+  const result = tao.render('page', data);
   res.status(200).send(result);
 });
 

@@ -1,5 +1,7 @@
 import { TEMPLATE_VARNAME } from './const';
-import { Metrics } from './interfaces';
+import { handleInfiniteInclusionError } from './error-utils';
+import { ErrorType, Metrics } from './interfaces';
+import { Store } from './store';
 
 function includeRenderTime(metrics: boolean, isAChild: boolean) {
   if (!metrics || isAChild) return '';
@@ -13,15 +15,22 @@ function includeChildren(metrics: boolean, isAChild: boolean) {
   return `const ɵɵchildren = this.childrenStore.get(this.parentTemplate);`;
 }
 
-function resetParentTemplateAtEndOfExecution(parentTemplate: string, filename: string) {
+function resetParentTemplateAtEndOfExecution(
+  parentTemplate: string,
+  filename: string,
+  childrenStore: Store<string[]>
+) {
   if (isAChildTemplate(parentTemplate, filename)) return parentTemplate;
 
+  childrenStore.remove(parentTemplate);
   return '';
 }
 
 function getUniqueChildren(parentStored: string[], children: string[]) {
   const allChildren = parentStored.concat(children);
-  return Array.from(new Set(allChildren));
+
+  handleInfiniteInclusionError(allChildren);
+  return Array.from(allChildren);
 }
 
 function isAParentTemplate(parentTemplate: string, filename: string) {
