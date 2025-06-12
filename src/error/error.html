@@ -174,9 +174,10 @@
           </div>
 
           <div class="error-message">
-            <% const lineNumberMessage = lineNumber ? ` at line ${lineNumber}` : "" %>
-            <p class="general"><%= `${message}${lineNumberMessage} in ${filename}` %></p>
-            <% if (!lineNumber) { %>
+            <% const lineNumberMessage = lineNumber ? ` at line ${lineNumber} in ${filename}` : ""
+            %>
+            <p class="general"><%= `${message}${lineNumberMessage}` %></p>
+            <% if (isNaN(lineNumber)) { %>
             <p class="line">⚠️ Error line number cannot be retrieved</p>
             <% } %>
           </div>
@@ -201,6 +202,7 @@
         <div class="tips">
           <p>Tips: resize the box by dragging its sides.</p>
         </div>
+
         <div class="github">
           <a href="https://github.com/GreenFlag31/node-tao" target="_blank">
             <button>

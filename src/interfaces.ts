@@ -54,7 +54,7 @@ export type TemplateFunction = (data: object, helpers: Helpers, ɵɵstart: numbe
 export interface Debug {
   fileContent: string;
   message: string;
-  lineNumber: number;
+  lineNumber: number | null;
 }
 
 export interface ErrorData {

@@ -27,21 +27,6 @@ function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFil
 function checkAccessPermission(templatePaths: string[], templateFile: string) {
   const files = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
 
-  // if (files.length === 0) {
-  //   console.error(
-  //     new Error(`Non existing template or template out of scope (reading "${templateFile}")`)
-  //   );
-  //   return undefined;
-  // }
-  // if (files.length > 1) {
-  //   console.error(
-  //     new Error(
-  //       `Non unique template given "${templateFile}". Possible:\n- ${files.join('\n- ')}`
-  //     )
-  //   );
-  //   return undefined;
-  // }
-
   return files;
 }
 

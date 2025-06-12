@@ -26,10 +26,10 @@ function resetParentTemplateAtEndOfExecution(
   return '';
 }
 
-function getUniqueChildren(parentStored: string[], children: string[]) {
-  const allChildren = parentStored.concat(children);
+function getUniqueChildren(previousChildren: string[], children: string[], filename: string) {
+  const allChildren = previousChildren.concat(children);
 
-  handleInfiniteInclusionError(allChildren);
+  handleInfiniteInclusionError(allChildren, filename);
   return Array.from(allChildren);
 }
 

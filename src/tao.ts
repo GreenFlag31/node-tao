@@ -43,12 +43,7 @@ import {
   ErrorData,
 } from './interfaces';
 import { Store } from './store';
-import {
-  findOriginalLineNumberWithMessage,
-  handleNonUniqueFile,
-  handleParseError,
-  isAParseError,
-} from './error-utils';
+import { findOriginalLineNumberWithMessage, handleNonUniqueFile } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import {
@@ -71,7 +66,7 @@ export class Tao {
   private debug: Debug = {
     fileContent: '',
     message: '',
-    lineNumber: NaN,
+    lineNumber: null,
   };
   private parentTemplate = '';
   private childrenStore = new Store<string[]>();
@@ -161,8 +156,8 @@ export class Tao {
     const children = getChildrenTemplatesName(content, this.config.extension);
     const containsInclude = children.length > 0;
 
-    const parentStored = this.childrenStore.get(this.parentTemplate) || [];
-    const uniqueChildren = getUniqueChildren(parentStored, children);
+    const previousChildren = this.childrenStore.get(this.parentTemplate) || [];
+    const uniqueChildren = getUniqueChildren(previousChildren, children, filename);
     this.childrenStore.set(this.parentTemplate, uniqueChildren);
 
     const isAChild = isAChildTemplate(this.parentTemplate, filename);
@@ -410,11 +405,9 @@ export class Tao {
    */
   private handleErrorMessage(error: ErrorData) {
     error.type = error.type ?? 'Execution Error';
-    const parsingError = isAParseError(error);
-    if (parsingError) return handleParseError(error);
-
     const { filename } = error;
     const { fileContent, lineNumber, message } = this.debug;
+
     const errorData = {
       filename,
       fileContent: [fileContent],
@@ -473,6 +466,7 @@ export class Tao {
 
   /**
    * Sync version is preferable, since HTML file are normally small (<300 Ko)
+   * and should be cached
    */
   private readFile(path: string) {
     try {
