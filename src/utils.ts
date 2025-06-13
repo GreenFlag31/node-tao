@@ -106,7 +106,7 @@ function getPathWithExtension(filePath: string, extension: string) {
 }
 
 /**
- * If path resolution is set to "flexible", do not return the full path.
+ * If path resolution is set to "flexible", do not return the full path, it is usefull for providing only unique end path.
  */
 function getFullPath(views: string, pathWithExtension: string, fileResolution: FileResolution) {
   if (fileResolution === 'flexible') return pathWithExtension;

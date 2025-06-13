@@ -63,7 +63,7 @@ app.get('/', (req, res) => {
 });
 ```
 
-It is also possible to register helpers on `globalThis` without provide them to the template engine, but it can lead to name collision.
+It is also possible to register helpers on `globalThis` without providing them to the template engine, but it can lead to name collision.
 
 ## Include
 
@@ -71,6 +71,7 @@ In your template, you might want to include other templates:
 
 ```html
 <h1>Hi <%= name %>!</h1>
+<!-- including "article" template and providing data -->
 <%~ include('article', { phone: 'Tao T9' }) %>
 ```
 

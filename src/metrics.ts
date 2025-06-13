@@ -1,6 +1,6 @@
 import { TEMPLATE_VARNAME } from './const';
 import { handleInfiniteInclusionError } from './error-utils';
-import { ErrorType, Metrics } from './interfaces';
+import { Metrics } from './interfaces';
 import { Store } from './store';
 
 function includeRenderTime(metrics: boolean, isAChild: boolean) {

@@ -10,7 +10,6 @@ import {
 } from './checks';
 import { checkAccessPermission, fileIsUnique, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
-import { log } from 'node:console';
 import {
   buildPrefixRegex,
   compileBody,
@@ -26,7 +25,6 @@ import {
 import { TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
 import {
   AstObject,
-  TagType,
   TemplateFunction,
   TemplateData,
   Data,

@@ -51,4 +51,20 @@ describe('error render', () => {
 
     expect(result).not.toContain(`<h1>Hi ${data.name} %></h1>`);
   });
+
+  it('should handle Parse error', () => {
+    const tao = new Tao({ views: templateViews, debug: true });
+    const result = tao.render('simple-parse-error');
+
+    expect(result).toContain(
+      `Unclosed string &quot; &#39; &quot; at line 1 in simple-parse-error.html`
+    );
+  });
+
+  it('should handle infinite inclusion error', () => {
+    const tao = new Tao({ views: templateViews, debug: true });
+    const result = tao.render('infinite-inclusion-1');
+
+    expect(result).toContain(`Possible infinite inclusion detected`);
+  });
 });
