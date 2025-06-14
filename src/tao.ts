@@ -21,8 +21,15 @@ import {
   escapeRegExp,
   getFileName,
   valueIsAFunction,
+  normalizeFilesPath,
+  injectDataAndHelpersInCachedTemplate,
 } from './utils';
-import { TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
+import {
+  PLACEHOLDER_VAR_END,
+  PLACEHOLDER_VAR_START,
+  TEMPLATE_VARNAME,
+  TP_VARNAME_WITH_PREFIX,
+} from './const';
 import {
   AstObject,
   TemplateFunction,
@@ -41,7 +48,13 @@ import {
   ErrorData,
 } from './interfaces';
 import { Store } from './store';
-import { findOriginalLineNumberWithMessage, handleNonUniqueFile } from './error-utils';
+import {
+  errorIsASyntaxError,
+  findOriginalLineNumberWithMessage,
+  handleInfiniteInclusionError,
+  handleInfiniteInclusionInCachedTemplate,
+  handleNonUniqueFile,
+} from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import {
@@ -50,7 +63,7 @@ import {
   includeMetrics,
   includeRenderTime,
   isAChildTemplate,
-  resetParentTemplateAtEndOfExecution,
+  resetChildAndParentAtEndOfExecution,
 } from './metrics';
 import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
@@ -68,12 +81,10 @@ export class Tao {
   };
   private parentTemplate = '';
   private childrenStore = new Store<string[]>();
+  // usefull for error in children
   private errorHTML: undefined | string = undefined;
+  public compiledStore = new Store<string>();
 
-  /**
-   * Stores cached templates.
-   */
-  public templatesStore = new Store<TemplateFunction>();
   /**
    * Stores dynamically defined templates.
    */
@@ -129,9 +140,9 @@ export class Tao {
   }
 
   private getMetrics(filename: string, isAChild: boolean) {
-    const { metrics, cache } = this.config;
+    const { development, cache } = this.config;
     const metricsData: Metrics = {
-      metrics,
+      development,
       files: this.mappedFiles,
       filename,
       cacheEnabled: cache,
@@ -147,7 +158,7 @@ export class Tao {
     variablesOfHelpers: string,
     filename: string
   ) {
-    const { metrics } = this.config;
+    const { development } = this.config;
     this.compiledAST = this.parse(content);
     const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
 
@@ -163,16 +174,19 @@ export class Tao {
 
     const result = `
     ${includeFn(containsInclude)}
+
+    ${PLACEHOLDER_VAR_START}
     ${variablesOfData}
     ${variablesOfHelpers}
     ${globalHelpers}
+    ${PLACEHOLDER_VAR_END}
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction};
     
     ${compileBody(this.compiledAST, this.config)}
 
-    ${includeChildren(metrics, isAChild)}
-    ${includeRenderTime(metrics, isAChild)}
+    ${includeChildren(development, isAChild)}
+    ${includeRenderTime(development, isAChild)}
     ${TP_VARNAME_WITH_PREFIX}.res += ${includeMetrics(metricsData)}
 
 
@@ -252,26 +266,30 @@ export class Tao {
 
   /**
    * Render a template with data and helpers.
-   * @param template The path of your template to render. Always use "/" as separator.
-   * @param data Provide data to inject.
-   * @param helpers Provide helper functions to inject.
+   * @param template The path of your template to render.
+   * @param data The datas to inject.
+   * @param helpers The helpers functions to inject.
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
     if (!templateIsOfTypeString(template)) return '';
+    template = normalizeFilesPath(template);
+
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let filename = template;
     this.errorHTML = undefined;
 
     const pathWithExtension = getPathWithExtension(template, extension);
-    if (!this.parentTemplate) this.parentTemplate = getFileName(pathWithExtension);
+    if (!this.parentTemplate) {
+      this.parentTemplate = getFileName(pathWithExtension);
+    }
 
     if (isTemplateDynamicallyDefined(template)) {
-      const cachedTemplate = this.handleCachedLoadedTemplate(template);
+      const cachedTemplate = this.compiledStore.get(template);
 
       if (cachedTemplate) {
         const executeData: ExecuteFunction = {
-          templateFn: cachedTemplate,
+          compiledContent: cachedTemplate,
           data,
           helpers,
           ɵɵstart,
@@ -281,7 +299,6 @@ export class Tao {
         return this.executeFunction(executeData);
       }
 
-      // preloaded with 'loadTemplate'
       const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
         console.error(
@@ -315,11 +332,10 @@ export class Tao {
       return this.manageError(error, filename);
     }
 
-    const file = files[0];
-    const cachedTemplate = this.templatesStore.get(file);
+    const cachedTemplate = this.compiledStore.get(filename);
     if (cachedTemplate) {
       const executeData: ExecuteFunction = {
-        templateFn: cachedTemplate,
+        compiledContent: cachedTemplate,
         data,
         helpers,
         ɵɵstart,
@@ -329,6 +345,7 @@ export class Tao {
       return this.executeFunction(executeData);
     }
 
+    const file = files[0];
     const compileData: CompileExecuteData = {
       filename,
       fullPath: file,
@@ -346,16 +363,24 @@ export class Tao {
     try {
       const variablesOfData = initVariablesAndHelpers(data);
       const variablesOfHelpers = initVariablesAndHelpers(helpers);
-      const templateFn = this.readFileAndCompile(
+
+      const compiledContent = this.readFileAndGetCompiledContent(
         fullPath,
         variablesOfData,
         variablesOfHelpers,
         filename
       );
+      const templateFn = new Function(
+        TEMPLATE_VARNAME,
+        'hp',
+        'ɵɵstart',
+        compiledContent
+      ) as TemplateFunction;
+
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
 
-      this.parentTemplate = resetParentTemplateAtEndOfExecution(
+      this.parentTemplate = resetChildAndParentAtEndOfExecution(
         this.parentTemplate,
         filename,
         this.childrenStore
@@ -363,15 +388,20 @@ export class Tao {
 
       return this.errorHTML ?? html;
     } catch (error: any) {
+      if (errorIsASyntaxError(error.message)) {
+        const type: ErrorType = 'Compilation Error';
+        error.type = type;
+      }
       return this.manageError(error, filename);
     }
   }
 
   /**
-   * By default, no error should be returned
+   * By default, no error should be returned.
+   * Removes the cached compiled template.
    */
   private manageError(error: any, filename: string) {
-    this.templatesStore.remove(filename);
+    this.compiledStore.remove(filename);
     error.filename = filename;
     const errorData = this.handleErrorMessage(error);
     console.error(new Error(`${errorData.message} in ${filename}`));
@@ -381,12 +411,21 @@ export class Tao {
   }
 
   private executeFunction(executeData: ExecuteFunction) {
-    const { data, filename, helpers, ɵɵstart, templateFn } = executeData;
+    const { data, filename, helpers, ɵɵstart, compiledContent } = executeData;
 
     try {
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
-      this.parentTemplate = resetParentTemplateAtEndOfExecution(
+      const templateWithVariables = injectDataAndHelpersInCachedTemplate(
+        data,
+        helpers,
+        this.helpersStore,
+        compiledContent
+      );
+
+      handleInfiniteInclusionInCachedTemplate(this.parentTemplate, this.childrenStore, filename);
+      const html = templateWithVariables.call(this, immutableData, helpers, ɵɵstart);
+
+      this.parentTemplate = resetChildAndParentAtEndOfExecution(
         this.parentTemplate,
         filename,
         this.childrenStore
@@ -429,37 +468,30 @@ export class Tao {
   }
 
   private initErrorTemplate(errorData: Data) {
-    if (!this.config.debug) return '';
+    if (!this.config.development) return '';
 
     const templatesPath = path.join(__dirname, 'error');
     const tao = new Tao({ views: templatesPath });
     return tao.render('error', errorData);
   }
 
-  private readFileAndCompile(
+  private readFileAndGetCompiledContent(
     resolvedPath: string,
     variablesOfData: string,
     variablesOfHelpers: string,
     filename: string
-  ) {
+  ): string {
     this.debug.fileContent = '';
     const content = this.readFile(resolvedPath);
     this.debug.fileContent = content;
-    const templateFn = this.createCompilationFunction(
-      content,
-      variablesOfData,
-      variablesOfHelpers,
-      filename
-    );
+    const compiledContent = this.compile(content, variablesOfData, variablesOfHelpers, filename);
 
-    if (this.config.cache && !this.config.metrics) {
-      // Do not store when metrics is enabled
-      // This will skew the results of children names
-      // since template is not reevaluated
-      this.templatesStore.set(filename, templateFn);
+    // cache only enabled in non development mode
+    if (this.config.cache && !this.config.development) {
+      this.compiledStore.set(filename, compiledContent);
     }
 
-    return templateFn;
+    return compiledContent;
   }
 
   /**
@@ -477,26 +509,21 @@ export class Tao {
     }
   }
 
-  private handleCachedLoadedTemplate(template: string) {
-    const cachedTemplate = this.templatesStore.get(template);
-    if (!cachedTemplate) return undefined;
-
-    return cachedTemplate;
-  }
-
   private handleLoadedTemplate(templateData: LoadedTemplateData) {
     const { data, filename, helpers, ɵɵstart, template, templateLoaded } = templateData;
 
     try {
-      const templateFn = this.compileLoadedTemplate(templateLoaded, data, helpers, filename);
-
-      if (this.config.cache) {
-        this.templatesStore.set(template, templateFn);
-      }
+      const templateFn = this.compileLoadedTemplate(
+        templateLoaded,
+        data,
+        helpers,
+        filename,
+        template
+      );
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
-      this.parentTemplate = resetParentTemplateAtEndOfExecution(
+      this.parentTemplate = resetChildAndParentAtEndOfExecution(
         this.parentTemplate,
         filename,
         this.childrenStore
@@ -504,19 +531,35 @@ export class Tao {
 
       return this.errorHTML ?? html;
     } catch (error: any) {
+      if (errorIsASyntaxError(error.message)) {
+        const type: ErrorType = 'Compilation Error';
+        error.type = type;
+      }
       return this.manageError(error, filename);
     }
   }
 
-  private compileLoadedTemplate(content: string, data: Data, helpers: Helpers, filename: string) {
+  private compileLoadedTemplate(
+    content: string,
+    data: Data,
+    helpers: Helpers,
+    filename: string,
+    template: string
+  ) {
     const variablesOfData = initVariablesAndHelpers(data);
     const variablesOfHelpers = initVariablesAndHelpers(helpers);
-    const templateFn = this.createCompilationFunction(
-      content,
-      variablesOfData,
-      variablesOfHelpers,
-      filename
-    );
+    const compiledContent = this.compile(content, variablesOfData, variablesOfHelpers, filename);
+
+    if (this.config.cache) {
+      this.compiledStore.set(template, compiledContent);
+    }
+
+    const templateFn = new Function(
+      TEMPLATE_VARNAME,
+      'hp',
+      'ɵɵstart',
+      compiledContent
+    ) as TemplateFunction;
 
     return templateFn;
   }

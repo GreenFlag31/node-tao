@@ -14,8 +14,7 @@ const defaultConfig: DefinitiveOptions = {
   autoEscape: true,
   escapeFunction: XMLEscape,
   cache: true,
-  debug: false,
-  metrics: false,
+  development: false,
   fileResolution: 'flexible',
   parse: {
     exec: DEFAULT_EXEC,

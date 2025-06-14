@@ -2,7 +2,7 @@ import { Tao } from '../src';
 import path from 'path';
 
 const templateViews = path.join(process.cwd(), 'test/templates');
-const tao = new Tao({ views: templateViews, metrics: false });
+const tao = new Tao({ views: templateViews, development: false });
 
 describe('complex render tests', () => {
   it('should render a more complex template with more data', () => {

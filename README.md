@@ -201,7 +201,7 @@ It started as a fork of `eta`, but became a dedicated library because the change
     <b>Choices</b>
   </summary>
 
-- **No async support**: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and can be considered as an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity. Logic in templates is difficult to test, debug, and hard to read. In short: if you have async data, fetch it beforehand and render it synchronously.
+- **No async support**: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and can be considered as an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity and possible errors. Async logic in template make it impossible de optimize through a `Promise.all` or any parallelism, hard to test and debug. In short: if you have async data, fetch it beforehand and render it synchronously.
 
 - **No `layouts`**: Layouts are essentially includes and add unnecessary complexity to the rendering process.
 

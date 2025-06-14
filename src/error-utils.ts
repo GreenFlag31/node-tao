@@ -1,11 +1,7 @@
 import { TP_VARNAME_WITH_PREFIX } from './const';
 import { AstObject, Debug, ErrorData, ErrorType } from './interfaces';
+import { Store } from './store';
 
-/**
- * Two possible exceptions:
- * There is no content => an error occurred while reading the file
- * There is no line number => there is a syntax error
- */
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
   compiledAST: AstObject[],
@@ -156,6 +152,12 @@ function getTemplateParsedLineNumber(expression: string, index: number) {
 function handleInfiniteInclusionError(allChildren: string[], filename: string) {
   if (new Set(allChildren).size === allChildren.length) return;
 
+  const error = infiniteInclusionError(filename, allChildren);
+
+  throw error;
+}
+
+function infiniteInclusionError(filename: string, allChildren: string[]) {
   const error: any = new Error();
   error.message = `Possible infinite inclusion detected in ${filename} with children: ${allChildren.join(
     ' - '
@@ -164,6 +166,19 @@ function handleInfiniteInclusionError(allChildren: string[], filename: string) {
   error.fileContent = '';
   const errorType: ErrorType = 'Inclusion Error';
   error.type = errorType;
+
+  return error;
+}
+
+function handleInfiniteInclusionInCachedTemplate(
+  parentTemplate: string,
+  childrenStore: Store<string[]>,
+  filename: string
+) {
+  const children = childrenStore.get(parentTemplate) || [];
+  if (!children.includes(filename)) return;
+
+  const error = infiniteInclusionError(filename, children);
 
   throw error;
 }
@@ -185,6 +200,14 @@ function handleNonUniqueFile(files: string[], filename: string) {
   return error;
 }
 
+/**
+ * Syntax error occurs when there is a compilation error.
+ */
+function errorIsASyntaxError(message: string) {
+  const syntaxError = new RegExp(/SyntaxError/);
+  return syntaxError.test(message);
+}
+
 export {
   getErrorMessageAndSource,
   getLineFromAnonymousFunction,
@@ -195,4 +218,6 @@ export {
   getParsingErrorData,
   handleInfiniteInclusionError,
   handleNonUniqueFile,
+  errorIsASyntaxError,
+  handleInfiniteInclusionInCachedTemplate,
 };

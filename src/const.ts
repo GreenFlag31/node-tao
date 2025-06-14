@@ -13,6 +13,9 @@ const TP_VARNAME_WITH_PREFIX = `__${TEMPLATE_VARNAME}`;
 const HELPER_WITH_PREFIX = `__${HELPER_VARNAME}`;
 const DYNAMICAL_TEMPLATE_PREFIX = '@';
 
+const PLACEHOLDER_VAR_START = '"<injected-var-start>"';
+const PLACEHOLDER_VAR_END = '"<injected-var-end>"';
+
 const templateLitReg = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
 const singleQuoteReg = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
 const doubleQuoteReg = /"(?:\\[\s\w"'\\`]|[^\n\r"\\])*?"/g;
@@ -44,4 +47,6 @@ export {
   DEFAULT_EXEC,
   DEFAULT_INTERPOLATE,
   DEFAULT_RAW,
+  PLACEHOLDER_VAR_START,
+  PLACEHOLDER_VAR_END,
 };

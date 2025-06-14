@@ -57,7 +57,7 @@ describe('eta constructor', () => {
 
   it('Metrics should be available when enabled', () => {
     const templateViews = path.join(process.cwd(), 'test/templates');
-    const tao = new Tao({ views: templateViews, metrics: true });
+    const tao = new Tao({ views: templateViews, development: true });
 
     const result = tao.render('simple', { name: 'test' });
 

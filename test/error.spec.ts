@@ -18,34 +18,34 @@ describe('error render', () => {
     expect(result).toContain('');
   });
 
-  it('should return nothing when there is an error inside a template with debug set to false (execution error)', () => {
+  it('should return nothing when there is an error inside a template with development set to false (execution error)', () => {
     const result = tao.render('execution-error');
 
     expect(result).toContain('');
   });
 
-  it('should return nothing when there is an error inside a template with debug set to false (compilation error)', () => {
+  it('should return nothing when there is an error inside a template with development set to false (compilation error)', () => {
     const result = tao.render('compilation-error');
 
     expect(result).toContain('');
   });
 
-  it('should return the error template provided in the library when debug is set to true (compilation error)', () => {
-    const tao = new Tao({ views: templateViews, debug: true });
+  it('should return the error template provided in the library when development is set to true (compilation error)', () => {
+    const tao = new Tao({ views: templateViews, development: true });
     const result = tao.render('compilation-error');
 
     expect(result).toContain('<h2>An error occurred</h2>');
   });
 
-  it('should not return any content of the parent template if there is a bug in a child template with debug set to false', () => {
+  it('should not return any content of the parent template if there is a bug in a child template with development set to false', () => {
     const tao = new Tao({ views: templateViews });
     const result = tao.render('include-error-child', { name: 'parent data' });
 
     expect(result).toContain('');
   });
 
-  it('should not return any content of the parent template if there is a bug in a child template with debug set to true', () => {
-    const tao = new Tao({ views: templateViews, debug: true });
+  it('should not return any content of the parent template if there is a bug in a child template with development set to true', () => {
+    const tao = new Tao({ views: templateViews, development: true });
     const data = { name: 'parent data' };
     const result = tao.render('include-error-child', data);
 
@@ -53,7 +53,7 @@ describe('error render', () => {
   });
 
   it('should handle Parse error', () => {
-    const tao = new Tao({ views: templateViews, debug: true });
+    const tao = new Tao({ views: templateViews, development: true });
     const result = tao.render('simple-parse-error');
 
     expect(result).toContain(
@@ -62,7 +62,7 @@ describe('error render', () => {
   });
 
   it('should handle infinite inclusion error', () => {
-    const tao = new Tao({ views: templateViews, debug: true });
+    const tao = new Tao({ views: templateViews, development: true });
     const result = tao.render('infinite-inclusion-1');
 
     expect(result).toContain(`Possible infinite inclusion detected`);

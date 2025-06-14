@@ -1,15 +1,27 @@
 import { isTemplateDynamicallyDefined } from './checks';
-import { escMap, HELPER_VARNAME, TEMPLATE_VARNAME, TP_VARNAME_WITH_PREFIX } from './const';
+import {
+  escMap,
+  HELPER_VARNAME,
+  PLACEHOLDER_VAR_END,
+  PLACEHOLDER_VAR_START,
+  TEMPLATE_VARNAME,
+  TP_VARNAME_WITH_PREFIX,
+} from './const';
 import {
   AstObject,
   Data,
   DefinitiveOptions,
   FileResolution,
+  HelperFunction,
   Helpers,
   Parse,
   TagType,
+  TemplateFunction,
 } from './interfaces';
 import path from 'node:path';
+import { Store } from './store';
+import { log } from 'node:console';
+import { extractContentFromAnonymousFunction } from './error-utils';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -105,6 +117,28 @@ function getPathWithExtension(filePath: string, extension: string) {
   return `${filePath}.${extension}`;
 }
 
+function injectDataAndHelpersInCachedTemplate(
+  data: Data,
+  helpers: Helpers,
+  helpersStore: Store<HelperFunction>,
+  executableContent: string
+) {
+  let newVariables = initVariablesAndHelpers(data);
+  newVariables += initVariablesAndHelpers(helpers);
+  newVariables += initVariablesAndHelpers(helpersStore.getAll());
+
+  const startIndex = executableContent.indexOf(PLACEHOLDER_VAR_START);
+  const endIndex = executableContent.indexOf(PLACEHOLDER_VAR_END);
+
+  const oldVariables = executableContent.substring(
+    startIndex,
+    endIndex + PLACEHOLDER_VAR_END.length
+  );
+  const contentReplaced = executableContent.replace(oldVariables, newVariables);
+
+  return new Function(TEMPLATE_VARNAME, 'hp', 'ɵɵstart', contentReplaced) as TemplateFunction;
+}
+
 /**
  * If path resolution is set to "flexible", do not return the full path, it is usefull for providing only unique end path.
  */
@@ -183,4 +217,5 @@ export {
   normalizeFilesPath,
   getFileName,
   valueIsAFunction,
+  injectDataAndHelpersInCachedTemplate,
 };

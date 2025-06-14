@@ -3,19 +3,19 @@ import { handleInfiniteInclusionError } from './error-utils';
 import { Metrics } from './interfaces';
 import { Store } from './store';
 
-function includeRenderTime(metrics: boolean, isAChild: boolean) {
-  if (!metrics || isAChild) return '';
+function includeRenderTime(development: boolean, isAChild: boolean) {
+  if (!development || isAChild) return '';
 
   return `const ɵɵrenderDuration = (performance.now() - ɵɵstart).toFixed(2);`;
 }
 
-function includeChildren(metrics: boolean, isAChild: boolean) {
-  if (!metrics || isAChild) return '';
+function includeChildren(development: boolean, isAChild: boolean) {
+  if (!development || isAChild) return '';
 
-  return `const ɵɵchildren = this.childrenStore.get(this.parentTemplate);`;
+  return `const ɵɵchildren = this.childrenStore.get(this.parentTemplate) || [];`;
 }
 
-function resetParentTemplateAtEndOfExecution(
+function resetChildAndParentAtEndOfExecution(
   parentTemplate: string,
   filename: string,
   childrenStore: Store<string[]>
@@ -45,8 +45,8 @@ function isAChildTemplate(parentTemplate: string, filename: string) {
  * Display metrics in the browser. Do not include logs if disabled or if the current template is included in another template. Make data available in the console.
  */
 function includeMetrics(metricsData: Metrics) {
-  const { cacheEnabled, filename: filename, files, metrics, isAChild } = metricsData;
-  if (!metrics || isAChild) return '""';
+  const { cacheEnabled, filename: filename, files, development, isAChild } = metricsData;
+  if (!development || isAChild) return '""';
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);
 
@@ -110,7 +110,7 @@ export {
   includeRenderTime,
   isAChildTemplate,
   isAParentTemplate,
-  resetParentTemplateAtEndOfExecution,
+  resetChildAndParentAtEndOfExecution,
   includeChildren,
   getUniqueChildren,
 };

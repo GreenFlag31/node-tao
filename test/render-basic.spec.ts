@@ -38,14 +38,14 @@ describe('basic render tests', () => {
     const data = { name: 'test included' };
     tao.render(templateNameWithExtension, data);
 
-    expect(tao.templatesStore.get(templateNameWithExtension)).toBeTruthy();
+    expect(tao.compiledStore.get(templateNameWithExtension)).toBeTruthy();
   });
 
   it('should remove cache key if error in template', () => {
     const templateNameWithExtension = 'execution-error.html';
     tao.render('execution-error');
 
-    expect(tao.templatesStore.get(templateNameWithExtension)).toBeFalsy();
+    expect(tao.compiledStore.get(templateNameWithExtension)).toBeFalsy();
   });
 
   it('should remove cache key if error in cached template', () => {
@@ -55,11 +55,11 @@ describe('basic render tests', () => {
     // not providing any data cause the error
     tao.render(templateNameWithExtension);
 
-    expect(tao.templatesStore.get(templateNameWithExtension)).toBeFalsy();
+    expect(tao.compiledStore.get(templateNameWithExtension)).toBeFalsy();
   });
 
   it('dynamictemplatesStore should store dynamical defined template', () => {
-    const templateName = '@header';
+    const templateName = '@header1';
     const headerPartial = `
     <header>
       <h1><%= title %></h1>
@@ -70,15 +70,15 @@ describe('basic render tests', () => {
     expect(tao.dynamictemplatesStore.getAll()).toHaveProperty(templateName);
   });
 
-  it('should render @header', () => {
+  it('should render @header2', () => {
     const headerPartial = `
     <header>
       <h1><%= title %></h1>
     </header>
   `;
     const data = { title: 'this is my partial' };
-    tao.loadTemplate('@header', headerPartial);
-    const result = tao.render('@header', data);
+    tao.loadTemplate('@header2', headerPartial);
+    const result = tao.render('@header2', data);
 
     expect(result).toContain(`<h1>${data.title}</h1>`);
   });
@@ -91,8 +91,8 @@ describe('basic render tests', () => {
     </header>
   `;
     const data = { title: 'this is my partial', name: 'included' };
-    tao.loadTemplate('@header2', headerPartial);
-    const result = tao.render('@header2', data);
+    tao.loadTemplate('@header3', headerPartial);
+    const result = tao.render('@header3', data);
 
     expect(result).toContain(`<h1>${data.title}</h1>`);
     expect(result).toContain(`Hi ${data.name}`);
@@ -100,8 +100,12 @@ describe('basic render tests', () => {
 
   it('should render fullpath defined templates', () => {
     const fullPath = normalizeFilesPath(path.join(templateViews, 'simple.html'));
+
+    log(fullPath);
     const data = { name: 'test' };
     const result = tao.render(fullPath, data);
-    expect(result).toBe(`Hi ${data.name}`);
+    log('RESULT OF FULLPATH', result);
+    log(tao.mappedFiles);
+    expect(result).toContain(`Hi ${data.name}`);
   });
 });

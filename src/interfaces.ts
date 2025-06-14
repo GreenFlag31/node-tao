@@ -44,6 +44,8 @@ export type AstObject = string | TemplateData;
 
 export type TagType = 'raw' | 'execute' | 'interpolate';
 
+export type FileResolution = 'strict' | 'flexible';
+
 export interface TemplateData {
   type: TagType;
   content: string;
@@ -76,7 +78,7 @@ export type Helpers = {
 export type HelperFunction = (...args: any[]) => any;
 
 export interface Metrics {
-  metrics: boolean;
+  development: boolean;
   files: string[];
   cacheEnabled: boolean;
   isAChild: boolean;
@@ -101,7 +103,7 @@ export interface CompileExecuteData {
 }
 
 export interface ExecuteFunction {
-  templateFn: TemplateFunction;
+  compiledContent: string;
   data: Data;
   helpers: Helpers;
   ɵɵstart: number;
@@ -124,11 +126,13 @@ export interface options {
   cache?: boolean;
 
   /**
-   * Display an error box in your browser with debug information.
+   * Display a visual error representation and activate metrics. Provided data is available in the console. Add infinite inclusion protection.
+   *
+   * Overrides cache to false.
    *
    * @default false
    */
-  debug?: boolean;
+  development?: boolean;
 
   /**
    * Function to XML-sanitize interpolations.
@@ -160,13 +164,6 @@ export interface options {
   extension?: string;
 
   /**
-   * Display console logs inside your browser with several informations.
-   *
-   * @default false
-   */
-  metrics?: boolean;
-
-  /**
    * File mode resolution. Strict means you have to define the template path relative to the view provided, flexible allow you to define only the end of your path (make sure it is unique).
    *
    * @default "flexible"
@@ -174,17 +171,14 @@ export interface options {
   fileResolution?: FileResolution;
 }
 
-export type FileResolution = 'strict' | 'flexible';
-
 export interface DefinitiveOptions {
   autoEscape: boolean;
   cache: boolean;
-  debug: boolean;
+  development: boolean;
   escapeFunction: (str: unknown) => string;
   parse: Required<Parse>;
   tags: Required<Tags>;
   views: string;
   extension: string;
-  metrics: boolean;
   fileResolution: FileResolution;
 }
