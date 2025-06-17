@@ -51,7 +51,12 @@ export interface TemplateData {
   content: string;
 }
 
-export type TemplateFunction = (data: object, helpers: Helpers, ɵɵstart: number) => string;
+export type TemplateFunction = (
+  data: object,
+  helpers: Helpers,
+  ɵɵstart: number,
+  ɵɵcacheHit: boolean
+) => string;
 
 export interface Debug {
   fileContent: string;
@@ -86,12 +91,12 @@ export interface Metrics {
 }
 
 export interface LoadedTemplateData {
-  template: string;
   templateLoaded: string;
   data: Data;
   helpers: Helpers;
   ɵɵstart: number;
   filename: string;
+  ɵɵcacheHit: boolean;
 }
 
 export interface CompileExecuteData {
@@ -100,6 +105,7 @@ export interface CompileExecuteData {
   helpers: Helpers;
   ɵɵstart: number;
   filename: string;
+  ɵɵcacheHit: boolean;
 }
 
 export interface ExecuteFunction {
@@ -108,6 +114,7 @@ export interface ExecuteFunction {
   helpers: Helpers;
   ɵɵstart: number;
   filename: string;
+  ɵɵcacheHit: boolean;
 }
 
 export interface options {

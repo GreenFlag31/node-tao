@@ -20,8 +20,6 @@ import {
 } from './interfaces';
 import path from 'node:path';
 import { Store } from './store';
-import { log } from 'node:console';
-import { extractContentFromAnonymousFunction } from './error-utils';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -36,26 +34,50 @@ function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
 
 function getValueType(value: any) {
   if (valueIsAFunction(value)) return value;
+  if (valueIsASymbol(value)) return value;
+  if (valueIsABigint(value)) return value;
+  if (valueIsNaN(value)) return value;
+  if (valueIsInfinity(value)) return value;
 
   return JSON.stringify(value);
+}
+
+function valueIsNaN(value: any) {
+  if (typeof value !== 'number') return false;
+
+  return isNaN(value);
+}
+
+function valueIsInfinity(value: any) {
+  if (typeof value !== 'number') return false;
+  const plusOrMinus = Math.abs(value);
+
+  return plusOrMinus === Infinity;
+}
+
+function valueIsASymbol(value: Function) {
+  return typeof value === 'symbol';
+}
+
+function valueIsABigint(value: Function) {
+  return typeof value === 'bigint';
 }
 
 function valueIsAFunction(value: Function) {
   return typeof value === 'function';
 }
 
-function includeFn(isInclude: boolean) {
-  if (!isInclude) return '';
-
+function includeFn() {
   return `const include = (templatePath, data, helpers) => {
     data = {...${TEMPLATE_VARNAME}, ...data};
     helpers = {...${HELPER_VARNAME}, ...helpers};
     return this.render(templatePath, data, helpers);
   }`;
 }
-
+/**
+ * Example: I'm using \ today → I\'m using \\ today
+ */
 function escapeJSLiteral(value: string) {
-  // example: I'm using \ today → I\'m using \\ today
   return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 }
 
@@ -117,15 +139,21 @@ function getPathWithExtension(filePath: string, extension: string) {
   return `${filePath}.${extension}`;
 }
 
-function injectDataAndHelpersInCachedTemplate(
+/**
+ * Inject data and helpers at every template execution.
+ * Always keep placeholders.
+ */
+function injectDataAndHelpersInTemplate(
   data: Data,
   helpers: Helpers,
   helpersStore: Store<HelperFunction>,
   executableContent: string
 ) {
-  let newVariables = initVariablesAndHelpers(data);
+  let newVariables = PLACEHOLDER_VAR_START;
+  newVariables += initVariablesAndHelpers(data);
   newVariables += initVariablesAndHelpers(helpers);
   newVariables += initVariablesAndHelpers(helpersStore.getAll());
+  newVariables += PLACEHOLDER_VAR_END;
 
   const startIndex = executableContent.indexOf(PLACEHOLDER_VAR_START);
   const endIndex = executableContent.indexOf(PLACEHOLDER_VAR_END);
@@ -136,11 +164,21 @@ function injectDataAndHelpersInCachedTemplate(
   );
   const contentReplaced = executableContent.replace(oldVariables, newVariables);
 
-  return new Function(TEMPLATE_VARNAME, 'hp', 'ɵɵstart', contentReplaced) as TemplateFunction;
+  return contentReplaced;
+}
+
+function compileToFunction(contentReplaced: string) {
+  return new Function(
+    TEMPLATE_VARNAME,
+    'hp',
+    'ɵɵstart',
+    'ɵɵcacheHit',
+    contentReplaced
+  ) as TemplateFunction;
 }
 
 /**
- * If path resolution is set to "flexible", do not return the full path, it is usefull for providing only unique end path.
+ * If path resolution is set to "flexible", do not return the full path, it's usefull for providing only unique end path.
  */
 function getFullPath(views: string, pathWithExtension: string, fileResolution: FileResolution) {
   if (fileResolution === 'flexible') return pathWithExtension;
@@ -217,5 +255,6 @@ export {
   normalizeFilesPath,
   getFileName,
   valueIsAFunction,
-  injectDataAndHelpersInCachedTemplate,
+  injectDataAndHelpersInTemplate,
+  compileToFunction,
 };

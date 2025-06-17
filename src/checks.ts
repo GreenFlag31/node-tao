@@ -27,11 +27,6 @@ function getChildrenTemplatesName(content: string, extension: string) {
   });
 }
 
-function templateContainsInclude(content: string) {
-  const includeToken = new RegExp(/include\(.*\)/);
-  return includeToken.test(content);
-}
-
 function checkOpeningAndClosingTag(tags: Tags) {
   const { opening, closing } = tags;
   if (opening === closing) {
@@ -68,7 +63,6 @@ export {
   isTemplateDynamicallyDefined,
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
-  templateContainsInclude,
   getChildrenTemplatesName,
   templateIsOfTypeString,
   givenExtensionShouldNotStartWithADot,

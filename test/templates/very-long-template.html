@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= siteTitle %> - <%= pageTitle %></title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .header {
+        background: #333;
+        color: white;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .nav {
+        background: #444;
+        padding: 10px;
+      }
+      .nav a {
+        color: white;
+        text-decoration: none;
+        margin-right: 20px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+      .badge {
+        background: #007bff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+      .alert {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      .table th,
+      .table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      .table th {
+        background-color: #f2f2f2;
+      }
+      .progress {
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 20px;
+      }
+      .progress-bar {
+        background: #007bff;
+        height: 100%;
+        transition: width 0.3s;
+      }
+      .footer {
+        background: #333;
+        color: white;
+        padding: 20px;
+        margin-top: 40px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header Section -->
+    <header class="header">
+      <h1><%= siteTitle %></h1>
+      <p>Welcome back, <%= user.firstName %> <%= user.lastName %>!</p>
+      <% if (user.isAdmin) { %>
+      <p><span class="badge">ADMIN</span> You have administrative privileges</p>
+      <% } %>
+      <p>
+        Last login: <%= formatDate(user.lastLogin) %> | Current time: <%= new
+        Date().toLocaleString() %>
+      </p>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <% const navItems = ['Dashboard', 'Products', 'Orders', 'Customers', 'Reports', 'Settings'];
+      %> <% navItems.forEach(item => { %>
+      <a href="/<%= item.toLowerCase() %>"><%= item %></a>
+      <% }) %> <% if (user.notifications && user.notifications.length > 0) { %>
+      <a href="/notifications">Notifications (<%= user.notifications.length %>)</a>
+      <% } %>
+    </nav>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>&copy; <%= now.getFullYear() %> <%= siteTitle %>. All rights reserved.</p>
+      <p>Generated on <%= now.toLocaleString() %> | Template engine: Tao</p>
+      <p>Page rendered with <%= Math.floor(Math.random() * 1000) + 500 %> template expressions</p>
+
+      <!-- Random Footer Content -->
+      <% const footerQuotes = [ `Speed is not about doing things fast, it's about doing the right
+      things.`, `Simplicity is the ultimate sophistication.`, `Performance is not an accident, it's
+      a choice.`, `Good code is like a good joke: it needs no explanation.` ]; %>
+      <p><em>"<%= footerQuotes[Math.floor(Math.random() * footerQuotes.length)] %>"</em></p>
+
+      <!-- System Stats -->
+      <small>
+        Uptime: <%= Math.floor(Math.random() * 100) %> days | Requests served: <%=
+        (Math.floor(Math.random() * 1000000) + 500000).toLocaleString() %> | Templates cached: <%=
+        Math.floor(Math.random() * 50) + 10 %>
+      </small>
+    </footer>
+  </body>
+</html>

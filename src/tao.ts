@@ -4,7 +4,6 @@ import {
   checkPrefixTemplateTags,
   getPathWithExtension,
   isTemplateDynamicallyDefined,
-  getChildrenTemplatesName,
   templateIsOfTypeString,
   givenExtensionShouldNotStartWithADot,
 } from './checks';
@@ -16,23 +15,17 @@ import {
   escapeJSLiteral,
   getCurrentPrefixType,
   includeFn,
-  initVariablesAndHelpers,
   getFullPath,
   escapeRegExp,
   getFileName,
   valueIsAFunction,
   normalizeFilesPath,
-  injectDataAndHelpersInCachedTemplate,
+  injectDataAndHelpersInTemplate,
+  compileToFunction,
 } from './utils';
-import {
-  PLACEHOLDER_VAR_END,
-  PLACEHOLDER_VAR_START,
-  TEMPLATE_VARNAME,
-  TP_VARNAME_WITH_PREFIX,
-} from './const';
+import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
   AstObject,
-  TemplateFunction,
   TemplateData,
   Data,
   Debug,
@@ -48,22 +41,17 @@ import {
   ErrorData,
 } from './interfaces';
 import { Store } from './store';
-import {
-  errorIsASyntaxError,
-  findOriginalLineNumberWithMessage,
-  handleInfiniteInclusionError,
-  handleInfiniteInclusionInCachedTemplate,
-  handleNonUniqueFile,
-} from './error-utils';
+import { findOriginalLineNumberWithMessage, handleNonUniqueFile } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import {
-  getUniqueChildren,
   includeChildren,
   includeMetrics,
   includeRenderTime,
   isAChildTemplate,
   resetChildAndParentAtEndOfExecution,
+  updateChildrenStore,
+  updateChildrenStoreInCachedTemplate,
 } from './metrics';
 import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
@@ -72,7 +60,6 @@ export class Tao {
   private config: DefinitiveOptions;
   private templatePaths: string[] = [];
   private prefixBuild = '';
-  private compiledAST: AstObject[] = [];
   private compiledAnonymousFnContent = '';
   private debug: Debug = {
     fileContent: '',
@@ -119,26 +106,6 @@ export class Tao {
     return this.templatePaths.slice();
   }
 
-  private createCompilationFunction(
-    content: string,
-    variablesOfData: string,
-    variablesOfHelpers: string,
-    filename: string
-  ) {
-    try {
-      return new Function(
-        TEMPLATE_VARNAME,
-        'hp',
-        'ɵɵstart',
-        this.compile(content, variablesOfData, variablesOfHelpers, filename)
-      ) as TemplateFunction;
-    } catch (error: any) {
-      const type: ErrorType = 'Compilation Error';
-      error.type = error.type ?? type;
-      throw error;
-    }
-  }
-
   private getMetrics(filename: string, isAChild: boolean) {
     const { development, cache } = this.config;
     const metricsData: Metrics = {
@@ -152,38 +119,24 @@ export class Tao {
     return metricsData;
   }
 
-  private compile(
-    content: string,
-    variablesOfData: string,
-    variablesOfHelpers: string,
-    filename: string
-  ) {
+  private compile(content: string, filename: string) {
     const { development } = this.config;
-    this.compiledAST = this.parse(content);
-    const globalHelpers = initVariablesAndHelpers(this.helpersStore.getAll());
+    const compiledAST = this.parse(content);
 
-    const children = getChildrenTemplatesName(content, this.config.extension);
-    const containsInclude = children.length > 0;
-
-    const previousChildren = this.childrenStore.get(this.parentTemplate) || [];
-    const uniqueChildren = getUniqueChildren(previousChildren, children, filename);
-    this.childrenStore.set(this.parentTemplate, uniqueChildren);
+    updateChildrenStore(this.childrenStore, content, filename, this.parentTemplate, this.config);
 
     const isAChild = isAChildTemplate(this.parentTemplate, filename);
     const metricsData = this.getMetrics(filename, isAChild);
 
     const result = `
-    ${includeFn(containsInclude)}
+    ${includeFn()}
 
     ${PLACEHOLDER_VAR_START}
-    ${variablesOfData}
-    ${variablesOfHelpers}
-    ${globalHelpers}
     ${PLACEHOLDER_VAR_END}
 
     const ${TP_VARNAME_WITH_PREFIX} = {res: "", e: this.config.escapeFunction};
     
-    ${compileBody(this.compiledAST, this.config)}
+    ${compileBody(compiledAST, this.config)}
 
     ${includeChildren(development, isAChild)}
     ${includeRenderTime(development, isAChild)}
@@ -193,7 +146,6 @@ export class Tao {
     return ${TP_VARNAME_WITH_PREFIX}.res;
   `;
 
-    this.compiledAnonymousFnContent = result;
     return result;
   }
 
@@ -229,7 +181,8 @@ export class Tao {
         const [originalClose, closePrefix] = closeResult;
 
         if (closePrefix) {
-          const content = expression.slice(lastIndex, closeResult.index);
+          let content = expression.slice(lastIndex, closeResult.index);
+          // content = content.replace(/\r\n|\n|\r/g, '\\n');
 
           lastIndex = parseCloseReg.lastIndex;
           parseOpenReg.lastIndex = lastIndex;
@@ -276,6 +229,7 @@ export class Tao {
 
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
+    let ɵɵcacheHit = false;
     let filename = template;
     this.errorHTML = undefined;
 
@@ -288,12 +242,14 @@ export class Tao {
       const cachedTemplate = this.compiledStore.get(template);
 
       if (cachedTemplate) {
+        ɵɵcacheHit = true;
         const executeData: ExecuteFunction = {
           compiledContent: cachedTemplate,
           data,
           helpers,
           ɵɵstart,
           filename,
+          ɵɵcacheHit,
         };
 
         return this.executeFunction(executeData);
@@ -308,12 +264,12 @@ export class Tao {
       }
 
       const templateData: LoadedTemplateData = {
-        template,
         templateLoaded,
         data,
         helpers,
         ɵɵstart,
         filename,
+        ɵɵcacheHit,
       };
       return this.handleLoadedTemplate(templateData);
     }
@@ -334,12 +290,14 @@ export class Tao {
 
     const cachedTemplate = this.compiledStore.get(filename);
     if (cachedTemplate) {
+      ɵɵcacheHit = true;
       const executeData: ExecuteFunction = {
         compiledContent: cachedTemplate,
         data,
         helpers,
         ɵɵstart,
         filename,
+        ɵɵcacheHit,
       };
 
       return this.executeFunction(executeData);
@@ -352,33 +310,20 @@ export class Tao {
       data,
       helpers,
       ɵɵstart,
+      ɵɵcacheHit,
     };
 
     return this.compileAndExecute(compileData);
   }
 
   private compileAndExecute(compileData: CompileExecuteData) {
-    const { data, filename, fullPath, helpers, ɵɵstart } = compileData;
+    const { data, filename, fullPath, helpers, ɵɵstart, ɵɵcacheHit } = compileData;
 
     try {
-      const variablesOfData = initVariablesAndHelpers(data);
-      const variablesOfHelpers = initVariablesAndHelpers(helpers);
-
-      const compiledContent = this.readFileAndGetCompiledContent(
-        fullPath,
-        variablesOfData,
-        variablesOfHelpers,
-        filename
-      );
-      const templateFn = new Function(
-        TEMPLATE_VARNAME,
-        'hp',
-        'ɵɵstart',
-        compiledContent
-      ) as TemplateFunction;
+      const templateFn = this.readFileAndGetCompiledFn(fullPath, data, helpers, filename);
 
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
       this.parentTemplate = resetChildAndParentAtEndOfExecution(
         this.parentTemplate,
@@ -388,10 +333,6 @@ export class Tao {
 
       return this.errorHTML ?? html;
     } catch (error: any) {
-      if (errorIsASyntaxError(error.message)) {
-        const type: ErrorType = 'Compilation Error';
-        error.type = type;
-      }
       return this.manageError(error, filename);
     }
   }
@@ -411,19 +352,26 @@ export class Tao {
   }
 
   private executeFunction(executeData: ExecuteFunction) {
-    const { data, filename, helpers, ɵɵstart, compiledContent } = executeData;
+    const { data, filename, helpers, ɵɵstart, compiledContent, ɵɵcacheHit } = executeData;
 
     try {
       const immutableData = structuredClone(data);
-      const templateWithVariables = injectDataAndHelpersInCachedTemplate(
+      const contentReplaced = injectDataAndHelpersInTemplate(
         data,
         helpers,
         this.helpersStore,
         compiledContent
       );
+      this.compiledAnonymousFnContent = contentReplaced;
 
-      handleInfiniteInclusionInCachedTemplate(this.parentTemplate, this.childrenStore, filename);
-      const html = templateWithVariables.call(this, immutableData, helpers, ɵɵstart);
+      updateChildrenStoreInCachedTemplate(
+        this.childrenStore,
+        filename,
+        this.parentTemplate,
+        this.config.development
+      );
+      const templateFn = compileToFunction(contentReplaced);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
       this.parentTemplate = resetChildAndParentAtEndOfExecution(
         this.parentTemplate,
@@ -456,7 +404,6 @@ export class Tao {
     const [finalMessage, fileContentPerLine, correctedLineNumber] =
       findOriginalLineNumberWithMessage(
         error,
-        this.compiledAST,
         this.compiledAnonymousFnContent,
         this.debug.fileContent
       );
@@ -475,28 +422,49 @@ export class Tao {
     return tao.render('error', errorData);
   }
 
-  private readFileAndGetCompiledContent(
-    resolvedPath: string,
-    variablesOfData: string,
-    variablesOfHelpers: string,
-    filename: string
-  ): string {
-    this.debug.fileContent = '';
-    const content = this.readFile(resolvedPath);
-    this.debug.fileContent = content;
-    const compiledContent = this.compile(content, variablesOfData, variablesOfHelpers, filename);
+  private compileAndCache(content: string, filename: string) {
+    const compiledContent = this.compile(content, filename);
 
-    // cache only enabled in non development mode
-    if (this.config.cache && !this.config.development) {
+    if (this.config.cache) {
       this.compiledStore.set(filename, compiledContent);
     }
 
     return compiledContent;
   }
 
+  private readFileAndGetCompiledFn(
+    resolvedPath: string,
+    data: Data,
+    helpers: Helpers,
+    filename: string
+  ) {
+    try {
+      this.debug.fileContent = '';
+      const content = this.readFile(resolvedPath);
+      this.debug.fileContent = content;
+      const compiledContent = this.compileAndCache(content, filename);
+
+      const contentReplaced = injectDataAndHelpersInTemplate(
+        data,
+        helpers,
+        this.helpersStore,
+        compiledContent
+      );
+      this.compiledAnonymousFnContent = contentReplaced;
+
+      const templateFn = compileToFunction(contentReplaced);
+
+      return templateFn;
+    } catch (error: any) {
+      const type: ErrorType = 'Compilation Error';
+      error.type = error.type ?? type;
+      throw error;
+    }
+  }
+
   /**
    * Sync version is preferable, since HTML file are normally small (<300 Ko)
-   * and should be cached
+   * and should be cached.
    */
   private readFile(path: string) {
     try {
@@ -509,20 +477,19 @@ export class Tao {
     }
   }
 
+  /**
+   * Handle dynamically defined templates
+   */
   private handleLoadedTemplate(templateData: LoadedTemplateData) {
-    const { data, filename, helpers, ɵɵstart, template, templateLoaded } = templateData;
+    const { data, filename, helpers, ɵɵstart, templateLoaded, ɵɵcacheHit } = templateData;
 
     try {
-      const templateFn = this.compileLoadedTemplate(
-        templateLoaded,
-        data,
-        helpers,
-        filename,
-        template
-      );
+      const contentReplaced = this.compileLoadedTemplate(templateLoaded, data, helpers, filename);
+
+      const templateFn = compileToFunction(contentReplaced);
 
       const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart);
+      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
       this.parentTemplate = resetChildAndParentAtEndOfExecution(
         this.parentTemplate,
         filename,
@@ -531,37 +498,31 @@ export class Tao {
 
       return this.errorHTML ?? html;
     } catch (error: any) {
-      if (errorIsASyntaxError(error.message)) {
-        const type: ErrorType = 'Compilation Error';
-        error.type = type;
-      }
       return this.manageError(error, filename);
     }
   }
 
-  private compileLoadedTemplate(
-    content: string,
-    data: Data,
-    helpers: Helpers,
-    filename: string,
-    template: string
-  ) {
-    const variablesOfData = initVariablesAndHelpers(data);
-    const variablesOfHelpers = initVariablesAndHelpers(helpers);
-    const compiledContent = this.compile(content, variablesOfData, variablesOfHelpers, filename);
+  /**
+   * Handle dynamically defined templates
+   */
+  private compileLoadedTemplate(content: string, data: Data, helpers: Helpers, filename: string) {
+    try {
+      const compiledContent = this.compileAndCache(content, filename);
 
-    if (this.config.cache) {
-      this.compiledStore.set(template, compiledContent);
+      const contentReplaced = injectDataAndHelpersInTemplate(
+        data,
+        helpers,
+        this.helpersStore,
+        compiledContent
+      );
+      this.compiledAnonymousFnContent = contentReplaced;
+
+      return contentReplaced;
+    } catch (error: any) {
+      const type: ErrorType = 'Compilation Error';
+      error.type = error.type ?? type;
+      throw error;
     }
-
-    const templateFn = new Function(
-      TEMPLATE_VARNAME,
-      'hp',
-      'ɵɵstart',
-      compiledContent
-    ) as TemplateFunction;
-
-    return templateFn;
   }
 
   /**
@@ -593,7 +554,7 @@ export class Tao {
     }
 
     if (duplicate) {
-      console.warn(`Duplicate template name ${name} provided. Template content have been erased.`);
+      console.warn(`Duplicate template name ${name} provided. Template content has been erased.`);
     }
 
     this.dynamictemplatesStore.set(name, template);

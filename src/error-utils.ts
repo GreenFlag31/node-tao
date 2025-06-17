@@ -1,10 +1,9 @@
-import { TP_VARNAME_WITH_PREFIX } from './const';
+import { log } from 'console';
 import { AstObject, Debug, ErrorData, ErrorType } from './interfaces';
 import { Store } from './store';
 
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
-  compiledAST: AstObject[],
   compiledAnonymousFnContent: string,
   originalFileContent: string
 ): [string, string[], number | null] {
@@ -24,11 +23,9 @@ function findOriginalLineNumberWithMessage(
 
   const [message, source] = getErrorMessageAndSource(error);
   const lineFromAnonymousFn = getLineFromAnonymousFunction(source);
+
   if (error.type === 'Compilation Error') {
-    const [fileContent, _] = trimEmptySpaceAndDecrementLine(
-      originalFileContent,
-      lineFromAnonymousFn
-    );
+    const fileContent = splitByLine(originalFileContent);
     return [message, fileContent, lineFromAnonymousFn];
   }
 
@@ -36,10 +33,10 @@ function findOriginalLineNumberWithMessage(
     compiledAnonymousFnContent,
     lineFromAnonymousFn
   );
-  const lineNumber = getOriginalLineNumber(compiledContent, compiledAST);
-  const [fileContent, line] = trimEmptySpaceAndDecrementLine(originalFileContent, lineNumber);
+  const lineNumber = getOriginalLineNumber(compiledContent);
+  const fileContent = splitByLine(originalFileContent);
 
-  return [message, fileContent, line];
+  return [message, fileContent, lineNumber];
 }
 
 function getErrorMessageAndSource(error: any): [string, string] {
@@ -62,61 +59,53 @@ function extractContentFromAnonymousFunction(compiledAnonymousFnContent: string,
   const LINES_CORRECTION = 2;
 
   const lines = compiledAnonymousFnContent.split('\n');
+
   const compiledContentUntilError = lines.slice(0, line - LINES_CORRECTION);
-  const compiledContent = compiledContentUntilError.join(' ');
+  const compiledContent = compiledContentUntilError.join('\n');
 
   return compiledContent;
 }
 
-function getOriginalLineNumber(compiledJoined: string, compiledAST: AstObject[]) {
-  const result = `${TP_VARNAME_WITH_PREFIX}\\.res\\+=`;
-  const resultRegex = new RegExp(result, 'g');
-  const countBodyContent = compiledJoined.match(resultRegex) || [];
-  const extract = compiledAST.slice(0, countBodyContent.length);
-  let lineNumber = 1;
+/**
+ * Small lineCounter correction.
+ */
+function isolatedCarriageReturn(compiledAnonymousFnContent: string) {
+  const regex = /\r/g;
+  let match: RegExpExecArray | null = null;
+  let lineCount = 0;
 
-  for (const data of extract) {
-    if (typeof data === 'string') {
-      lineNumber += (data.match(/\\n/g) || []).length;
-    }
+  while ((match = regex.exec(compiledAnonymousFnContent))) {
+    lineCount++;
   }
 
-  return lineNumber;
+  return lineCount;
 }
 
-function trimEmptySpaceAndDecrementLine(
-  fileContent: string,
-  lineNumber: number
-): [string[], number] {
+function getOriginalLineNumber(compiledJoined: string) {
+  let lineCount = 1;
+  lineCount += isolatedCarriageReturn(compiledJoined);
+  lineCount += (compiledJoined.match(/\\n/g) || []).length;
+
+  return lineCount;
+}
+
+function splitByLine(fileContent: string) {
   const fileSplittedByNewLine = fileContent.split('\n');
-  const fileContentWithoutEmptySpace: string[] = [];
-  let offset = 0;
+  const lastLine = fileSplittedByNewLine.at(-1) || '';
+  const lastLineIsEmpty = !lastLine.trim();
+  if (lastLineIsEmpty) return fileSplittedByNewLine.slice(0, -1);
 
-  for (let i = 0; i < fileSplittedByNewLine.length; i++) {
-    const line = fileSplittedByNewLine[i];
-
-    if (!line.trim()) {
-      // empty line
-      if (i < lineNumber - 1) offset += 1;
-      continue;
-    }
-
-    fileContentWithoutEmptySpace.push(line);
-  }
-
-  const line = lineNumber - offset;
-  return [fileContentWithoutEmptySpace, line];
+  return fileSplittedByNewLine;
 }
 
 /**
  * Error occurred while parsing the template (unclosed string)
  */
 function handleParseError(error: any) {
-  const { fileContent, lineNumber } = error;
-  const [content, line] = trimEmptySpaceAndDecrementLine(fileContent, lineNumber);
+  const { fileContent } = error;
+  const content = splitByLine(fileContent);
 
   error.fileContent = content;
-  error.lineNumber = line;
   return error;
 }
 
@@ -170,19 +159,6 @@ function infiniteInclusionError(filename: string, allChildren: string[]) {
   return error;
 }
 
-function handleInfiniteInclusionInCachedTemplate(
-  parentTemplate: string,
-  childrenStore: Store<string[]>,
-  filename: string
-) {
-  const children = childrenStore.get(parentTemplate) || [];
-  if (!children.includes(filename)) return;
-
-  const error = infiniteInclusionError(filename, children);
-
-  throw error;
-}
-
 function handleNonUniqueFile(files: string[], filename: string) {
   let errorMessage = `Non existing template or template out of scope (reading "${filename}")`;
 
@@ -200,14 +176,6 @@ function handleNonUniqueFile(files: string[], filename: string) {
   return error;
 }
 
-/**
- * Syntax error occurs when there is a compilation error.
- */
-function errorIsASyntaxError(message: string) {
-  const syntaxError = new RegExp(/SyntaxError/);
-  return syntaxError.test(message);
-}
-
 export {
   getErrorMessageAndSource,
   getLineFromAnonymousFunction,
@@ -218,6 +186,5 @@ export {
   getParsingErrorData,
   handleInfiniteInclusionError,
   handleNonUniqueFile,
-  errorIsASyntaxError,
-  handleInfiniteInclusionInCachedTemplate,
+  infiniteInclusionError,
 };

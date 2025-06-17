@@ -101,11 +101,25 @@ describe('basic render tests', () => {
   it('should render fullpath defined templates', () => {
     const fullPath = normalizeFilesPath(path.join(templateViews, 'simple.html'));
 
-    log(fullPath);
     const data = { name: 'test' };
     const result = tao.render(fullPath, data);
-    log('RESULT OF FULLPATH', result);
-    log(tao.mappedFiles);
     expect(result).toContain(`Hi ${data.name}`);
+  });
+
+  it('should render cached dynamic templates', () => {
+    const headerPartial = `
+    <header>
+      <h1><%= title %></h1>
+    </header>
+  `;
+    const data = { title: 'this is my partial' };
+    tao.loadTemplate('@header4', headerPartial);
+    tao.render('@header4', data);
+
+    const dataErased = 'another title';
+    data.title = dataErased;
+    const result = tao.render('@header4', data);
+
+    expect(result).toContain(dataErased);
   });
 });

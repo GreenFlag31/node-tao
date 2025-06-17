@@ -67,4 +67,18 @@ describe('error render', () => {
 
     expect(result).toContain(`Possible infinite inclusion detected`);
   });
+
+  it('should handle template unclosed prefix', () => {
+    const tao = new Tao({ views: templateViews, development: true });
+    const headerPartial = `
+    <header>
+      <h1><%= title </h1>
+    </header>
+  `;
+    const data = { title: 'this is my partial' };
+    tao.loadTemplate('@header2', headerPartial);
+    const result = tao.render('@header2', data);
+
+    expect(result).toContain(`Unclosed prefix`);
+  });
 });

@@ -1,6 +1,7 @@
+import { getChildrenTemplatesName } from './checks';
 import { TEMPLATE_VARNAME } from './const';
-import { handleInfiniteInclusionError } from './error-utils';
-import { Metrics } from './interfaces';
+import { handleInfiniteInclusionError, infiniteInclusionError } from './error-utils';
+import { DefinitiveOptions, Metrics } from './interfaces';
 import { Store } from './store';
 
 function includeRenderTime(development: boolean, isAChild: boolean) {
@@ -26,11 +27,44 @@ function resetChildAndParentAtEndOfExecution(
   return '';
 }
 
-function getUniqueChildren(previousChildren: string[], children: string[], filename: string) {
+function updateChildrenStoreInCachedTemplate(
+  childrenStore: Store<string[]>,
+  filename: string,
+  parentTemplate: string,
+  development: boolean
+) {
+  if (!development) return;
+  if (isAParentTemplate(parentTemplate, filename)) return;
+
+  const previousChildren = childrenStore.get(parentTemplate) || [];
+
+  if (previousChildren.includes(filename)) {
+    const error = infiniteInclusionError(filename, previousChildren);
+    throw error;
+  }
+
+  const children = previousChildren.concat(filename);
+  childrenStore.set(parentTemplate, children);
+}
+
+function updateChildrenStore(
+  childrenStore: Store<string[]>,
+  content: string,
+  filename: string,
+  parentTemplate: string,
+  config: DefinitiveOptions
+) {
+  const { development, extension } = config;
+  if (!development) return [];
+
+  const children = getChildrenTemplatesName(content, extension);
+  const previousChildren = childrenStore.get(parentTemplate) || [];
   const allChildren = previousChildren.concat(children);
 
   handleInfiniteInclusionError(allChildren, filename);
-  return Array.from(allChildren);
+  childrenStore.set(parentTemplate, allChildren);
+
+  return children;
 }
 
 function isAParentTemplate(parentTemplate: string, filename: string) {
@@ -54,7 +88,7 @@ function includeMetrics(metricsData: Metrics) {
     filename
   )});${logChildTemplatesCount()};${logRenderTime()};console.log(${logCache(
     cacheEnabled
-  )});${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
+  )});${logCacheHit()};${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
 }
 
 function logMappedTemplates(templates: string[]) {
@@ -63,6 +97,10 @@ function logMappedTemplates(templates: string[]) {
     .join('');
 
   return `console.group("%cMAPPED TEMPLATES (${templates.length})", "color: #00ffcc; font-weight: bold");${logs}console.groupEnd();`;
+}
+
+function logCacheHit() {
+  return `console.log("%c[CACHE HIT]%c   ' + ɵɵcacheHit + '", "color:rgb(255, 0, 221);font-weight:bold",${getNormalStyle()})`;
 }
 
 function logCache(cacheEnabled: boolean) {
@@ -112,5 +150,6 @@ export {
   isAParentTemplate,
   resetChildAndParentAtEndOfExecution,
   includeChildren,
-  getUniqueChildren,
+  updateChildrenStore,
+  updateChildrenStoreInCachedTemplate,
 };
