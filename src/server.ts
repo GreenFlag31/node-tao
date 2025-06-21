@@ -6,7 +6,7 @@ const app = express();
 const PORT = 3000;
 
 const templatesPath = path.join(__dirname, 'templates');
-const tao = new Tao({ views: templatesPath, development: true });
+const tao = new Tao({ views: templatesPath, development: true, cache: true });
 
 app.get('/', (req, res) => {
   const result = tao.render('has-include', { name: 'fds' });

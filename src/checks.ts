@@ -3,8 +3,11 @@ import { Parse, Tags } from './interfaces';
 import { getPathWithExtension } from './utils';
 
 function templateIsOfTypeString(template: string) {
-  if (typeof template !== 'string') {
-    console.error(new Error('Provided template should be of type string'));
+  const templateType = typeof template;
+  if (templateType !== 'string') {
+    console.error(
+      new Error(`Provided template should be of type string (provided ${templateType})`)
+    );
     return false;
   }
 

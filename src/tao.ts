@@ -181,8 +181,7 @@ export class Tao {
         const [originalClose, closePrefix] = closeResult;
 
         if (closePrefix) {
-          let content = expression.slice(lastIndex, closeResult.index);
-          // content = content.replace(/\r\n|\n|\r/g, '\\n');
+          const content = expression.slice(lastIndex, closeResult.index);
 
           lastIndex = parseCloseReg.lastIndex;
           parseOpenReg.lastIndex = lastIndex;
@@ -438,28 +437,21 @@ export class Tao {
     helpers: Helpers,
     filename: string
   ) {
-    try {
-      this.debug.fileContent = '';
-      const content = this.readFile(resolvedPath);
-      this.debug.fileContent = content;
-      const compiledContent = this.compileAndCache(content, filename);
+    this.debug.fileContent = '';
+    const content = this.readFile(resolvedPath);
+    this.debug.fileContent = content;
+    const compiledContent = this.compileAndCache(content, filename);
 
-      const contentReplaced = injectDataAndHelpersInTemplate(
-        data,
-        helpers,
-        this.helpersStore,
-        compiledContent
-      );
-      this.compiledAnonymousFnContent = contentReplaced;
+    const contentReplaced = injectDataAndHelpersInTemplate(
+      data,
+      helpers,
+      this.helpersStore,
+      compiledContent
+    );
+    this.compiledAnonymousFnContent = contentReplaced;
+    const templateFn = compileToFunction(contentReplaced);
 
-      const templateFn = compileToFunction(contentReplaced);
-
-      return templateFn;
-    } catch (error: any) {
-      const type: ErrorType = 'Compilation Error';
-      error.type = error.type ?? type;
-      throw error;
-    }
+    return templateFn;
   }
 
   /**
@@ -506,23 +498,17 @@ export class Tao {
    * Handle dynamically defined templates
    */
   private compileLoadedTemplate(content: string, data: Data, helpers: Helpers, filename: string) {
-    try {
-      const compiledContent = this.compileAndCache(content, filename);
+    const compiledContent = this.compileAndCache(content, filename);
 
-      const contentReplaced = injectDataAndHelpersInTemplate(
-        data,
-        helpers,
-        this.helpersStore,
-        compiledContent
-      );
-      this.compiledAnonymousFnContent = contentReplaced;
+    const contentReplaced = injectDataAndHelpersInTemplate(
+      data,
+      helpers,
+      this.helpersStore,
+      compiledContent
+    );
+    this.compiledAnonymousFnContent = contentReplaced;
 
-      return contentReplaced;
-    } catch (error: any) {
-      const type: ErrorType = 'Compilation Error';
-      error.type = error.type ?? type;
-      throw error;
-    }
+    return contentReplaced;
   }
 
   /**

@@ -37,7 +37,6 @@ function updateChildrenStoreInCachedTemplate(
   if (isAParentTemplate(parentTemplate, filename)) return;
 
   const previousChildren = childrenStore.get(parentTemplate) || [];
-
   if (previousChildren.includes(filename)) {
     const error = infiniteInclusionError(filename, previousChildren);
     throw error;

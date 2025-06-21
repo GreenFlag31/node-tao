@@ -11,6 +11,7 @@ import {
   AstObject,
   Data,
   DefinitiveOptions,
+  ErrorType,
   FileResolution,
   HelperFunction,
   Helpers,
@@ -168,13 +169,19 @@ function injectDataAndHelpersInTemplate(
 }
 
 function compileToFunction(contentReplaced: string) {
-  return new Function(
-    TEMPLATE_VARNAME,
-    'hp',
-    'ɵɵstart',
-    'ɵɵcacheHit',
-    contentReplaced
-  ) as TemplateFunction;
+  try {
+    return new Function(
+      TEMPLATE_VARNAME,
+      'hp',
+      'ɵɵstart',
+      'ɵɵcacheHit',
+      contentReplaced
+    ) as TemplateFunction;
+  } catch (error: any) {
+    const type: ErrorType = 'Compilation Error';
+    error.type = type;
+    throw error;
+  }
 }
 
 /**

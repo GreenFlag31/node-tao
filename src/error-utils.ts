@@ -1,6 +1,4 @@
-import { log } from 'console';
-import { AstObject, Debug, ErrorData, ErrorType } from './interfaces';
-import { Store } from './store';
+import { Debug, ErrorData, ErrorType } from './interfaces';
 
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
