@@ -8,7 +8,7 @@ import {
 } from './const';
 
 /**
- * Configuration tag options can be partial, so definitive assignation is required.
+ * Configuration tag options can be partial, so definitive assignation is required to maintain all properties.
  */
 function assignTags(tags: Tags) {
   const { opening = DEFAULT_OPENING, closing = DEFAULT_CLOSING } = tags;
@@ -18,7 +18,7 @@ function assignTags(tags: Tags) {
 }
 
 /**
- * Configuration parse options can be partial, so definitive assignation is required.
+ * Configuration parse options can be partial, so definitive assignation is required to maintain all properties.
  */
 function assignParse(parse: Parse) {
   const { exec = DEFAULT_EXEC, interpolate = DEFAULT_INTERPOLATE, raw = DEFAULT_RAW } = parse;

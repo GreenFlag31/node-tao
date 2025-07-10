@@ -5,7 +5,7 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   templateIsOfTypeString,
-  givenExtensionShouldNotStartWithADot,
+  trimDotFromExtension,
 } from './checks';
 import { checkAccessPermission, fileIsUnique, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
@@ -55,6 +55,7 @@ import {
 } from './metrics';
 import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
+import { log } from 'node:console';
 
 export class Tao {
   private config: DefinitiveOptions;
@@ -83,6 +84,7 @@ export class Tao {
 
   constructor(customConfig: options = {}) {
     this.config = { ...defaultConfig, ...customConfig } as DefinitiveOptions;
+
     this.initializeConfig();
   }
 
@@ -90,13 +92,13 @@ export class Tao {
     const { views, extension, tags, parse } = this.config;
     this.config.tags = assignTags(tags);
     this.config.parse = assignParse(parse);
-    this.config.extension = givenExtensionShouldNotStartWithADot(extension);
+    this.config.extension = trimDotFromExtension(extension);
 
     checkOpeningAndClosingTag(this.config.tags);
     checkPrefixTemplateTags(this.config.parse);
 
-    this.prefixBuild = buildPrefixRegex(parse);
-    this.templatePaths = getFilesFromDirectory(views, extension);
+    this.prefixBuild = buildPrefixRegex(this.config.parse);
+    this.templatePaths = getFilesFromDirectory(views, this.config.extension);
   }
 
   /**
@@ -280,8 +282,8 @@ export class Tao {
 
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
     filename = getFileName(fullPath);
-
     const files = checkAccessPermission(this.templatePaths, fullPath);
+
     if (!fileIsUnique(files)) {
       const error = handleNonUniqueFile(files, filename);
       return this.manageError(error, filename);

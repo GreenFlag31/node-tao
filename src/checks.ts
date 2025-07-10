@@ -55,7 +55,7 @@ function checkPrefixTemplateTags(parse: Parse) {
   }
 }
 
-function givenExtensionShouldNotStartWithADot(extension: string) {
+function trimDotFromExtension(extension: string) {
   if (extension.startsWith('.')) return extension.slice(1);
 
   return extension;
@@ -68,5 +68,5 @@ export {
   checkPrefixTemplateTags,
   getChildrenTemplatesName,
   templateIsOfTypeString,
-  givenExtensionShouldNotStartWithADot,
+  trimDotFromExtension,
 };

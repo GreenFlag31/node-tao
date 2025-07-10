@@ -135,8 +135,6 @@ export interface options {
   /**
    * Display a visual error representation and activate metrics. Provided data is available in the console. Add infinite inclusion protection.
    *
-   * Overrides cache to false.
-   *
    * @default false
    */
   development?: boolean;

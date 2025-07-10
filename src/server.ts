@@ -9,7 +9,7 @@ const templatesPath = path.join(__dirname, 'templates');
 const tao = new Tao({ views: templatesPath, development: true, cache: true });
 
 app.get('/', (req, res) => {
-  const result = tao.render('has-include', { name: 'fds' });
+  const result = tao.render('simple');
   res.status(200).send(result);
 });
 

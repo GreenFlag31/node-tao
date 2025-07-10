@@ -1,7 +1,8 @@
 ## Node Tao
 
 <p align="center">
-  <img src="./node-tao.jpg" alt="node-tao template engine representation" width="300" height="300"/>
+<img src="https://raw.githubusercontent.com/GreenFlag31/node-tao/main/node-tao.jpg" alt="node-tao template engine representation" width="300" height="300"/>
+
 </p>
 
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.
@@ -155,17 +156,17 @@ All methods, properties are correctly typed and documented, so you should get he
 
 In case of an error, a visual representation is available in your browser, giving you all the details and the precise line of the error (if available).
 
-![Error representation](error-representation.png)
+![Error representation](https://raw.githubusercontent.com/GreenFlag31/node-tao/main/error-representation.png)
 
 NB: _set `debug: true` to activate this option. Do not activate this option in production._
 
 Metrics are also available, so you get usefull informations about the template rendering time, cache hit, mapped templates, etc. in your browser console.
 
-![Metrics](metrics.png)
+![Metrics](https://raw.githubusercontent.com/GreenFlag31/node-tao/main/metrics.png)
 
 If you want to inspect the data provided to the template, it is available directly in your browser console under the object `data`.
 
-![Data](data.png)
+![Data](https://raw.githubusercontent.com/GreenFlag31/node-tao/main/data.png)
 
 NB: _set `metrics: true` to activate this option. Do not activate this option in production._
 

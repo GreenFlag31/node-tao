@@ -1,3 +1,4 @@
+import { log } from 'node:console';
 import { Debug, ErrorData, ErrorType } from './interfaces';
 
 function findOriginalLineNumberWithMessage(
@@ -140,7 +141,6 @@ function handleInfiniteInclusionError(allChildren: string[], filename: string) {
   if (new Set(allChildren).size === allChildren.length) return;
 
   const error = infiniteInclusionError(filename, allChildren);
-
   throw error;
 }
 
