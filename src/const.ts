@@ -9,21 +9,26 @@ const DEFAULT_RAW = '~';
 const TEMPLATE_VARNAME = 'it';
 const HELPER_VARNAME = 'hp';
 
-const TP_VARNAME_WITH_PREFIX = `__${TEMPLATE_VARNAME}`;
-const HELPER_WITH_PREFIX = `__${HELPER_VARNAME}`;
+/**
+ * Internal variable signal.
+ */
+const PRIVATE_ONLY = 'ɵɵ';
+
+const TP_VARNAME_WITH_PREFIX = `${PRIVATE_ONLY}${TEMPLATE_VARNAME}`;
+const HELPER_WITH_PREFIX = `${PRIVATE_ONLY}${HELPER_VARNAME}`;
 const DYNAMICAL_TEMPLATE_PREFIX = '@';
 
 const PLACEHOLDER_VAR_START = '"<injected-var-start>";';
 const PLACEHOLDER_VAR_END = '"<injected-var-end>";';
 
-const templateLitReg = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
-const singleQuoteReg = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
-const doubleQuoteReg = /"(?:\\[\s\w"'\\`]|[^\n\r"\\])*?"/g;
+const LITERAL_REGEX = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
+const SINGLE_QUOTE_REGEX = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
+const DOUBLE_QUOTE_REGEX = /"(?:\\[\s\w"'\\`]|[^\n\r"\\])*?"/g;
 
 /**
  * A map of special HTML characters to their XML-escaped equivalents
  */
-const escMap: { [key: string]: string } = {
+const ESC_MAP: { [key: string]: string } = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
@@ -33,10 +38,10 @@ const escMap: { [key: string]: string } = {
 
 export {
   DEFAULT_EXTENSION,
-  templateLitReg,
-  singleQuoteReg,
-  doubleQuoteReg,
-  escMap,
+  LITERAL_REGEX,
+  SINGLE_QUOTE_REGEX,
+  DOUBLE_QUOTE_REGEX,
+  ESC_MAP,
   TEMPLATE_VARNAME,
   DYNAMICAL_TEMPLATE_PREFIX,
   TP_VARNAME_WITH_PREFIX,

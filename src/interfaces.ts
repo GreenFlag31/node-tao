@@ -51,6 +51,8 @@ export interface TemplateData {
   content: string;
 }
 
+export type ChildTemplateFunction = (data: object, helpers: Helpers) => string;
+
 export type TemplateFunction = (
   data: object,
   helpers: Helpers,
@@ -90,6 +92,13 @@ export interface Metrics {
   filename: string;
 }
 
+export interface LoadedChildTemplateData {
+  templateLoaded: string;
+  data: Data;
+  helpers: Helpers;
+  filename: string;
+}
+
 export interface LoadedTemplateData {
   templateLoaded: string;
   data: Data;
@@ -99,6 +108,13 @@ export interface LoadedTemplateData {
   ɵɵcacheHit: boolean;
 }
 
+export interface CompileChildExecuteData {
+  fullPath: string;
+  data: Data;
+  helpers: Helpers;
+  filename: string;
+}
+
 export interface CompileExecuteData {
   fullPath: string;
   data: Data;
@@ -106,6 +122,13 @@ export interface CompileExecuteData {
   ɵɵstart: number;
   filename: string;
   ɵɵcacheHit: boolean;
+}
+
+export interface ExecuteChildFunction {
+  compiledContent: string;
+  data: Data;
+  helpers: Helpers;
+  filename: string;
 }
 
 export interface ExecuteFunction {
@@ -186,4 +209,9 @@ export interface DefinitiveOptions {
   views: string;
   extension: string;
   fileResolution: FileResolution;
+}
+
+export interface Rendered {
+  error: boolean;
+  content: string;
 }

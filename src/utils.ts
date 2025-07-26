@@ -1,6 +1,6 @@
 import { isTemplateDynamicallyDefined } from './checks';
 import {
-  escMap,
+  ESC_MAP,
   HELPER_VARNAME,
   PLACEHOLDER_VAR_END,
   PLACEHOLDER_VAR_START,
@@ -9,6 +9,7 @@ import {
 } from './const';
 import {
   AstObject,
+  ChildTemplateFunction,
   Data,
   DefinitiveOptions,
   ErrorType,
@@ -68,13 +69,20 @@ function valueIsAFunction(value: Function) {
   return typeof value === 'function';
 }
 
+// il faudra un autre render pour les enfants que le principal
+// le renderChild renverra un objet avec error (réelle) et content
+// si error alors throw new Error(error)
+// sur error toutes les props mises
 function includeFn() {
   return `const include = (templatePath, data, helpers) => {
-    data = {...${TEMPLATE_VARNAME}, ...data};
-    helpers = {...${HELPER_VARNAME}, ...helpers};
-    return this.render(templatePath, data, helpers);
+      data = {...${TEMPLATE_VARNAME}, ...data};
+      helpers = {...${HELPER_VARNAME}, ...helpers};
+      const rendered = this.renderChild(templatePath, data, helpers);
+      if (rendered.error) throw new Error(error);
+      return rendered.content;
   }`;
 }
+
 /**
  * Example: I'm using \ today → I\'m using \\ today
  */
@@ -168,11 +176,21 @@ function injectDataAndHelpersInTemplate(
   return contentReplaced;
 }
 
+function compileChildToFunction(contentReplaced: string) {
+  try {
+    return new Function(TEMPLATE_VARNAME, HELPER_VARNAME, contentReplaced) as ChildTemplateFunction;
+  } catch (error: any) {
+    const type: ErrorType = 'Compilation Error';
+    error.type = type;
+    throw error;
+  }
+}
+
 function compileToFunction(contentReplaced: string) {
   try {
     return new Function(
       TEMPLATE_VARNAME,
-      'hp',
+      HELPER_VARNAME,
       'ɵɵstart',
       'ɵɵcacheHit',
       contentReplaced
@@ -222,7 +240,7 @@ function buildPrefixRegex(parseOptions: Parse) {
 }
 
 function replaceChar(input: string): string {
-  return escMap[input];
+  return ESC_MAP[input];
 }
 
 /**
@@ -264,4 +282,5 @@ export {
   valueIsAFunction,
   injectDataAndHelpersInTemplate,
   compileToFunction,
+  compileChildToFunction,
 };

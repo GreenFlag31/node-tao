@@ -23,7 +23,7 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "rimraf dist && tsc && cpx src/public/**/* dist/public && cpx \"src/templates/**/*\" dist/templates",
+    "build": "rimraf dist && tsc && cpx src/public/**/* dist/public && cpx \"src/templates/**/*\" dist/templates && cpx src/error/**/* dist/error",
     "startNodemon": "nodemon --ext ts,js,json,css,html --watch src --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/error/**/* dist/error && node dist/server.js\""
   },
   "devDependencies": {

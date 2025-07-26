@@ -1,4 +1,4 @@
-import { singleQuoteReg, doubleQuoteReg, templateLitReg } from './const';
+import { SINGLE_QUOTE_REGEX, DOUBLE_QUOTE_REGEX, LITERAL_REGEX } from './const';
 import { getParsingErrorData } from './error-utils';
 import { Debug, TemplateData } from './interfaces';
 
@@ -52,9 +52,9 @@ function handleSingleQuote(
   closeResultIndex: number,
   debug: Debug
 ) {
-  singleQuoteReg.lastIndex = closeResultIndex;
+  SINGLE_QUOTE_REGEX.lastIndex = closeResultIndex;
 
-  const singleQuoteMatch = singleQuoteReg.exec(expression);
+  const singleQuoteMatch = SINGLE_QUOTE_REGEX.exec(expression);
   if (!singleQuoteMatch) {
     const error = getParsingErrorData(
       expression,
@@ -66,7 +66,7 @@ function handleSingleQuote(
     throw error;
   }
 
-  return singleQuoteReg.lastIndex;
+  return SINGLE_QUOTE_REGEX.lastIndex;
 }
 
 function handleDoubleQuote(
@@ -75,8 +75,8 @@ function handleDoubleQuote(
   closeResultIndex: number,
   debug: Debug
 ) {
-  doubleQuoteReg.lastIndex = closeResultIndex;
-  const doubleQuoteMatch = doubleQuoteReg.exec(expression);
+  DOUBLE_QUOTE_REGEX.lastIndex = closeResultIndex;
+  const doubleQuoteMatch = DOUBLE_QUOTE_REGEX.exec(expression);
 
   if (!doubleQuoteMatch) {
     const error = getParsingErrorData(
@@ -89,7 +89,7 @@ function handleDoubleQuote(
     throw error;
   }
 
-  return doubleQuoteReg.lastIndex;
+  return DOUBLE_QUOTE_REGEX.lastIndex;
 }
 
 function handleLiteralQuote(
@@ -98,8 +98,8 @@ function handleLiteralQuote(
   closeResultIndex: number,
   debug: Debug
 ) {
-  templateLitReg.lastIndex = closeResultIndex;
-  const templateLitMatch = templateLitReg.exec(expression);
+  LITERAL_REGEX.lastIndex = closeResultIndex;
+  const templateLitMatch = LITERAL_REGEX.exec(expression);
 
   if (!templateLitMatch) {
     const error = getParsingErrorData(
@@ -112,7 +112,7 @@ function handleLiteralQuote(
     throw error;
   }
 
-  return templateLitReg.lastIndex;
+  return LITERAL_REGEX.lastIndex;
 }
 
 export { handleQuotes, checkForUnclosedPrefix };

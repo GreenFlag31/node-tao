@@ -1,9 +1,1 @@
-<!-- Navigation -->
-<nav class="nav">
-  <% const navItems = ['Dashboard', 'Products', 'Orders', 'Customers', 'Reports', 'Settings']; %> <%
-  navItems.forEach(item => { %>
-  <a href="/<%= item.toLowerCase() %>"><%= item %></a>
-  <% }) %> <% if (user.notifications && user.notifications.length > 0) { %>
-  <a href="/notifications">Notifications (<%= user.notifications.length %>)</a>
-  <% } %>
-</nav>
+<h1>Hello from simple</h1>

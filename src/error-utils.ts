@@ -1,5 +1,4 @@
-import { log } from 'node:console';
-import { Debug, ErrorData, ErrorType } from './interfaces';
+import { Debug, ErrorData, ErrorType, Rendered } from './interfaces';
 
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
@@ -168,6 +167,7 @@ function handleNonUniqueFile(files: string[], filename: string) {
   error.message = errorMessage;
   error.lineNumber = null;
   error.fileContent = '';
+  error.filename = filename;
   const errorType: ErrorType = 'Precompilation Error';
   error.type = errorType;
 
