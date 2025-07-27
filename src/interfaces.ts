@@ -68,10 +68,12 @@ export interface Debug {
 
 export interface ErrorData {
   filename: string;
-  fileContent: [string];
+  fileContent: string[];
   message: string;
-  lineNumber: number;
+  lineNumber: number | null;
   type: ErrorType;
+  isAChildError: boolean;
+  errorHTML: string;
 }
 
 export interface Data {
@@ -88,7 +90,6 @@ export interface Metrics {
   development: boolean;
   files: string[];
   cacheEnabled: boolean;
-  isAChild: boolean;
   filename: string;
 }
 
@@ -211,7 +212,7 @@ export interface DefinitiveOptions {
   fileResolution: FileResolution;
 }
 
-export interface Rendered {
-  error: boolean;
+export interface ChildError {
+  error: any;
   content: string;
 }

@@ -9,9 +9,11 @@ import {
 } from './const';
 import {
   AstObject,
+  ChildError,
   ChildTemplateFunction,
   Data,
   DefinitiveOptions,
+  ErrorData,
   ErrorType,
   FileResolution,
   HelperFunction,
@@ -78,9 +80,13 @@ function includeFn() {
       data = {...${TEMPLATE_VARNAME}, ...data};
       helpers = {...${HELPER_VARNAME}, ...helpers};
       const rendered = this.renderChild(templatePath, data, helpers);
-      if (rendered.error) throw new Error(error);
-      return rendered.content;
+      if (rendered.isAChildError) throw rendered;
+      return rendered;
   }`;
+}
+
+function isAChildError(error: any): error is ErrorData {
+  return error.isAChildError;
 }
 
 /**
@@ -283,4 +289,5 @@ export {
   injectDataAndHelpersInTemplate,
   compileToFunction,
   compileChildToFunction,
+  isAChildError,
 };

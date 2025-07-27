@@ -1,4 +1,4 @@
-import { Debug, ErrorData, ErrorType, Rendered } from './interfaces';
+import { Debug, ErrorData, ErrorType } from './interfaces';
 
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
@@ -163,12 +163,12 @@ function handleNonUniqueFile(files: string[], filename: string) {
     errorMessage = `Non unique template given "${filename}". Possible:\n- ${files.join('\n- ')}`;
   }
 
+  const errorType: ErrorType = 'Precompilation Error';
   const error: any = new Error();
   error.message = errorMessage;
   error.lineNumber = null;
   error.fileContent = '';
   error.filename = filename;
-  const errorType: ErrorType = 'Precompilation Error';
   error.type = errorType;
 
   return error;

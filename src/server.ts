@@ -9,7 +9,7 @@ const templatesPath = path.join(__dirname, 'templates');
 const tao = new Tao({ views: templatesPath, development: true, cache: true });
 
 app.get('/', (req, res) => {
-  const result = tao.render('partial');
+  const result = tao.render('C1');
   res.status(200).send(result);
 });
 

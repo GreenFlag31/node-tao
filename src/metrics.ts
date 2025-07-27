@@ -4,27 +4,16 @@ import { handleInfiniteInclusionError, infiniteInclusionError } from './error-ut
 import { DefinitiveOptions, Metrics } from './interfaces';
 import { Store } from './store';
 
-function includeRenderTime(development: boolean, isAChild: boolean) {
-  if (!development || isAChild) return '';
+function includeRenderTime(development: boolean) {
+  if (!development) return '';
 
   return `const ɵɵrenderDuration = (performance.now() - ɵɵstart).toFixed(2);`;
 }
 
-function includeChildren(development: boolean, isAChild: boolean) {
-  if (!development || isAChild) return '';
+function includeChildren(development: boolean) {
+  if (!development) return '';
 
   return `const ɵɵchildren = this.childrenStore.get(this.parentTemplate) || [];`;
-}
-
-function resetChildAndParentAtEndOfExecution(
-  parentTemplate: string,
-  filename: string,
-  childrenStore: Store<string[]>
-) {
-  if (isAChildTemplate(parentTemplate, filename)) return parentTemplate;
-
-  childrenStore.remove(parentTemplate);
-  return '';
 }
 
 function updateChildrenStoreInCachedTemplate(
@@ -34,7 +23,6 @@ function updateChildrenStoreInCachedTemplate(
   development: boolean
 ) {
   if (!development) return;
-  if (isAParentTemplate(parentTemplate, filename)) return;
 
   const previousChildren = childrenStore.get(parentTemplate) || [];
   if (previousChildren.includes(filename)) {
@@ -66,20 +54,12 @@ function updateChildrenStore(
   return children;
 }
 
-function isAParentTemplate(parentTemplate: string, filename: string) {
-  return parentTemplate === filename;
-}
-
-function isAChildTemplate(parentTemplate: string, filename: string) {
-  return !isAParentTemplate(parentTemplate, filename);
-}
-
 /**
  * Display metrics in the browser. Do not include logs if disabled or if the current template is included in another template. Make data available in the console.
  */
 function includeMetrics(metricsData: Metrics) {
-  const { cacheEnabled, filename: filename, files, development, isAChild } = metricsData;
-  if (!development || isAChild) return '""';
+  const { cacheEnabled, filename: filename, files, development } = metricsData;
+  if (!development) return '""';
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);
 
@@ -92,7 +72,9 @@ function includeMetrics(metricsData: Metrics) {
 
 function logMappedTemplates(templates: string[]) {
   const logs = templates
-    .map((tpl, i) => `console.log("%c#${i + 1} %c${tpl}", "color: #888", "color: #87cefa");`)
+    .map(
+      (template, i) => `console.log("%c#${i + 1} %c${template}", "color: #888", "color: #87cefa");`
+    )
     .join('');
 
   return `console.group("%cMAPPED TEMPLATES (${templates.length})", "color: #00ffcc; font-weight: bold");${logs}console.groupEnd();`;
@@ -145,9 +127,6 @@ export {
   getNormalStyle,
   includeMetrics,
   includeRenderTime,
-  isAChildTemplate,
-  isAParentTemplate,
-  resetChildAndParentAtEndOfExecution,
   includeChildren,
   updateChildrenStore,
   updateChildrenStoreInCachedTemplate,
