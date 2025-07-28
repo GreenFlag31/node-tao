@@ -132,38 +132,27 @@ function getTemplateParsedLineNumber(expression: string, index: number) {
   return line;
 }
 
-/**
- * Detect infinite inclusion error.
- * FileContent is left empty.
- */
-function handleInfiniteInclusionError(allChildren: string[], filename: string) {
-  if (new Set(allChildren).size === allChildren.length) return;
-
-  const error = infiniteInclusionError(filename, allChildren);
-  throw error;
-}
-
-function infiniteInclusionError(filename: string, allChildren: string[]) {
+function infiniteInclusionError(filename: string, children: string[]) {
   const error: any = new Error();
-  error.message = `Possible infinite inclusion detected in ${filename} with children: ${allChildren.join(
+  const errorType: ErrorType = 'Inclusion Error';
+  error.message = `Possible infinite inclusion detected in ${filename} with children: ${children.join(
     ' - '
   )}`;
   error.lineNumber = null;
   error.fileContent = '';
-  const errorType: ErrorType = 'Inclusion Error';
   error.type = errorType;
 
   return error;
 }
 
 function handleNonUniqueFile(files: string[], filename: string) {
+  const errorType: ErrorType = 'Precompilation Error';
   let errorMessage = `Non existing template or template out of scope (reading "${filename}")`;
 
   if (files.length > 1) {
     errorMessage = `Non unique template given "${filename}". Possible:\n- ${files.join('\n- ')}`;
   }
 
-  const errorType: ErrorType = 'Precompilation Error';
   const error: any = new Error();
   error.message = errorMessage;
   error.lineNumber = null;
@@ -182,7 +171,6 @@ export {
   findOriginalLineNumberWithMessage,
   handleParseError,
   getParsingErrorData,
-  handleInfiniteInclusionError,
   handleNonUniqueFile,
   infiniteInclusionError,
 };

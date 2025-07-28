@@ -49,13 +49,7 @@ import { Store } from './store';
 import { findOriginalLineNumberWithMessage, handleNonUniqueFile } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import {
-  includeChildren,
-  includeMetrics,
-  includeRenderTime,
-  updateChildrenStore,
-  updateChildrenStoreInCachedTemplate,
-} from './metrics';
+import { includeChildren, includeMetrics, includeRenderTime, updateChildrenStore } from './metrics';
 import { assignParse, assignTags } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
@@ -84,7 +78,9 @@ export class Tao {
     message: '',
     lineNumber: null,
   };
+  // Metrics - DX
   private parentTemplate = '';
+  // Metrics - DX
   private childrenStore = new Store<string[]>();
 
   constructor(customConfig: options = {}) {
@@ -128,7 +124,7 @@ export class Tao {
   private compileChild(content: string, filename: string) {
     const compiledAST = this.parse(content);
 
-    // TODO: ajouter les enfants au parent
+    updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
 
     const result = `
     ${includeFn()}
@@ -152,7 +148,6 @@ export class Tao {
 
     this.childrenStore.set(this.parentTemplate, []);
     const metricsData = this.getMetrics(filename);
-    // updateChildrenStore(this.childrenStore, content, filename, this.parentTemplate, this.config);
 
     const result = `
     ${includeFn()}
@@ -250,17 +245,16 @@ export class Tao {
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
     if (!templateIsOfTypeString(template)) return '';
-    template = normalizeFilesPath(template);
 
+    template = normalizeFilesPath(template);
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let ɵɵcacheHit = false;
     let filename = template;
 
     const pathWithExtension = getPathWithExtension(template, extension);
-    if (!this.parentTemplate) {
-      this.parentTemplate = getFileName(pathWithExtension);
-    }
+    this.parentTemplate = getFileName(pathWithExtension);
+    this.childrenStore.remove(this.parentTemplate);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -341,13 +335,19 @@ export class Tao {
     return this.compileAndExecute(compileData);
   }
 
-  renderChild(template: string, data: Data = {}, helpers: Helpers = {}): string | ErrorData | null {
+  /**
+   * Render a child component. Called in the parent template.
+   */
+  private renderChild(
+    template: string,
+    data: Data = {},
+    helpers: Helpers = {}
+  ): string | ErrorData | null {
     if (!templateIsOfTypeString(template)) return null;
-    template = normalizeFilesPath(template);
 
+    template = normalizeFilesPath(template);
     const { views, extension, fileResolution } = this.config;
     let filename = template;
-
     const pathWithExtension = getPathWithExtension(template, extension);
 
     if (isTemplateDynamicallyDefined(template)) {
@@ -421,6 +421,12 @@ export class Tao {
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers);
+      updateChildrenStore(
+        this.childrenStore,
+        filename,
+        this.parentTemplate,
+        this.config.development
+      );
 
       return html;
     } catch (error: any) {
@@ -439,10 +445,10 @@ export class Tao {
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
       this.childrenStore.remove(this.parentTemplate);
-      this.parentTemplate = '';
 
       return html;
     } catch (error: any) {
+      // An error occurred in a child component - return it
       if (isAChildError(error)) return error.errorHTML;
       const { errorHTML } = this.manageError(error, filename);
       return errorHTML;
@@ -450,11 +456,10 @@ export class Tao {
   }
 
   /**
-   * By default, no error should be returned.
-   * Removes the cached compiled template.
+   * Removes the cached compiled template. => pourquoi ?
    */
-  private manageError(error: any, filename: string) {
-    this.compiledStore.remove(filename);
+  private manageError(error: any, filename: string): ErrorData {
+    // this.compiledStore.remove(filename);
     error.filename = filename;
     const errorData = this.handleErrorMessage(error);
     console.error(new Error(`Error in ${filename}: ${errorData.message}`));
@@ -477,7 +482,7 @@ export class Tao {
       );
       this.compiledAnonymousFnContent = contentReplaced;
 
-      updateChildrenStoreInCachedTemplate(
+      updateChildrenStore(
         this.childrenStore,
         filename,
         this.parentTemplate,
@@ -496,7 +501,7 @@ export class Tao {
   private handleChildError(error: any, filename: string) {
     // Error in a nested child — bubble up to the parent
     if (isAChildError(error)) throw error;
-    // Error occurred in this component - handle it
+    // Error occurred in this child component - handle it
     const errorData = this.manageError(error, filename);
     errorData.isAChildError = true;
 
@@ -516,17 +521,10 @@ export class Tao {
       );
       this.compiledAnonymousFnContent = contentReplaced;
 
-      updateChildrenStoreInCachedTemplate(
-        this.childrenStore,
-        filename,
-        this.parentTemplate,
-        this.config.development
-      );
       const templateFn = compileToFunction(contentReplaced);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
       this.childrenStore.remove(this.parentTemplate);
-      this.parentTemplate = '';
 
       return html;
     } catch (error: any) {
@@ -659,8 +657,8 @@ export class Tao {
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+
       this.childrenStore.remove(this.parentTemplate);
-      this.parentTemplate = '';
 
       return html;
     } catch (error: any) {
