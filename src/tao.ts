@@ -62,7 +62,6 @@ export class Tao {
    * Stores already compiled templates.
    */
   public compiledStore = new Store<string>();
-
   /**
    * Stores dynamically defined templates.
    */
@@ -121,10 +120,8 @@ export class Tao {
     return metricsData;
   }
 
-  private compileChild(content: string, filename: string) {
+  private compileChild(content: string) {
     const compiledAST = this.parse(content);
-
-    updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
 
     const result = `
     ${includeFn()}
@@ -349,6 +346,7 @@ export class Tao {
     const { views, extension, fileResolution } = this.config;
     let filename = template;
     const pathWithExtension = getPathWithExtension(template, extension);
+    updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -421,12 +419,6 @@ export class Tao {
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers);
-      updateChildrenStore(
-        this.childrenStore,
-        filename,
-        this.parentTemplate,
-        this.config.development
-      );
 
       return html;
     } catch (error: any) {
@@ -443,8 +435,6 @@ export class Tao {
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
-
-      this.childrenStore.remove(this.parentTemplate);
 
       return html;
     } catch (error: any) {
@@ -482,12 +472,6 @@ export class Tao {
       );
       this.compiledAnonymousFnContent = contentReplaced;
 
-      updateChildrenStore(
-        this.childrenStore,
-        filename,
-        this.parentTemplate,
-        this.config.development
-      );
       const templateFn = compileChildToFunction(contentReplaced);
       const html = templateFn.call(this, immutableData, helpers);
 
@@ -524,10 +508,10 @@ export class Tao {
       const templateFn = compileToFunction(contentReplaced);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
-      this.childrenStore.remove(this.parentTemplate);
-
       return html;
     } catch (error: any) {
+      // An error occurred in a child component - return it
+      if (isAChildError(error)) return error.errorHTML;
       const { errorHTML } = this.manageError(error, filename);
       return errorHTML;
     }
@@ -564,7 +548,7 @@ export class Tao {
   }
 
   private compileChildAndCache(content: string, filename: string) {
-    const compiledContent = this.compileChild(content, filename);
+    const compiledContent = this.compileChild(content);
 
     if (this.config.cache) {
       this.compiledStore.set(filename, compiledContent);
@@ -658,10 +642,10 @@ export class Tao {
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
-      this.childrenStore.remove(this.parentTemplate);
-
       return html;
     } catch (error: any) {
+      // An error occurred in a child component - return it
+      if (isAChildError(error)) return error.errorHTML;
       const { errorHTML } = this.manageError(error, filename);
       return errorHTML;
     }

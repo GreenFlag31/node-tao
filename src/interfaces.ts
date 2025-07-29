@@ -150,7 +150,7 @@ export interface options {
   autoEscape?: boolean;
 
   /**
-   * Enable template cache.
+   * Enable template lazy cache.
    *
    * @default true
    */
