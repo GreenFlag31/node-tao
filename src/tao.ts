@@ -30,7 +30,6 @@ import {
   AstObject,
   TemplateData,
   Data,
-  Debug,
   Helpers,
   HelperFunction,
   Metrics,
@@ -44,13 +43,14 @@ import {
   ExecuteChildFunction,
   LoadedChildTemplateData,
   CompileChildExecuteData,
+  DebugData,
 } from './interfaces';
 import { Store } from './store';
 import { findOriginalLineNumberWithMessage, handleNonUniqueFile } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { includeChildren, includeMetrics, includeRenderTime, updateChildrenStore } from './metrics';
-import { assignParse, assignTags } from './init';
+import { assignParse, assignTags, initDebugData } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
 export class Tao {
@@ -71,12 +71,6 @@ export class Tao {
    */
   public helpersStore = new Store<HelperFunction>();
 
-  private compiledAnonymousFnContent = '';
-  private debug: Debug = {
-    fileContent: '',
-    message: '',
-    lineNumber: null,
-  };
   // Metrics - DX
   private parentTemplate = '';
   // Metrics - DX
@@ -120,8 +114,8 @@ export class Tao {
     return metricsData;
   }
 
-  private compileChild(content: string) {
-    const compiledAST = this.parse(content);
+  private compileChild(content: string, debugData: DebugData) {
+    const compiledAST = this.parse(content, debugData);
 
     const result = `
     ${includeFn()}
@@ -139,9 +133,9 @@ export class Tao {
     return result;
   }
 
-  private compile(content: string, filename: string) {
+  private compile(content: string, filename: string, debugData: DebugData) {
     const { development } = this.config;
-    const compiledAST = this.parse(content);
+    const compiledAST = this.parse(content, debugData);
 
     this.childrenStore.set(this.parentTemplate, []);
     const metricsData = this.getMetrics(filename);
@@ -167,7 +161,7 @@ export class Tao {
     return result;
   }
 
-  private parse(expression: string): AstObject[] {
+  private parse(expression: string, debugData: DebugData): AstObject[] {
     const { parse, tags } = this.config;
     const { closing, opening } = tags;
 
@@ -214,7 +208,7 @@ export class Tao {
           expression,
           originalClose,
           closeResult.index,
-          this.debug
+          debugData.fileContent
         );
       }
 
@@ -223,7 +217,7 @@ export class Tao {
         expression,
         originalOpen,
         openingResult.index,
-        this.debug
+        debugData.fileContent
       );
     }
 
@@ -252,6 +246,7 @@ export class Tao {
     const pathWithExtension = getPathWithExtension(template, extension);
     this.parentTemplate = getFileName(pathWithExtension);
     this.childrenStore.remove(this.parentTemplate);
+    const debugData = initDebugData();
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -267,7 +262,7 @@ export class Tao {
           ɵɵcacheHit,
         };
 
-        return this.executeFunction(executeData);
+        return this.executeFunction(executeData, debugData);
       }
 
       const templateLoaded = this.dynamictemplatesStore.get(template);
@@ -286,7 +281,7 @@ export class Tao {
         filename,
         ɵɵcacheHit,
       };
-      return this.handleLoadedTemplate(templateData);
+      return this.handleLoadedTemplate(templateData, debugData);
     }
 
     if (this.templatePaths.length === 0) {
@@ -300,7 +295,7 @@ export class Tao {
 
     if (!fileIsUnique(files)) {
       const error = handleNonUniqueFile(files, filename);
-      const { errorHTML } = this.manageError(error, filename);
+      const { errorHTML } = this.manageError(error, filename, debugData);
       return errorHTML;
     }
 
@@ -316,7 +311,7 @@ export class Tao {
         ɵɵcacheHit,
       };
 
-      return this.executeFunction(executeData);
+      return this.executeFunction(executeData, debugData);
     }
 
     const file = files[0];
@@ -329,11 +324,11 @@ export class Tao {
       ɵɵcacheHit,
     };
 
-    return this.compileAndExecute(compileData);
+    return this.compileAndExecute(compileData, debugData);
   }
 
   /**
-   * Render a child component. Called in the parent template.
+   * Render a child component. Called inside the parent template.
    */
   private renderChild(
     template: string,
@@ -347,6 +342,7 @@ export class Tao {
     let filename = template;
     const pathWithExtension = getPathWithExtension(template, extension);
     updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
+    const debugData = initDebugData();
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -359,7 +355,7 @@ export class Tao {
           filename,
         };
 
-        return this.executeChildFunction(executeData);
+        return this.executeChildFunction(executeData, debugData);
       }
 
       const templateLoaded = this.dynamictemplatesStore.get(template);
@@ -376,7 +372,7 @@ export class Tao {
         helpers,
         filename,
       };
-      return this.handleLoadedChildTemplate(templateData);
+      return this.handleLoadedChildTemplate(templateData, debugData);
     }
 
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
@@ -385,7 +381,7 @@ export class Tao {
 
     if (!fileIsUnique(files)) {
       const error = handleNonUniqueFile(files, filename);
-      const errorData = this.handleChildError(error, filename);
+      const errorData = this.handleChildError(error, filename, debugData);
       return errorData;
     }
 
@@ -397,7 +393,7 @@ export class Tao {
         helpers,
         filename,
       };
-      return this.executeChildFunction(executeData);
+      return this.executeChildFunction(executeData, debugData);
     }
 
     const file = files[0];
@@ -408,30 +404,42 @@ export class Tao {
       helpers,
     };
 
-    return this.compileAndExecuteChild(compileData);
+    return this.compileAndExecuteChild(compileData, debugData);
   }
 
-  private compileAndExecuteChild(compileData: CompileChildExecuteData) {
+  private compileAndExecuteChild(compileData: CompileChildExecuteData, debugData: DebugData) {
     const { data, filename, fullPath, helpers } = compileData;
 
     try {
-      const templateFn = this.readChildFileAndGetCompiledFn(fullPath, data, helpers, filename);
+      const templateFn = this.readChildFileAndGetCompiledFn(
+        fullPath,
+        data,
+        helpers,
+        filename,
+        debugData
+      );
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers);
 
       return html;
     } catch (error: any) {
-      const errorData = this.handleChildError(error, filename);
+      const errorData = this.handleChildError(error, filename, debugData);
       return errorData;
     }
   }
 
-  private compileAndExecute(compileData: CompileExecuteData) {
+  private compileAndExecute(compileData: CompileExecuteData, debugData: DebugData) {
     const { data, filename, fullPath, helpers, ɵɵstart, ɵɵcacheHit } = compileData;
 
     try {
-      const templateFn = this.readFileAndGetCompiledFn(fullPath, data, helpers, filename);
+      const templateFn = this.readFileAndGetCompiledFn(
+        fullPath,
+        data,
+        helpers,
+        filename,
+        debugData
+      );
 
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
@@ -440,7 +448,7 @@ export class Tao {
     } catch (error: any) {
       // An error occurred in a child component - return it
       if (isAChildError(error)) return error.errorHTML;
-      const { errorHTML } = this.manageError(error, filename);
+      const { errorHTML } = this.manageError(error, filename, debugData);
       return errorHTML;
     }
   }
@@ -448,10 +456,10 @@ export class Tao {
   /**
    * Removes the cached compiled template. => pourquoi ?
    */
-  private manageError(error: any, filename: string): ErrorData {
+  private manageError(error: any, filename: string, debugData: DebugData): ErrorData {
     // this.compiledStore.remove(filename);
     error.filename = filename;
-    const errorData = this.handleErrorMessage(error);
+    const errorData = this.handleErrorMessage(error, debugData);
     console.error(new Error(`Error in ${filename}: ${errorData.message}`));
     const errorHTML = this.initErrorTemplate(errorData);
     errorData.errorHTML = errorHTML;
@@ -459,7 +467,7 @@ export class Tao {
     return errorData;
   }
 
-  private executeChildFunction(executeData: ExecuteChildFunction) {
+  private executeChildFunction(executeData: ExecuteChildFunction, debugData: DebugData) {
     const { data, filename, helpers, compiledContent } = executeData;
 
     try {
@@ -470,29 +478,29 @@ export class Tao {
         this.helpersStore,
         compiledContent
       );
-      this.compiledAnonymousFnContent = contentReplaced;
+      debugData.compiledAnonymousFnContent = contentReplaced;
 
       const templateFn = compileChildToFunction(contentReplaced);
       const html = templateFn.call(this, immutableData, helpers);
 
       return html;
     } catch (error: any) {
-      const errorData = this.handleChildError(error, filename);
+      const errorData = this.handleChildError(error, filename, debugData);
       return errorData;
     }
   }
 
-  private handleChildError(error: any, filename: string) {
+  private handleChildError(error: any, filename: string, debugData: DebugData) {
     // Error in a nested child — bubble up to the parent
     if (isAChildError(error)) throw error;
     // Error occurred in this child component - handle it
-    const errorData = this.manageError(error, filename);
+    const errorData = this.manageError(error, filename, debugData);
     errorData.isAChildError = true;
 
     return errorData;
   }
 
-  private executeFunction(executeData: ExecuteFunction) {
+  private executeFunction(executeData: ExecuteFunction, debugData: DebugData) {
     const { data, filename, helpers, ɵɵstart, compiledContent, ɵɵcacheHit } = executeData;
 
     try {
@@ -503,7 +511,7 @@ export class Tao {
         this.helpersStore,
         compiledContent
       );
-      this.compiledAnonymousFnContent = contentReplaced;
+      debugData.compiledAnonymousFnContent = contentReplaced;
 
       const templateFn = compileToFunction(contentReplaced);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
@@ -512,17 +520,17 @@ export class Tao {
     } catch (error: any) {
       // An error occurred in a child component - return it
       if (isAChildError(error)) return error.errorHTML;
-      const { errorHTML } = this.manageError(error, filename);
+      const { errorHTML } = this.manageError(error, filename, debugData);
       return errorHTML;
     }
   }
 
-  private handleErrorMessage(error: ErrorData) {
+  private handleErrorMessage(error: ErrorData, debugData: DebugData) {
     const [finalMessage, fileContentPerLine, correctedLineNumber] =
       findOriginalLineNumberWithMessage(
         error,
-        this.compiledAnonymousFnContent,
-        this.debug.fileContent
+        debugData.compiledAnonymousFnContent,
+        debugData.fileContent
       );
 
     const errorData: ErrorData = {
@@ -547,8 +555,8 @@ export class Tao {
     return tao.render('error', errorData);
   }
 
-  private compileChildAndCache(content: string, filename: string) {
-    const compiledContent = this.compileChild(content);
+  private compileChildAndCache(content: string, filename: string, debugData: DebugData) {
+    const compiledContent = this.compileChild(content, debugData);
 
     if (this.config.cache) {
       this.compiledStore.set(filename, compiledContent);
@@ -557,8 +565,8 @@ export class Tao {
     return compiledContent;
   }
 
-  private compileAndCache(content: string, filename: string) {
-    const compiledContent = this.compile(content, filename);
+  private compileAndCache(content: string, filename: string, debugData: DebugData) {
+    const compiledContent = this.compile(content, filename, debugData);
 
     if (this.config.cache) {
       this.compiledStore.set(filename, compiledContent);
@@ -571,12 +579,12 @@ export class Tao {
     resolvedPath: string,
     data: Data,
     helpers: Helpers,
-    filename: string
+    filename: string,
+    debugData: DebugData
   ) {
-    this.debug.fileContent = '';
     const content = this.readFile(resolvedPath);
-    this.debug.fileContent = content;
-    const compiledContent = this.compileChildAndCache(content, filename);
+    debugData.fileContent = content;
+    const compiledContent = this.compileChildAndCache(content, filename, debugData);
 
     const contentReplaced = injectDataAndHelpersInTemplate(
       data,
@@ -584,7 +592,7 @@ export class Tao {
       this.helpersStore,
       compiledContent
     );
-    this.compiledAnonymousFnContent = contentReplaced;
+    debugData.compiledAnonymousFnContent = contentReplaced;
     const templateFn = compileChildToFunction(contentReplaced);
 
     return templateFn;
@@ -594,12 +602,12 @@ export class Tao {
     resolvedPath: string,
     data: Data,
     helpers: Helpers,
-    filename: string
+    filename: string,
+    debugData: DebugData
   ) {
-    this.debug.fileContent = '';
     const content = this.readFile(resolvedPath);
-    this.debug.fileContent = content;
-    const compiledContent = this.compileAndCache(content, filename);
+    debugData.fileContent = content;
+    const compiledContent = this.compileAndCache(content, filename, debugData);
 
     const contentReplaced = injectDataAndHelpersInTemplate(
       data,
@@ -607,7 +615,7 @@ export class Tao {
       this.helpersStore,
       compiledContent
     );
-    this.compiledAnonymousFnContent = contentReplaced;
+    debugData.compiledAnonymousFnContent = contentReplaced;
     const templateFn = compileToFunction(contentReplaced);
 
     return templateFn;
@@ -631,14 +639,13 @@ export class Tao {
   /**
    * Handle dynamically defined templates
    */
-  private handleLoadedTemplate(templateData: LoadedTemplateData) {
-    const { data, filename, helpers, ɵɵstart, templateLoaded, ɵɵcacheHit } = templateData;
+  private handleLoadedTemplate(templateData: LoadedTemplateData, debugData: DebugData) {
+    const { data, filename, helpers, ɵɵstart, ɵɵcacheHit } = templateData;
 
     try {
-      const contentReplaced = this.compileLoadedTemplate(templateLoaded, data, helpers, filename);
+      const contentReplaced = this.compileLoadedTemplate(templateData, debugData);
 
       const templateFn = compileToFunction(contentReplaced);
-
       const immutableData = structuredClone(data);
       const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
 
@@ -646,21 +653,16 @@ export class Tao {
     } catch (error: any) {
       // An error occurred in a child component - return it
       if (isAChildError(error)) return error.errorHTML;
-      const { errorHTML } = this.manageError(error, filename);
+      const { errorHTML } = this.manageError(error, filename, debugData);
       return errorHTML;
     }
   }
 
-  private handleLoadedChildTemplate(templateData: LoadedChildTemplateData) {
-    const { data, filename, helpers, templateLoaded } = templateData;
+  private handleLoadedChildTemplate(templateData: LoadedChildTemplateData, debugData: DebugData) {
+    const { data, filename, helpers } = templateData;
 
     try {
-      const contentReplaced = this.compileLoadedChildTemplate(
-        templateLoaded,
-        data,
-        helpers,
-        filename
-      );
+      const contentReplaced = this.compileLoadedChildTemplate(templateData, debugData);
 
       const templateFn = compileChildToFunction(contentReplaced);
 
@@ -669,7 +671,7 @@ export class Tao {
 
       return html;
     } catch (error: any) {
-      const errorData = this.handleChildError(error, filename);
+      const errorData = this.handleChildError(error, filename, debugData);
       return errorData;
     }
   }
@@ -677,27 +679,25 @@ export class Tao {
   /**
    * Handle dynamically defined templates
    */
-  private compileLoadedTemplate(content: string, data: Data, helpers: Helpers, filename: string) {
-    const compiledContent = this.compileAndCache(content, filename);
+  private compileLoadedTemplate(templateData: LoadedTemplateData, debugData: DebugData) {
+    const { data, filename, helpers, templateLoaded: content } = templateData;
 
+    const compiledContent = this.compileAndCache(content, filename, debugData);
     const contentReplaced = injectDataAndHelpersInTemplate(
       data,
       helpers,
       this.helpersStore,
       compiledContent
     );
-    this.compiledAnonymousFnContent = contentReplaced;
+    debugData.compiledAnonymousFnContent = contentReplaced;
 
     return contentReplaced;
   }
 
-  private compileLoadedChildTemplate(
-    content: string,
-    data: Data,
-    helpers: Helpers,
-    filename: string
-  ) {
-    const compiledContent = this.compileChildAndCache(content, filename);
+  private compileLoadedChildTemplate(templateData: LoadedChildTemplateData, debugData: DebugData) {
+    const { data, filename, helpers, templateLoaded: content } = templateData;
+
+    const compiledContent = this.compileChildAndCache(content, filename, debugData);
 
     const contentReplaced = injectDataAndHelpersInTemplate(
       data,
@@ -705,7 +705,7 @@ export class Tao {
       this.helpersStore,
       compiledContent
     );
-    this.compiledAnonymousFnContent = contentReplaced;
+    debugData.compiledAnonymousFnContent = contentReplaced;
 
     return contentReplaced;
   }

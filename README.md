@@ -72,7 +72,7 @@ In your template, you might want to include other templates:
 
 ```html
 <h1>Hi <%= name %>!</h1>
-<!-- including "article" template and providing data -->
+<!-- include "article" template and provide data -->
 <%~ include('article', { phone: 'Tao T9' }) %>
 ```
 
@@ -95,7 +95,7 @@ NB: _Those prefix are configurable in the options._
 
 ## Template paths resolution
 
-`TAO` will _recursively_ add all templates matching the containing `views` path definition
+`TAO` will recursively add all templates matching the containing `views` path definition
 
 ```javascript
 import { Tao } from 'tao';

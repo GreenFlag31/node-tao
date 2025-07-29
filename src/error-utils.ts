@@ -1,4 +1,4 @@
-import { Debug, ErrorData, ErrorType } from './interfaces';
+import { DebugData, ErrorData, ErrorType } from './interfaces';
 
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
@@ -111,9 +111,8 @@ function getParsingErrorData(
   expression: string,
   index: number,
   message: string,
-  debug: Debug
+  fileContent: string
 ): ErrorData {
-  const { fileContent } = debug;
   const lineNumber = getTemplateParsedLineNumber(expression, index);
   const type: ErrorType = 'Parse Error';
 

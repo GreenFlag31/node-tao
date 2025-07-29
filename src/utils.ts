@@ -9,7 +9,6 @@ import {
 } from './const';
 import {
   AstObject,
-  ChildError,
   ChildTemplateFunction,
   Data,
   DefinitiveOptions,

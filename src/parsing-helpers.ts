@@ -1,13 +1,13 @@
 import { SINGLE_QUOTE_REGEX, DOUBLE_QUOTE_REGEX, LITERAL_REGEX } from './const';
 import { getParsingErrorData } from './error-utils';
-import { Debug, TemplateData } from './interfaces';
+import { TemplateData } from './interfaces';
 
 function checkForUnclosedPrefix(
   templateData: TemplateData | undefined,
   expression: string,
   originalOpen: string,
   openingResultIndex: number,
-  debug: Debug
+  fileContent: string
 ) {
   if (templateData) return;
 
@@ -15,7 +15,7 @@ function checkForUnclosedPrefix(
     expression,
     openingResultIndex,
     `Unclosed prefix " ${originalOpen} "`,
-    debug
+    fileContent
   );
 
   throw error;
@@ -28,7 +28,7 @@ function handleQuotes(
   expression: string,
   original: string,
   closeResultIndex: number,
-  debug: Debug
+  fileContent: string
 ) {
   let lastIndex = 0;
   const SINGLE_QUOTE = "'";
@@ -36,11 +36,11 @@ function handleQuotes(
   const LITERAL_QUOTE = '`';
 
   if (original === SINGLE_QUOTE) {
-    lastIndex = handleSingleQuote(expression, original, closeResultIndex, debug);
+    lastIndex = handleSingleQuote(expression, original, closeResultIndex, fileContent);
   } else if (original === DOUBLE_QUOTE) {
-    lastIndex = handleDoubleQuote(expression, original, closeResultIndex, debug);
+    lastIndex = handleDoubleQuote(expression, original, closeResultIndex, fileContent);
   } else if (original === LITERAL_QUOTE) {
-    lastIndex = handleLiteralQuote(expression, original, closeResultIndex, debug);
+    lastIndex = handleLiteralQuote(expression, original, closeResultIndex, fileContent);
   }
 
   return lastIndex;
@@ -50,7 +50,7 @@ function handleSingleQuote(
   expression: string,
   original: string,
   closeResultIndex: number,
-  debug: Debug
+  fileContent: string
 ) {
   SINGLE_QUOTE_REGEX.lastIndex = closeResultIndex;
 
@@ -60,7 +60,7 @@ function handleSingleQuote(
       expression,
       closeResultIndex,
       `Unclosed string " ${original} "`,
-      debug
+      fileContent
     );
 
     throw error;
@@ -73,7 +73,7 @@ function handleDoubleQuote(
   expression: string,
   original: string,
   closeResultIndex: number,
-  debug: Debug
+  fileContent: string
 ) {
   DOUBLE_QUOTE_REGEX.lastIndex = closeResultIndex;
   const doubleQuoteMatch = DOUBLE_QUOTE_REGEX.exec(expression);
@@ -83,7 +83,7 @@ function handleDoubleQuote(
       expression,
       closeResultIndex,
       `Unclosed string " ${original} "`,
-      debug
+      fileContent
     );
 
     throw error;
@@ -96,7 +96,7 @@ function handleLiteralQuote(
   expression: string,
   original: string,
   closeResultIndex: number,
-  debug: Debug
+  fileContent: string
 ) {
   LITERAL_REGEX.lastIndex = closeResultIndex;
   const templateLitMatch = LITERAL_REGEX.exec(expression);
@@ -106,7 +106,7 @@ function handleLiteralQuote(
       expression,
       closeResultIndex,
       `Unclosed string " ${original} "`,
-      debug
+      fileContent
     );
 
     throw error;

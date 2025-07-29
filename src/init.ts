@@ -1,4 +1,4 @@
-import { Parse, Tags } from './interfaces';
+import { DebugData, Parse, Tags } from './interfaces';
 import {
   DEFAULT_CLOSING,
   DEFAULT_EXEC,
@@ -27,4 +27,13 @@ function assignParse(parse: Parse) {
   return definitiveParse;
 }
 
-export { assignTags, assignParse };
+function initDebugData() {
+  const debugData: DebugData = {
+    compiledAnonymousFnContent: '',
+    fileContent: '',
+  };
+
+  return debugData;
+}
+
+export { assignTags, assignParse, initDebugData };

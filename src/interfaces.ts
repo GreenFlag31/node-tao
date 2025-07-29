@@ -6,6 +6,11 @@ export type ErrorType =
   | 'Inclusion Error'
   | 'Precompilation Error';
 
+export interface DebugData {
+  compiledAnonymousFnContent: string;
+  fileContent: string;
+}
+
 export interface Parse {
   /**
    * Which prefix to use for evaluation.
@@ -59,12 +64,6 @@ export type TemplateFunction = (
   ɵɵstart: number,
   ɵɵcacheHit: boolean
 ) => string;
-
-export interface Debug {
-  fileContent: string;
-  message: string;
-  lineNumber: number | null;
-}
 
 export interface ErrorData {
   filename: string;
@@ -210,9 +209,4 @@ export interface DefinitiveOptions {
   views: string;
   extension: string;
   fileResolution: FileResolution;
-}
-
-export interface ChildError {
-  error: any;
-  content: string;
 }
