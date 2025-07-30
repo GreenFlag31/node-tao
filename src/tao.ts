@@ -46,12 +46,18 @@ import {
   DebugData,
 } from './interfaces';
 import { Store } from './store';
-import { findOriginalLineNumberWithMessage, handleNonUniqueFile } from './error-utils';
+import {
+  handleWrongTypeInChildTemplate,
+  findOriginalLineNumberWithMessage,
+  handleNonUniqueFile,
+  handleNotFoundDynamicChildTemplate,
+} from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { includeChildren, includeMetrics, includeRenderTime, updateChildrenStore } from './metrics';
 import { assignParse, assignTags, initDebugData } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
+import { debug } from 'node:console';
 
 export class Tao {
   private config: DefinitiveOptions;
@@ -334,15 +340,20 @@ export class Tao {
     template: string,
     data: Data = {},
     helpers: Helpers = {}
-  ): string | ErrorData | null {
-    if (!templateIsOfTypeString(template)) return null;
+  ): string | ErrorData {
+    const debugData = initDebugData();
+
+    if (typeof template !== 'string') {
+      const error = handleWrongTypeInChildTemplate(template);
+      const errorData = this.handleChildError(error, template, debugData);
+      return errorData;
+    }
 
     template = normalizeFilesPath(template);
     const { views, extension, fileResolution } = this.config;
     let filename = template;
     const pathWithExtension = getPathWithExtension(template, extension);
     updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
-    const debugData = initDebugData();
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -360,10 +371,9 @@ export class Tao {
 
       const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
-        console.error(
-          new Error(`Failed to get programmaticaly defined template ${template} from cache`)
-        );
-        return null;
+        const error = handleNotFoundDynamicChildTemplate(template);
+        const errorData = this.handleChildError(error, template, debugData);
+        return errorData;
       }
 
       const templateData: LoadedChildTemplateData = {

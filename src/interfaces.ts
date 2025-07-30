@@ -4,7 +4,9 @@ export type ErrorType =
   | 'Compilation Error'
   | 'Execution Error'
   | 'Inclusion Error'
-  | 'Precompilation Error';
+  | 'Precompilation Error'
+  | 'Template Type Error'
+  | 'Not Found Error';
 
 export interface DebugData {
   compiledAnonymousFnContent: string;

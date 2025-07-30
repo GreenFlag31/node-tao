@@ -1,14 +1,17 @@
-import { DebugData, ErrorData, ErrorType } from './interfaces';
+import { ErrorData, ErrorType } from './interfaces';
 
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
   compiledAnonymousFnContent: string,
   originalFileContent: string
 ): [string, string[], number | null] {
-  if (error.type === 'Precompilation Error') {
-    return [error.message, [], null];
-  }
-  if (error.type === 'Inclusion Error') {
+  const basicErrorTypes: ErrorType[] = [
+    'Template Type Error',
+    'Not Found Error',
+    'Precompilation Error',
+    'Inclusion Error',
+  ];
+  if (basicErrorTypes.includes(error.type)) {
     return [error.message, [], null];
   }
   if (error.type === 'Parse Error') {
@@ -162,6 +165,32 @@ function handleNonUniqueFile(files: string[], filename: string) {
   return error;
 }
 
+function handleWrongTypeInChildTemplate(template: string) {
+  const errorType: ErrorType = 'Template Type Error';
+
+  const error: any = new Error();
+  error.message = `Provided template ${template} should be of type string`;
+  error.lineNumber = null;
+  error.fileContent = '';
+  error.filename = template;
+  error.type = errorType;
+
+  return error;
+}
+
+function handleNotFoundDynamicChildTemplate(template: string) {
+  const errorType: ErrorType = 'Not Found Error';
+
+  const error: any = new Error();
+  error.message = `Failed to get programmaticaly defined template ${template} from cache`;
+  error.lineNumber = null;
+  error.fileContent = '';
+  error.filename = template;
+  error.type = errorType;
+
+  return error;
+}
+
 export {
   getErrorMessageAndSource,
   getLineFromAnonymousFunction,
@@ -172,4 +201,6 @@ export {
   getParsingErrorData,
   handleNonUniqueFile,
   infiniteInclusionError,
+  handleWrongTypeInChildTemplate,
+  handleNotFoundDynamicChildTemplate,
 };
