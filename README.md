@@ -64,6 +64,15 @@ app.get('/', (req, res) => {
 });
 ```
 
+Usage:
+
+```javascript
+// simple.html
+<%= nPlusOne(1) %>
+```
+
+NB: _Always escape (=) the output of a helper function when it includes user-controlled data._
+
 It is also possible to register helpers on `globalThis` without providing them to the template engine, but it can lead to name collision.
 
 ## Include

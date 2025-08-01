@@ -2,32 +2,8 @@ import { DYNAMICAL_TEMPLATE_PREFIX } from './const';
 import { Parse, Tags } from './interfaces';
 import { getPathWithExtension } from './utils';
 
-function templateIsOfTypeString(template: string) {
-  const templateType = typeof template;
-  if (templateType !== 'string') {
-    console.error(
-      new Error(`Provided template should be of type string (provided ${templateType})`)
-    );
-    return false;
-  }
-
-  return true;
-}
-
 function isTemplateDynamicallyDefined(template: string) {
   return template.startsWith(DYNAMICAL_TEMPLATE_PREFIX);
-}
-
-/**
- * Retrieve children template names.
- * Example: include('simple', ...) => simple.html
- */
-function getChildrenTemplatesName(content: string, extension: string) {
-  const includeToken = new RegExp(/include\(\s*([^,)]+)/, 'g');
-  return [...content.matchAll(includeToken)].map((match) => {
-    const matchWithoutQuotes = match[1].replace(/'|"|`/g, '');
-    return getPathWithExtension(matchWithoutQuotes, extension);
-  });
 }
 
 function checkOpeningAndClosingTag(tags: Tags) {
@@ -66,7 +42,5 @@ export {
   isTemplateDynamicallyDefined,
   checkOpeningAndClosingTag,
   checkPrefixTemplateTags,
-  getChildrenTemplatesName,
-  templateIsOfTypeString,
   trimDotFromExtension,
 };

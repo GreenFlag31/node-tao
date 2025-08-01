@@ -63,4 +63,49 @@ describe('eta constructor', () => {
 
     expect(result).toContain('%c[RENDERED]%c');
   });
+
+  it('should handle dynamic child component', () => {
+    const tao = new Tao({ development: true });
+    const parentComponent = `
+    <header>
+      <h1><%= parentTitle %></h1>
+      <%~ include('@childComponent') %>
+    </header>
+  `;
+    const childComponent = `
+    <div>
+      <h1><%= childTitle %></h1>
+    </div>
+  `;
+    const parentTitle = { parentTitle: 'parent data', childTitle: 'child data' };
+    tao.loadTemplate('@parentComponent', parentComponent);
+    tao.loadTemplate('@childComponent', childComponent);
+    const result = tao.render('@parentComponent', parentTitle);
+
+    expect(result).toContain(`<h1>${parentTitle.parentTitle}</h1>`);
+    expect(result).toContain(`<h1>${parentTitle.childTitle}</h1>`);
+  });
+
+  it('should handle dynamic child component (both parent and child are cached)', () => {
+    const tao = new Tao({ development: true });
+    const parentComponent = `
+    <header>
+      <h1><%= parentTitle %></h1>
+      <%~ include('@childComponent') %>
+    </header>
+  `;
+    const childComponent = `
+    <div>
+      <h1><%= childTitle %></h1>
+    </div>
+  `;
+    const parentTitle = { parentTitle: 'parent data', childTitle: 'child data' };
+    tao.loadTemplate('@parentComponent', parentComponent);
+    tao.loadTemplate('@childComponent', childComponent);
+    const result = tao.render('@parentComponent', parentTitle);
+    const result2 = tao.render('@parentComponent', parentTitle);
+
+    expect(result2).toContain(`<h1>${parentTitle.parentTitle}</h1>`);
+    expect(result2).toContain(`<h1>${parentTitle.childTitle}</h1>`);
+  });
 });

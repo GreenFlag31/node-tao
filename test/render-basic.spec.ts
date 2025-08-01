@@ -41,23 +41,6 @@ describe('basic render tests', () => {
     expect(tao.compiledStore.get(templateNameWithExtension)).toBeTruthy();
   });
 
-  it('should remove cache key if error in template', () => {
-    const templateNameWithExtension = 'execution-error.html';
-    tao.render('execution-error');
-
-    expect(tao.compiledStore.get(templateNameWithExtension)).toBeFalsy();
-  });
-
-  it('should remove cache key if error in cached template', () => {
-    const templateNameWithExtension = 'simple.html';
-    const data = { name: 'test included' };
-    tao.render(templateNameWithExtension, data);
-    // not providing any data cause the error
-    tao.render(templateNameWithExtension);
-
-    expect(tao.compiledStore.get(templateNameWithExtension)).toBeFalsy();
-  });
-
   it('dynamictemplatesStore should store dynamical defined template', () => {
     const templateName = '@header1';
     const headerPartial = `

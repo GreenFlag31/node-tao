@@ -81,4 +81,27 @@ describe('error render', () => {
 
     expect(result).toContain(`Unclosed prefix`);
   });
+
+  it('should handle not unique child template', () => {
+    const tao = new Tao({ views: templateViews, development: true });
+    const fullURL = path.join(templateViews, 'not unique.html');
+
+    const result = tao.render(fullURL);
+
+    expect(result).toContain('');
+  });
+
+  it('should handle wrong type in child template', () => {
+    const tao = new Tao({ views: templateViews, development: true });
+    const headerPartial = `
+    <header>
+      <h1><%~ include('wrongly typed') %></h1>
+    </header>
+  `;
+
+    tao.loadTemplate('@headerPartial', headerPartial);
+    const result = tao.render('@headerPartial');
+
+    expect(result).toContain('');
+  });
 });

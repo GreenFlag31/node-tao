@@ -4,7 +4,6 @@ import {
   checkPrefixTemplateTags,
   getPathWithExtension,
   isTemplateDynamicallyDefined,
-  templateIsOfTypeString,
   trimDotFromExtension,
 } from './checks';
 import { checkAccessPermission, fileIsUnique, getFilesFromDirectory } from './templates-access';
@@ -47,17 +46,17 @@ import {
 } from './interfaces';
 import { Store } from './store';
 import {
-  handleWrongTypeInChildTemplate,
+  handleWrongTypeOfTemplate,
   findOriginalLineNumberWithMessage,
   handleNonUniqueFile,
-  handleNotFoundDynamicChildTemplate,
+  handleNotFoundDynamicTemplate,
+  handleNoTemplateFilesFound,
 } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { includeChildren, includeMetrics, includeRenderTime, updateChildrenStore } from './metrics';
 import { assignParse, assignTags, initDebugData } from './init';
 import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
-import { debug } from 'node:console';
 
 export class Tao {
   private config: DefinitiveOptions;
@@ -237,25 +236,28 @@ export class Tao {
   /**
    * Render a template with data and helpers.
    * @param template The path of your template to render.
-   * @param data The datas to inject.
+   * @param data The data to inject.
    * @param helpers The helpers functions to inject.
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {
-    if (!templateIsOfTypeString(template)) return '';
+    const debugData = initDebugData();
+    if (typeof template !== 'string') {
+      const error = handleWrongTypeOfTemplate(template);
+      const { errorHTML } = this.manageError(error, template, debugData);
+      return errorHTML;
+    }
 
-    template = normalizeFilesPath(template);
+    let filename = normalizeFilesPath(template);
     const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let ɵɵcacheHit = false;
-    let filename = template;
 
-    const pathWithExtension = getPathWithExtension(template, extension);
+    const pathWithExtension = getPathWithExtension(filename, extension);
     this.parentTemplate = getFileName(pathWithExtension);
     this.childrenStore.remove(this.parentTemplate);
-    const debugData = initDebugData();
 
-    if (isTemplateDynamicallyDefined(template)) {
-      const cachedTemplate = this.compiledStore.get(template);
+    if (isTemplateDynamicallyDefined(filename)) {
+      const cachedTemplate = this.compiledStore.get(filename);
 
       if (cachedTemplate) {
         ɵɵcacheHit = true;
@@ -271,12 +273,11 @@ export class Tao {
         return this.executeFunction(executeData, debugData);
       }
 
-      const templateLoaded = this.dynamictemplatesStore.get(template);
+      const templateLoaded = this.dynamictemplatesStore.get(filename);
       if (!templateLoaded) {
-        console.error(
-          new Error(`Failed to get programmaticaly defined template ${template} from cache`)
-        );
-        return '';
+        const error = handleNotFoundDynamicTemplate(filename);
+        const { errorHTML } = this.manageError(error, filename, debugData);
+        return errorHTML;
       }
 
       const templateData: LoadedTemplateData = {
@@ -291,8 +292,9 @@ export class Tao {
     }
 
     if (this.templatePaths.length === 0) {
-      console.error(new Error(`No template files found in ${views} with extension ${extension}`));
-      return '';
+      const error = handleNoTemplateFilesFound(views, extension);
+      const { errorHTML } = this.manageError(error, filename, debugData);
+      return errorHTML;
     }
 
     const fullPath = getFullPath(views, pathWithExtension, fileResolution);
@@ -344,7 +346,7 @@ export class Tao {
     const debugData = initDebugData();
 
     if (typeof template !== 'string') {
-      const error = handleWrongTypeInChildTemplate(template);
+      const error = handleWrongTypeOfTemplate(template);
       const errorData = this.handleChildError(error, template, debugData);
       return errorData;
     }
@@ -371,7 +373,7 @@ export class Tao {
 
       const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
-        const error = handleNotFoundDynamicChildTemplate(template);
+        const error = handleNotFoundDynamicTemplate(template);
         const errorData = this.handleChildError(error, template, debugData);
         return errorData;
       }
@@ -463,11 +465,8 @@ export class Tao {
     }
   }
 
-  /**
-   * Removes the cached compiled template. => pourquoi ?
-   */
   private manageError(error: any, filename: string, debugData: DebugData): ErrorData {
-    // this.compiledStore.remove(filename);
+    // this.compiledStore.remove(filename); => pourquoi ?
     error.filename = filename;
     const errorData = this.handleErrorMessage(error, debugData);
     console.error(new Error(`Error in ${filename}: ${errorData.message}`));
@@ -749,7 +748,9 @@ export class Tao {
     }
 
     if (duplicate) {
-      console.warn(`Duplicate template name ${name} provided. Template content has been erased.`);
+      console.warn(
+        `⚠️  Duplicate template name ${name} provided. Template content has been erased.`
+      );
     }
 
     this.dynamictemplatesStore.set(name, template);

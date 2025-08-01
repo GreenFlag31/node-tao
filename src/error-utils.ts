@@ -165,27 +165,37 @@ function handleNonUniqueFile(files: string[], filename: string) {
   return error;
 }
 
-function handleWrongTypeInChildTemplate(template: string) {
+function handleWrongTypeOfTemplate(template: string) {
   const errorType: ErrorType = 'Template Type Error';
 
   const error: any = new Error();
-  error.message = `Provided template ${template} should be of type string`;
+  error.message = `Provided template "${template}" should be of type string`;
   error.lineNumber = null;
   error.fileContent = '';
-  error.filename = template;
   error.type = errorType;
 
   return error;
 }
 
-function handleNotFoundDynamicChildTemplate(template: string) {
+function handleNotFoundDynamicTemplate(template: string) {
   const errorType: ErrorType = 'Not Found Error';
 
   const error: any = new Error();
-  error.message = `Failed to get programmaticaly defined template ${template} from cache`;
+  error.message = `Failed to get programmaticaly defined template "${template}" from cache`;
   error.lineNumber = null;
   error.fileContent = '';
-  error.filename = template;
+  error.type = errorType;
+
+  return error;
+}
+
+function handleNoTemplateFilesFound(views: string, extension: string) {
+  const errorType: ErrorType = 'Not Found Error';
+
+  const error: any = new Error();
+  error.message = `No template files found in ${views} with extension ${extension}`;
+  error.lineNumber = null;
+  error.fileContent = '';
   error.type = errorType;
 
   return error;
@@ -201,6 +211,7 @@ export {
   getParsingErrorData,
   handleNonUniqueFile,
   infiniteInclusionError,
-  handleWrongTypeInChildTemplate,
-  handleNotFoundDynamicChildTemplate,
+  handleWrongTypeOfTemplate,
+  handleNotFoundDynamicTemplate,
+  handleNoTemplateFilesFound,
 };
