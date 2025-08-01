@@ -225,6 +225,8 @@ _If you think those features are absolutely necessary, please open a new discuss
 
 ## Change logs
 
+V0.0.2: Fix node modules exclusion in files matching for the error template.
+
 ## Credits
 
 - Syntax and some parts of compilation are based on `eta`.
