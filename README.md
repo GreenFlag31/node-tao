@@ -227,6 +227,8 @@ _If you think those features are absolutely necessary, please open a new discuss
 
 V0.0.2: Fix node modules exclusion in files matching for the error template.
 
+V0.0.3: Data exchange for the official extension, and various improvements.
+
 ## Credits
 
 - Syntax and some parts of compilation are based on `eta`.

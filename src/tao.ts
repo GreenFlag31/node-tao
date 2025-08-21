@@ -14,7 +14,7 @@ import {
   escapeJSLiteral,
   getCurrentPrefixType,
   includeFn,
-  getFullPath,
+  getResolvedPath,
   escapeRegExp,
   getFileName,
   valueIsAFunction,
@@ -23,6 +23,7 @@ import {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
+  injectUserData,
 } from './utils';
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -68,7 +69,7 @@ export class Tao {
    */
   public compiledStore = new Store<string>();
   /**
-   * Stores dynamically defined templates.
+   * Stores dynamically loaded templates.
    */
   public dynamictemplatesStore = new Store<string>();
   /**
@@ -247,17 +248,19 @@ export class Tao {
       return errorHTML;
     }
 
-    let filename = normalizeFilesPath(template);
-    const { views, extension, fileResolution } = this.config;
+    const { views, extension, fileResolution, development } = this.config;
     const ɵɵstart = performance.now();
     let ɵɵcacheHit = false;
 
-    const pathWithExtension = getPathWithExtension(filename, extension);
+    const pathWithExtension = getPathWithExtension(template, extension);
     this.parentTemplate = getFileName(pathWithExtension);
     this.childrenStore.remove(this.parentTemplate);
+    // ici injected data ?
 
-    if (isTemplateDynamicallyDefined(filename)) {
-      const cachedTemplate = this.compiledStore.get(filename);
+    injectUserData(development, pathWithExtension, data, helpers, this.helpersStore);
+
+    if (isTemplateDynamicallyDefined(template)) {
+      const cachedTemplate = this.compiledStore.get(template);
 
       if (cachedTemplate) {
         ɵɵcacheHit = true;
@@ -266,17 +269,17 @@ export class Tao {
           data,
           helpers,
           ɵɵstart,
-          filename,
+          filename: template,
           ɵɵcacheHit,
         };
 
         return this.executeFunction(executeData, debugData);
       }
 
-      const templateLoaded = this.dynamictemplatesStore.get(filename);
+      const templateLoaded = this.dynamictemplatesStore.get(template);
       if (!templateLoaded) {
-        const error = handleNotFoundDynamicTemplate(filename);
-        const { errorHTML } = this.manageError(error, filename, debugData);
+        const error = handleNotFoundDynamicTemplate(template);
+        const { errorHTML } = this.manageError(error, template, debugData);
         return errorHTML;
       }
 
@@ -285,11 +288,14 @@ export class Tao {
         data,
         helpers,
         ɵɵstart,
-        filename,
+        filename: template,
         ɵɵcacheHit,
       };
       return this.handleLoadedTemplate(templateData, debugData);
     }
+
+    const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
+    const filename = getFileName(fullPath);
 
     if (this.templatePaths.length === 0) {
       const error = handleNoTemplateFilesFound(views, extension);
@@ -297,8 +303,6 @@ export class Tao {
       return errorHTML;
     }
 
-    const fullPath = getFullPath(views, pathWithExtension, fileResolution);
-    filename = getFileName(fullPath);
     const files = checkAccessPermission(this.templatePaths, fullPath);
 
     if (!fileIsUnique(files)) {
@@ -322,6 +326,7 @@ export class Tao {
       return this.executeFunction(executeData, debugData);
     }
 
+    // mapped fullPath template file
     const file = files[0];
     const compileData: CompileExecuteData = {
       filename,
@@ -387,7 +392,7 @@ export class Tao {
       return this.handleLoadedChildTemplate(templateData, debugData);
     }
 
-    const fullPath = getFullPath(views, pathWithExtension, fileResolution);
+    const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
     filename = getFileName(fullPath);
     const files = checkAccessPermission(this.templatePaths, fullPath);
 

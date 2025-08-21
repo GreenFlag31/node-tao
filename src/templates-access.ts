@@ -7,7 +7,7 @@ import { normalizeFilesPath } from './utils';
  * Normalize paths on Windows.
  */
 function getFilesFromDirectory(directory: string, extension: string) {
-  const files = globSync(`${directory}/**/*${extension}`, {
+  const files = globSync(`${directory}/**/*.${extension}`, {
     absolute: true,
     nodir: true,
   });
@@ -17,14 +17,10 @@ function getFilesFromDirectory(directory: string, extension: string) {
 }
 
 /**
- * Security measure to allow access to only files in given directory that has been previously mapped.
+ * Security measure to restrict access only to files within a previously mapped directory.
  */
-function isTemplateFileInsideGivenDirectory(templatePaths: string[], templateFile: string) {
-  return templatePaths.filter((path) => path.endsWith(templateFile));
-}
-
 function checkAccessPermission(templatePaths: string[], templateFile: string) {
-  const files = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+  const files = templatePaths.filter((path) => path.endsWith(templateFile));
 
   return files;
 }
@@ -33,10 +29,4 @@ function fileIsUnique(files: string[]) {
   return files.length === 1;
 }
 
-export {
-  getFilesFromDirectory,
-  checkAccessPermission,
-  isTemplateFileInsideGivenDirectory,
-  normalizeFilesPath,
-  fileIsUnique,
-};
+export { getFilesFromDirectory, checkAccessPermission, normalizeFilesPath, fileIsUnique };

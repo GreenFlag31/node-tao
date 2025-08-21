@@ -212,3 +212,20 @@ export interface DefinitiveOptions {
   extension: string;
   fileResolution: FileResolution;
 }
+
+export interface VariableData {
+  name: string;
+  type: string;
+}
+
+export interface HelperData {
+  name: string;
+  params: string;
+}
+
+export interface UserData {
+  template: string;
+  variables: VariableData[];
+  helpers: HelperData[];
+  lastUpdate: string;
+}

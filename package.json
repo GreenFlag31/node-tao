@@ -1,6 +1,6 @@
 {
   "name": "node-tao",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Lightweight, fast, and powerful embedded JS template engine",
   "keywords": [
     "template engine",

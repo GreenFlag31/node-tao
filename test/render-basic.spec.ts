@@ -1,7 +1,6 @@
 import { Tao } from '../src/index';
 import path from 'path';
 import { normalizeFilesPath } from '../src/utils';
-import { log } from 'console';
 
 const templateViews = path.join(process.cwd(), 'test/templates');
 const tao = new Tao({ views: templateViews });
@@ -11,6 +10,12 @@ describe('basic render tests', () => {
     const data = { name: 'test' };
     const result = tao.render('simple', data);
     expect(result).toBe(`Hi ${data.name}`);
+  });
+
+  it('should render a path with extension', () => {
+    const result = tao.render('simple.html', { name: 'this is simple' });
+
+    expect(result).toContain('this is simple');
   });
 
   it('should render simple template with an include', () => {

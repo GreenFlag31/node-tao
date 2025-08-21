@@ -15,14 +15,19 @@ import {
   ErrorData,
   ErrorType,
   FileResolution,
+  HelperData,
   HelperFunction,
   Helpers,
   Parse,
   TagType,
   TemplateFunction,
+  UserData,
+  VariableData,
 } from './interfaces';
 import path from 'node:path';
 import { Store } from './store';
+import fs from 'fs';
+import { log } from 'node:console';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -70,10 +75,90 @@ function valueIsAFunction(value: Function) {
   return typeof value === 'function';
 }
 
-// il faudra un autre render pour les enfants que le principal
-// le renderChild renverra un objet avec error (réelle) et content
-// si error alors throw new Error(error)
-// sur error toutes les props mises
+/**
+ * Filename is not verified, can be non-existant.
+ */
+function injectUserData(
+  development: boolean,
+  fileName: string,
+  data: Data,
+  helpers: Helpers,
+  helpersStore: Store<HelperFunction>
+) {
+  if (!development) return;
+
+  const userDataFilePath = path.join(process.cwd(), '.vscode/tao-user-data.json');
+  const userData = buildUserData(fileName, data, helpers, helpersStore);
+
+  try {
+    fs.mkdirSync('.vscode', { recursive: true });
+    const data = fs.readFileSync(userDataFilePath, 'utf8');
+    const dataParsed: UserData[] = JSON.parse(data);
+
+    const datas = getAllOtherUserDatas(fileName, dataParsed);
+    datas.push(userData);
+
+    const allUserDataStringified = JSON.stringify(datas);
+    fs.writeFileSync(userDataFilePath, allUserDataStringified);
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      console.log('Fichier inexistant');
+      const userDataToArrayStringified = JSON.stringify([userData]);
+      fs.writeFileSync(userDataFilePath, userDataToArrayStringified);
+    }
+  }
+}
+
+function getAllOtherUserDatas(fileName: string, userDatas: UserData[]) {
+  return userDatas.filter((data) => data.template !== fileName);
+}
+
+function buildUserData(
+  fileName: string,
+  data: Data,
+  helpers: Helpers,
+  helpersStore: Store<HelperFunction>
+) {
+  const variables = Object.entries(data);
+  const helpersName = Object.entries(helpers);
+  const globalHelpersName = Object.entries(helpersStore.getAll());
+  const allHelpers = [...helpersName, ...globalHelpersName];
+
+  const variablesData: VariableData[] = [];
+  for (const [key, value] of variables) {
+    variablesData.push({
+      name: key,
+      type: typeof value,
+    });
+  }
+
+  const helpersData: HelperData[] = [];
+  for (const [key, fn] of allHelpers) {
+    const source = getFunctionSignatureParams(fn);
+    helpersData.push({
+      name: key,
+      params: source,
+    });
+  }
+
+  const userData: UserData = {
+    template: fileName,
+    variables: variablesData,
+    helpers: helpersData,
+    lastUpdate: new Date().toISOString(),
+  };
+
+  return userData;
+}
+
+function getFunctionSignatureParams(fn: HelperFunction) {
+  const fnToString = fn.toString();
+  const allParamsRegex = /\([^\)]+\)/i;
+  const matchingResult = fnToString.match(allParamsRegex);
+
+  return matchingResult?.[0] || '';
+}
+
 function includeFn() {
   return `const include = (templatePath, data, helpers) => {
       data = {...${TEMPLATE_VARNAME}, ...data};
@@ -144,15 +229,6 @@ function compileContent(type: TagType, content: string, config: DefinitiveOption
   }
 }
 
-function getPathWithExtension(filePath: string, extension: string) {
-  if (isTemplateDynamicallyDefined(filePath)) return filePath;
-
-  const pathContainsExtension = path.extname(filePath);
-  if (pathContainsExtension) return filePath;
-
-  return `${filePath}.${extension}`;
-}
-
 /**
  * Inject data and helpers at every template execution.
  * Always keep placeholders.
@@ -207,10 +283,19 @@ function compileToFunction(contentReplaced: string) {
   }
 }
 
+function getPathWithExtension(filePath: string, extension: string) {
+  if (isTemplateDynamicallyDefined(filePath)) return filePath;
+
+  const normalizedFilePath = normalizeFilesPath(filePath);
+  const pathWithoutExtension = normalizedFilePath.replace(`.${extension}`, '');
+
+  return `${pathWithoutExtension}.${extension}`;
+}
+
 /**
  * If path resolution is set to "flexible", do not return the full path, it's usefull for providing only unique end path.
  */
-function getFullPath(views: string, pathWithExtension: string, fileResolution: FileResolution) {
+function getResolvedPath(views: string, pathWithExtension: string, fileResolution: FileResolution) {
   if (fileResolution === 'flexible') return pathWithExtension;
 
   const isAbsolutePath = path.isAbsolute(pathWithExtension);
@@ -250,10 +335,9 @@ function replaceChar(input: string): string {
 
 /**
  * Escape special regular expression characters inside a string
- * MDN
+ * $& means the whole matched string
  */
 function escapeRegExp(string: string) {
-  // $& means the whole matched string
   return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 }
 
@@ -279,7 +363,7 @@ export {
   compileBody,
   includeFn,
   initVariablesAndHelpers,
-  getFullPath,
+  getResolvedPath,
   escapeRegExp,
   getPathWithExtension,
   normalizeFilesPath,
@@ -289,4 +373,5 @@ export {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
+  injectUserData,
 };

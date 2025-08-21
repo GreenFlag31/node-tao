@@ -3,7 +3,7 @@ import { Parse } from '../src/interfaces';
 import {
   buildPrefixRegex,
   escapeJSLiteral,
-  getFullPath,
+  getResolvedPath,
   initVariablesAndHelpers,
   XMLEscape,
 } from '../src/utils';
@@ -14,7 +14,7 @@ describe('initVariablesAndHelpers', () => {
     const views = path.join(process.cwd(), 'test/templates');
     const template = 'simple.eta';
 
-    const result = getFullPath(views, template, 'strict');
+    const result = getResolvedPath(views, template, 'strict');
     const normalized = normalizeFilesPath(path.join(views, template));
     expect(result).toBe(normalized);
   });
@@ -24,7 +24,7 @@ describe('initVariablesAndHelpers', () => {
     const template = 'simple.eta';
     const completePath = path.join(views, template);
 
-    const result = getFullPath(views, completePath, 'strict');
+    const result = getResolvedPath(views, completePath, 'strict');
     expect(result).toBe(completePath);
   });
 });

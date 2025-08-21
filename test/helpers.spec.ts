@@ -1,5 +1,5 @@
 import { getPathWithExtension } from '../src/checks';
-import { isTemplateFileInsideGivenDirectory } from '../src/templates-access';
+import { checkAccessPermission } from '../src/templates-access';
 
 describe('checks function tests', () => {
   it('getPathWithExtension should return a path with its extension when the filePath does not contain the extension', () => {
@@ -12,17 +12,17 @@ describe('checks function tests', () => {
     expect(result).toBe('simple.eta');
   });
 
-  it('isTemplateFileInsideGivenDirectory should contains templatePath', () => {
+  it('checkAccessPermission should contains templatePath', () => {
     const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test\\simple.eta'];
     const templateFile = 'simple.eta';
-    const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+    const result = checkAccessPermission(templatePaths, templateFile);
     expect(result).toMatchObject(templatePaths);
   });
 
-  it('isTemplateFileInsideGivenDirectory should be empty', () => {
+  it('checkAccessPermission should be empty', () => {
     const templatePaths = ['D:\\Manu\\Desktop\\Code\\eta-lib\\test\\simple.eta'];
     const templateFile = 'unexistant.eta';
-    const result = isTemplateFileInsideGivenDirectory(templatePaths, templateFile);
+    const result = checkAccessPermission(templatePaths, templateFile);
     expect(result).toMatchObject([]);
   });
 });
