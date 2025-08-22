@@ -23,7 +23,7 @@ import {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
-  injectUserData,
+  injectUserDataForVSCodeExtension,
 } from './utils';
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -44,6 +44,7 @@ import {
   LoadedChildTemplateData,
   CompileChildExecuteData,
   DebugData,
+  InjectedData,
 } from './interfaces';
 import { Store } from './store';
 import {
@@ -253,11 +254,20 @@ export class Tao {
     let ɵɵcacheHit = false;
 
     const pathWithExtension = getPathWithExtension(template, extension);
-    this.parentTemplate = getFileName(pathWithExtension);
+    const filename = getFileName(pathWithExtension);
+    const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
+    this.parentTemplate = filename;
     this.childrenStore.remove(this.parentTemplate);
-    // ici injected data ?
 
-    injectUserData(development, pathWithExtension, data, helpers, this.helpersStore);
+    const injectedData: InjectedData = {
+      development,
+      fullPath,
+      data,
+      helpers,
+      helpersStore: this.helpersStore,
+      templatePaths: this.templatePaths,
+    };
+    injectUserDataForVSCodeExtension(injectedData);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -293,9 +303,6 @@ export class Tao {
       };
       return this.handleLoadedTemplate(templateData, debugData);
     }
-
-    const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
-    const filename = getFileName(fullPath);
 
     if (this.templatePaths.length === 0) {
       const error = handleNoTemplateFilesFound(views, extension);
@@ -356,11 +363,22 @@ export class Tao {
       return errorData;
     }
 
-    template = normalizeFilesPath(template);
-    const { views, extension, fileResolution } = this.config;
-    let filename = template;
+    const { views, extension, fileResolution, development } = this.config;
     const pathWithExtension = getPathWithExtension(template, extension);
+    const filename = getFileName(pathWithExtension);
+    const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
+
     updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
+
+    const injectedData: InjectedData = {
+      development,
+      fullPath,
+      data,
+      helpers,
+      helpersStore: this.helpersStore,
+      templatePaths: this.templatePaths,
+    };
+    injectUserDataForVSCodeExtension(injectedData);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -370,7 +388,7 @@ export class Tao {
           compiledContent: cachedTemplate,
           data,
           helpers,
-          filename,
+          filename: template,
         };
 
         return this.executeChildFunction(executeData, debugData);
@@ -387,13 +405,11 @@ export class Tao {
         templateLoaded,
         data,
         helpers,
-        filename,
+        filename: template,
       };
       return this.handleLoadedChildTemplate(templateData, debugData);
     }
 
-    const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
-    filename = getFileName(fullPath);
     const files = checkAccessPermission(this.templatePaths, fullPath);
 
     if (!fileIsUnique(files)) {

@@ -1,3 +1,5 @@
+import { Store } from './store';
+
 export type ErrorType =
   | 'Parse Error'
   | 'ReadFile Error'
@@ -228,4 +230,13 @@ export interface UserData {
   variables: VariableData[];
   helpers: HelperData[];
   lastUpdate: string;
+}
+
+export interface InjectedData {
+  development: boolean;
+  templatePaths: string[];
+  fullPath: string;
+  data: Data;
+  helpers: Helpers;
+  helpersStore: Store<HelperFunction>;
 }

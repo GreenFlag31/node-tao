@@ -18,6 +18,7 @@ import {
   HelperData,
   HelperFunction,
   Helpers,
+  InjectedData,
   Parse,
   TagType,
   TemplateFunction,
@@ -28,6 +29,7 @@ import path from 'node:path';
 import { Store } from './store';
 import fs from 'fs';
 import { log } from 'node:console';
+import { fileIsUnique, findTemplateInMappedTemplates } from './templates-access';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -76,33 +78,32 @@ function valueIsAFunction(value: Function) {
 }
 
 /**
- * Filename is not verified, can be non-existant.
+ * Extract injected template data (variables & helpers) to make them available through a json file for the vscode extension.
  */
-function injectUserData(
-  development: boolean,
-  fileName: string,
-  data: Data,
-  helpers: Helpers,
-  helpersStore: Store<HelperFunction>
-) {
-  if (!development) return;
+function injectUserDataForVSCodeExtension(injectedData: InjectedData) {
+  const { data, development, fullPath, helpers, helpersStore, templatePaths } = injectedData;
 
+  if (!development) return;
+  if (isTemplateDynamicallyDefined(fullPath)) return;
+  const files = findTemplateInMappedTemplates(templatePaths, fullPath);
+  if (!fileIsUnique(files)) return;
+
+  const templateFilePath = files[0];
   const userDataFilePath = path.join(process.cwd(), '.vscode/tao-user-data.json');
-  const userData = buildUserData(fileName, data, helpers, helpersStore);
+  const userData = buildUserData(templateFilePath, data, helpers, helpersStore);
 
   try {
     fs.mkdirSync('.vscode', { recursive: true });
     const data = fs.readFileSync(userDataFilePath, 'utf8');
     const dataParsed: UserData[] = JSON.parse(data);
 
-    const datas = getAllOtherUserDatas(fileName, dataParsed);
+    const datas = getAllOtherUserDatas(templateFilePath, dataParsed);
     datas.push(userData);
 
     const allUserDataStringified = JSON.stringify(datas);
     fs.writeFileSync(userDataFilePath, allUserDataStringified);
   } catch (error: any) {
     if (error.code === 'ENOENT') {
-      console.log('Fichier inexistant');
       const userDataToArrayStringified = JSON.stringify([userData]);
       fs.writeFileSync(userDataFilePath, userDataToArrayStringified);
     }
@@ -153,7 +154,7 @@ function buildUserData(
 
 function getFunctionSignatureParams(fn: HelperFunction) {
   const fnToString = fn.toString();
-  const allParamsRegex = /\([^\)]+\)/i;
+  const allParamsRegex = /\([^\)]*\)/i;
   const matchingResult = fnToString.match(allParamsRegex);
 
   return matchingResult?.[0] || '';
@@ -373,5 +374,5 @@ export {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
-  injectUserData,
+  injectUserDataForVSCodeExtension,
 };
