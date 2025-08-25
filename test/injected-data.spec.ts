@@ -35,7 +35,18 @@ describe('testing injected user data', () => {
     const files = findTemplateInMappedTemplates(tao.mappedFiles, 'included.html');
     const templateFilePath = files[0];
 
-    expect(parsed.length).toBe(2);
-    expect(parsed.at(-1)!.template).toBe(templateFilePath);
+    const currentUserData = parsed.find(
+      (item) => item.template.toLowerCase() === templateFilePath.toLowerCase()
+    )!;
+
+    expect(currentUserData.variables).toMatchObject([
+      { name: 'name', type: 'string' },
+      { name: 'thisIsANum', type: 'number' },
+    ]);
+    expect(currentUserData.helpers).toMatchObject([
+      { name: 'add', params: '(a, b)' },
+      { name: 'sub', params: '(a, b)' },
+      { name: 'mul', params: '(a, b)' },
+    ]);
   });
 });

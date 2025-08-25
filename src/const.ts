@@ -21,10 +21,6 @@ const DYNAMICAL_TEMPLATE_PREFIX = '@';
 const PLACEHOLDER_VAR_START = '"<injected-var-start>";';
 const PLACEHOLDER_VAR_END = '"<injected-var-end>";';
 
-const LITERAL_REGEX = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
-const SINGLE_QUOTE_REGEX = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
-const DOUBLE_QUOTE_REGEX = /"(?:\\[\s\w"'\\`]|[^\n\r"\\])*?"/g;
-
 /**
  * A map of special HTML characters to their XML-escaped equivalents
  */
@@ -38,9 +34,6 @@ const ESC_MAP: { [key: string]: string } = {
 
 export {
   DEFAULT_EXTENSION,
-  LITERAL_REGEX,
-  SINGLE_QUOTE_REGEX,
-  DOUBLE_QUOTE_REGEX,
   ESC_MAP,
   TEMPLATE_VARNAME,
   DYNAMICAL_TEMPLATE_PREFIX,

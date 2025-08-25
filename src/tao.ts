@@ -18,7 +18,6 @@ import {
   escapeRegExp,
   getFileName,
   valueIsAFunction,
-  normalizeFilesPath,
   injectDataAndHelpersInTemplate,
   compileToFunction,
   compileChildToFunction,
@@ -238,7 +237,7 @@ export class Tao {
   /**
    * Render a template with data and helpers.
    * @param template The path of your template to render.
-   * @param data The data to inject.
+   * @param data The variables to inject.
    * @param helpers The helpers functions to inject.
    */
   render(template: string, data: Data = {}, helpers: Helpers = {}): string {

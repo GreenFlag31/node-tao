@@ -1,4 +1,3 @@
-import { SINGLE_QUOTE_REGEX, DOUBLE_QUOTE_REGEX, LITERAL_REGEX } from './const';
 import { getParsingErrorData } from './error-utils';
 import { TemplateData } from './interfaces';
 
@@ -52,6 +51,7 @@ function handleSingleQuote(
   closeResultIndex: number,
   fileContent: string
 ) {
+  const SINGLE_QUOTE_REGEX = /'(?:\\[\s\w"'\\`]|[^\n\r'\\])*?'/g;
   SINGLE_QUOTE_REGEX.lastIndex = closeResultIndex;
 
   const singleQuoteMatch = SINGLE_QUOTE_REGEX.exec(expression);
@@ -75,6 +75,7 @@ function handleDoubleQuote(
   closeResultIndex: number,
   fileContent: string
 ) {
+  const DOUBLE_QUOTE_REGEX = /"(?:\\[\s\w"'\\`]|[^\n\r"\\])*?"/g;
   DOUBLE_QUOTE_REGEX.lastIndex = closeResultIndex;
   const doubleQuoteMatch = DOUBLE_QUOTE_REGEX.exec(expression);
 
@@ -98,6 +99,7 @@ function handleLiteralQuote(
   closeResultIndex: number,
   fileContent: string
 ) {
+  const LITERAL_REGEX = /`(?:\\[\s\S]|\${(?:[^{}]|{(?:[^{}]|{[^}]*})*})*}|(?!\${)[^\\`])*`/g;
   LITERAL_REGEX.lastIndex = closeResultIndex;
   const templateLitMatch = LITERAL_REGEX.exec(expression);
 

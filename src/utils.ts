@@ -28,7 +28,6 @@ import {
 import path from 'node:path';
 import { Store } from './store';
 import fs from 'fs';
-import { log } from 'node:console';
 import { fileIsUnique, findTemplateInMappedTemplates } from './templates-access';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {

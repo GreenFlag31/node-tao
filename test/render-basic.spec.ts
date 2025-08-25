@@ -18,6 +18,14 @@ describe('basic render tests', () => {
     expect(result).toContain('this is simple');
   });
 
+  it('should render fullpath defined templates', () => {
+    const fullPath = normalizeFilesPath(path.join(templateViews, 'simple.html'));
+
+    const data = { name: 'test' };
+    const result = tao.render(fullPath, data);
+    expect(result).toContain(`Hi ${data.name}`);
+  });
+
   it('should render simple template with an include', () => {
     const data = { name: 'test included' };
     const result = tao.render('simple-2', data);
@@ -83,14 +91,6 @@ describe('basic render tests', () => {
     const result = tao.render('@header3', data);
 
     expect(result).toContain(`<h1>${data.title}</h1>`);
-    expect(result).toContain(`Hi ${data.name}`);
-  });
-
-  it('should render fullpath defined templates', () => {
-    const fullPath = normalizeFilesPath(path.join(templateViews, 'simple.html'));
-
-    const data = { name: 'test' };
-    const result = tao.render(fullPath, data);
     expect(result).toContain(`Hi ${data.name}`);
   });
 
