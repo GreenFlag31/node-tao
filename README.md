@@ -17,7 +17,7 @@
 - 💻 Developer experience
 - 🧩 Support for local and global helpers
 - 🛡️ Security by design
-- 🟦 [Official VS Code Extension](#official-vs-code-extension)
+- 🟦 [Official VS Code Extension](#vscode)
 
 ## Get Started
 
@@ -159,6 +159,8 @@ tao.helpersStore.remove('myHelperFn');
 ## Security by design
 
 By default, `TAO` assume you are running your app in production, so no error will be thrown, such that error stack traces are not visible in your browser. Errors will be displayed in your editor console, and visual error representation (see developer experience) is available in your browser by setting `debug: true` at option initialisation.
+
+<a id="vscode"></a>
 
 ## 🟦 Official VS Code Extension
 
