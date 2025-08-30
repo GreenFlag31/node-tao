@@ -84,6 +84,7 @@ function injectUserDataForVSCodeExtension(injectedData: InjectedData) {
 
   if (!development) return;
   if (isTemplateDynamicallyDefined(fullPath)) return;
+
   const files = findTemplateInMappedTemplates(templatePaths, fullPath);
   if (!fileIsUnique(files)) return;
 
