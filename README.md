@@ -164,7 +164,7 @@ By default, `TAO` assume you are running your app in production, so no error wil
 
 ## 🟦 Official VS Code Extension
 
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/<publisher>.<extension-name>?style=for-the-badge&logo=visualstudiocode&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=<publisher>.<extension-name>)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/ManuC.tao-vscode-extension?style=for-the-badge&logo=visualstudiocode&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=ManuC.tao-vscode-extension)
 
 ## Developer experience
 
