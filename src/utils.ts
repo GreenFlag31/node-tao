@@ -29,6 +29,7 @@ import path from 'node:path';
 import { Store } from './store';
 import fs from 'fs';
 import { fileIsUnique, findTemplateInMappedTemplates } from './templates-access';
+import { log } from 'node:console';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -47,8 +48,28 @@ function getValueType(value: any) {
   if (valueIsABigint(value)) return value;
   if (valueIsNaN(value)) return value;
   if (valueIsInfinity(value)) return value;
+  const objectTransformed = valueIsAnObject(value);
+  if (objectTransformed) return objectTransformed;
 
   return JSON.stringify(value);
+}
+
+function valueIsAnObject(value: any) {
+  if (typeof value !== 'object') return false;
+
+  return (
+    JSON.stringify(value, (_key, val) => {
+      if (typeof val !== 'number') return val;
+
+      // avoid stringify replacement NaN / Infinity with "null"
+      if (isNaN(val) || !isFinite(val)) return val.toString();
+      return val;
+    })
+      // string should be converted with real value
+      .replace(/"NaN"/g, 'NaN')
+      .replace(/"Infinity"/g, 'Infinity')
+      .replace(/"-Infinity"/g, '-Infinity')
+  );
 }
 
 function valueIsNaN(value: any) {
@@ -59,9 +80,8 @@ function valueIsNaN(value: any) {
 
 function valueIsInfinity(value: any) {
   if (typeof value !== 'number') return false;
-  const plusOrMinus = Math.abs(value);
 
-  return plusOrMinus === Infinity;
+  return Math.abs(value) === Infinity;
 }
 
 function valueIsASymbol(value: Function) {
@@ -179,6 +199,10 @@ function isAChildError(error: any): error is ErrorData {
  */
 function escapeJSLiteral(value: string) {
   return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
+}
+
+function replaceCarriageReturn(value: string) {
+  return value.replace(/\r\n|\n|\r/g, '\\n');
 }
 
 function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse']) {
@@ -375,4 +399,5 @@ export {
   compileChildToFunction,
   isAChildError,
   injectUserDataForVSCodeExtension,
+  replaceCarriageReturn,
 };

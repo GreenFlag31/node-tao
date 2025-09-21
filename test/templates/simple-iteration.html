@@ -1,0 +1,7 @@
+<% for (const element of results) { %>
+<p><%= element.NaNValue %></p>
+<p><%= `isNaN: ${isNaN(element.NaNValue)}` %></p>
+
+<p><%= element.InfinityValue %></p>
+<p><%= `isInfinite: ${element.InfinityValue === Infinity}` %></p>
+<% } %>

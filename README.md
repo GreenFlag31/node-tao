@@ -156,6 +156,17 @@ const rendered = tao.render('@header', { title: 'Computer shop' });
 tao.helpersStore.remove('myHelperFn');
 ```
 
+## Providing optionnal data into the template
+
+If you wish to provide optional data to the template, prefix your data with `tao`:
+
+```html
+// template.html
+<p><%= tao.error?.firstName %></p>
+```
+
+`tao` is an object containing all the provided data and is always defined. This is particularly useful when providing optional validation error data (data that you don’t always pass into the template).
+
 ## Security by design
 
 By default, `TAO` assume you are running your app in production, so no error will be thrown, such that error stack traces are not visible in your browser. Errors will be displayed in your editor console, and visual error representation (see developer experience) is available in your browser by setting `debug: true` at option initialisation.
@@ -186,6 +197,60 @@ If you want to inspect the data provided to the template, it is available direct
 
 NB: _set `metrics: true` to activate this option. Do not activate this option in production._
 
+## Integration with Web Framework
+
+Fastify:
+
+```typescript
+import { Tao } from 'node-tao';
+import Fastify from 'fastify';
+const fastify = Fastify();
+
+const tao = new Tao({ views: 'src', development: true });
+
+declare module 'fastify' {
+  interface FastifyReply {
+    html(payload: string): FastifyReply;
+  }
+}
+
+fastify.decorateReply('html', function (payload: string) {
+  return this.type('text/html').send(payload);
+});
+
+fastify.get('/tao', (request, reply) => {
+  const result = tao.render('test', { name: 'Fastify' });
+  return reply.html(result);
+});
+
+try {
+  await fastify.listen({ port: 3000 });
+} catch (err) {
+  fastify.log.error(err);
+  process.exit(1);
+}
+```
+
+Express:
+
+```typescript
+import express from 'express';
+import { Tao } from 'node-tao';
+export const app = express();
+app.use(express.json());
+
+const tao = new Tao({ views: 'src', development: true });
+
+app.get('/tao', (req, res) => {
+  const result = tao.render('test', { name: 'Express' });
+  res.send(result);
+});
+
+app.listen(3000, () => {
+  console.log('listening on *:3000');
+});
+```
+
 ## FAQs
 
 <details>
@@ -209,7 +274,9 @@ It started as a fork of `eta`, but became a dedicated library because the change
 - **Clearer template syntax**: No prefix are needed.
 - **Helpers**: Global and local helpers, which are clearer and more suitable for little template logic.
 - **Flexible template path resolution**: With `fileResolution` mode set to `flexible`, only end unique paths can be provided, which increases file path readability (aka. `namespaces`).
+- **Vscode extension**: Official vscode extension.
 - **Performance**: Various performance optimization.
+- **Testing**: Modern and up to date numerous tests.
 
 </details>
 
@@ -235,6 +302,8 @@ _If you think those features are absolutely necessary, please open a new discuss
 V0.0.2: Fix node modules exclusion in files matching for the error template.
 
 V0.0.3: Data exchange for the official extension, and various improvements.
+
+V0.0.4: Fix NaN or Infinity value provided inside an object into the template.
 
 ## Credits
 

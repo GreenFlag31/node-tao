@@ -16,11 +16,13 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   // A set of global variables that need to be available in all test environments
   // globals: {},
 
   // Indicates whether each individual test should be reported during the run
   verbose: true,
+  silent: true,
 };
 
 export default config;

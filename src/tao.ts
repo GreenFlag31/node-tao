@@ -23,6 +23,7 @@ import {
   compileChildToFunction,
   isAChildError,
   injectUserDataForVSCodeExtension,
+  replaceCarriageReturn,
 } from './utils';
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -204,8 +205,9 @@ export class Tao {
           lastIndex = parseCloseReg.lastIndex;
           parseOpenReg.lastIndex = lastIndex;
 
+          const contentLiteralEscaped = replaceCarriageReturn(content);
           const currentType = getCurrentPrefixType(openingPrefix, parse);
-          templateData = { type: currentType, content };
+          templateData = { type: currentType, content: contentLiteralEscaped };
           compiledData.push(templateData);
           break;
         }

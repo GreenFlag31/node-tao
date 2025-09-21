@@ -6,7 +6,7 @@ const DEFAULT_EXEC = '';
 const DEFAULT_INTERPOLATE = '=';
 const DEFAULT_RAW = '~';
 
-const TEMPLATE_VARNAME = 'it';
+const TEMPLATE_VARNAME = 'tao';
 const HELPER_VARNAME = 'hp';
 
 /**
