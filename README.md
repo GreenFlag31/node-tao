@@ -305,6 +305,8 @@ V0.0.3: Data exchange for the official extension, and various improvements.
 
 V0.0.4: Fix NaN or Infinity value provided inside an object into the template.
 
+V0.0.5: Fix character escape triggering an invalid js syntax.
+
 ## Credits
 
 - Syntax and some parts of compilation are based on `eta`.

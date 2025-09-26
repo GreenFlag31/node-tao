@@ -201,10 +201,6 @@ function escapeJSLiteral(value: string) {
   return value.replace(/\\|'/g, '\\$&').replace(/\r\n|\n|\r/g, '\\n');
 }
 
-function replaceCarriageReturn(value: string) {
-  return value.replace(/\r\n|\n|\r/g, '\\n');
-}
-
 function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse']) {
   const parseOptions: Record<string, TagType> = {
     [parse.exec]: 'execute',
@@ -399,5 +395,4 @@ export {
   compileChildToFunction,
   isAChildError,
   injectUserDataForVSCodeExtension,
-  replaceCarriageReturn,
 };
