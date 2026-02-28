@@ -5,10 +5,10 @@ import { DEFAULT_EXTENSION } from '../src/const';
 import { defaultConfig } from '../src/default-config';
 import { normalizeFilesPath } from '../src/utils';
 
-describe('eta constructor', () => {
+describe('tao constructor', () => {
   it('initialisation', () => {
-    const eta = new Tao();
-    const currentConfig = eta['config'];
+    const tao = new Tao();
+    const currentConfig = tao['config'];
     expect(currentConfig).toStrictEqual(defaultConfig);
   });
 
@@ -33,7 +33,7 @@ describe('eta constructor', () => {
   it('should throw if parse values are duplicated', () => {
     const customConfig: options = { parse: { exec: '<%', interpolate: '<%' } };
     expect(() => new Tao(customConfig)).toThrow(
-      `Cannot have the same parse value at 'exec' and 'interpolate' with value '<%'`
+      `Cannot have the same parse value at 'exec' and 'interpolate' with value '<%'`,
     );
   });
 
@@ -49,7 +49,7 @@ describe('eta constructor', () => {
     const tao = new Tao({ views: templateViews });
 
     const pathWithSimpleSlash = normalizeFilesPath(
-      path.join(templateViews, `simple.${DEFAULT_EXTENSION}`)
+      path.join(templateViews, `simple.${DEFAULT_EXTENSION}`),
     );
 
     expect(tao['templatePaths']).toContain(pathWithSimpleSlash);

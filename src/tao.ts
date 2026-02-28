@@ -177,7 +177,7 @@ export class Tao {
 
     const parseOpenReg = new RegExp(
       escapeRegExp(opening) + '\\s*(' + this.prefixBuild + ')?\\s*',
-      'g'
+      'g',
     );
 
     const parseCloseReg = new RegExp('\'|"|`|(\\s*' + escapeRegExp(closing) + ')', 'g');
@@ -188,6 +188,7 @@ export class Tao {
       let closeResult: RegExpExecArray | null = null;
       let templateData: TemplateData | undefined = undefined;
 
+      // l'html qui précéde
       const precedingExpression = expression.slice(lastIndex, openingResult.index);
       lastIndex = originalOpen.length + openingResult.index;
 
@@ -204,8 +205,8 @@ export class Tao {
           lastIndex = parseCloseReg.lastIndex;
           parseOpenReg.lastIndex = lastIndex;
 
-          const currentType = getCurrentPrefixType(openingPrefix, parse);
-          templateData = { type: currentType, content };
+          const prefixType = getCurrentPrefixType(openingPrefix, parse);
+          templateData = { type: prefixType, content };
           compiledData.push(templateData);
           break;
         }
@@ -214,7 +215,7 @@ export class Tao {
           expression,
           originalClose,
           closeResult.index,
-          debugData.fileContent
+          debugData.fileContent,
         );
       }
 
@@ -223,7 +224,7 @@ export class Tao {
         expression,
         originalOpen,
         openingResult.index,
-        debugData.fileContent
+        debugData.fileContent,
       );
     }
 
@@ -352,7 +353,7 @@ export class Tao {
   private renderChild(
     template: string,
     data: Data = {},
-    helpers: Helpers = {}
+    helpers: Helpers = {},
   ): string | ErrorData {
     const debugData = initDebugData();
 
@@ -448,7 +449,7 @@ export class Tao {
         data,
         helpers,
         filename,
-        debugData
+        debugData,
       );
 
       const immutableData = structuredClone(data);
@@ -470,7 +471,7 @@ export class Tao {
         data,
         helpers,
         filename,
-        debugData
+        debugData,
       );
 
       const immutableData = structuredClone(data);
@@ -505,7 +506,7 @@ export class Tao {
         data,
         helpers,
         this.helpersStore,
-        compiledContent
+        compiledContent,
       );
       debugData.compiledAnonymousFnContent = contentReplaced;
 
@@ -538,7 +539,7 @@ export class Tao {
         data,
         helpers,
         this.helpersStore,
-        compiledContent
+        compiledContent,
       );
       debugData.compiledAnonymousFnContent = contentReplaced;
 
@@ -559,7 +560,7 @@ export class Tao {
       findOriginalLineNumberWithMessage(
         error,
         debugData.compiledAnonymousFnContent,
-        debugData.fileContent
+        debugData.fileContent,
       );
 
     const errorData: ErrorData = {
@@ -609,7 +610,7 @@ export class Tao {
     data: Data,
     helpers: Helpers,
     filename: string,
-    debugData: DebugData
+    debugData: DebugData,
   ) {
     const content = this.readFile(resolvedPath);
     debugData.fileContent = content;
@@ -619,7 +620,7 @@ export class Tao {
       data,
       helpers,
       this.helpersStore,
-      compiledContent
+      compiledContent,
     );
     debugData.compiledAnonymousFnContent = contentReplaced;
     const templateFn = compileChildToFunction(contentReplaced);
@@ -632,7 +633,7 @@ export class Tao {
     data: Data,
     helpers: Helpers,
     filename: string,
-    debugData: DebugData
+    debugData: DebugData,
   ) {
     const content = this.readFile(resolvedPath);
     debugData.fileContent = content;
@@ -642,7 +643,7 @@ export class Tao {
       data,
       helpers,
       this.helpersStore,
-      compiledContent
+      compiledContent,
     );
     debugData.compiledAnonymousFnContent = contentReplaced;
     const templateFn = compileToFunction(contentReplaced);
@@ -716,7 +717,7 @@ export class Tao {
       data,
       helpers,
       this.helpersStore,
-      compiledContent
+      compiledContent,
     );
     debugData.compiledAnonymousFnContent = contentReplaced;
 
@@ -732,7 +733,7 @@ export class Tao {
       data,
       helpers,
       this.helpersStore,
-      compiledContent
+      compiledContent,
     );
     debugData.compiledAnonymousFnContent = contentReplaced;
 
@@ -769,7 +770,7 @@ export class Tao {
 
     if (duplicate) {
       console.warn(
-        `⚠️  Duplicate template name ${name} provided. Template content has been erased.`
+        `⚠️  Duplicate template name ${name} provided. Template content has been erased.`,
       );
     }
 
