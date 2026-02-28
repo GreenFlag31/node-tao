@@ -138,7 +138,7 @@ function buildUserData(
   fileName: string,
   data: Data,
   helpers: Helpers,
-  helpersStore: Store<HelperFunction>
+  helpersStore: Store<HelperFunction>,
 ) {
   const variables = Object.entries(data);
   const helpersName = Object.entries(helpers);
@@ -209,7 +209,7 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse'])
   };
 
   // escaping by default
-  return parseOptions[prefix] ?? parse.interpolate;
+  return parseOptions[prefix] ?? 'interpolate';
 }
 
 function compileBody(templateValues: AstObject[], config: DefinitiveOptions) {
@@ -229,7 +229,7 @@ function compileBody(templateValues: AstObject[], config: DefinitiveOptions) {
   return result;
 }
 
-function compileContent(type: TagType, content: string, config: DefinitiveOptions) {
+function compileContent(type: any, content: string, config: DefinitiveOptions) {
   const { autoEscape } = config;
   const prefix = TP_VARNAME_WITH_PREFIX;
 
@@ -258,7 +258,7 @@ function injectDataAndHelpersInTemplate(
   data: Data,
   helpers: Helpers,
   helpersStore: Store<HelperFunction>,
-  executableContent: string
+  executableContent: string,
 ) {
   let newVariables = PLACEHOLDER_VAR_START;
   newVariables += initVariablesAndHelpers(data);
@@ -271,7 +271,7 @@ function injectDataAndHelpersInTemplate(
 
   const oldVariables = executableContent.substring(
     startIndex,
-    endIndex + PLACEHOLDER_VAR_END.length
+    endIndex + PLACEHOLDER_VAR_END.length,
   );
   const contentReplaced = executableContent.replace(oldVariables, newVariables);
 
@@ -295,7 +295,7 @@ function compileToFunction(contentReplaced: string) {
       HELPER_VARNAME,
       'ɵɵstart',
       'ɵɵcacheHit',
-      contentReplaced
+      contentReplaced,
     ) as TemplateFunction;
   } catch (error: any) {
     const type: ErrorType = 'Compilation Error';

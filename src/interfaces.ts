@@ -49,14 +49,14 @@ export interface Tags {
 /**
  * HTML content or template data.
  */
-export type AstObject = string | TemplateData;
+export type AstObject = TemplateData;
 
 export type TagType = 'raw' | 'execute' | 'interpolate';
 
 export type FileResolution = 'strict' | 'flexible';
 
 export interface TemplateData {
-  type: TagType;
+  type: TagType | null;
   content: string;
 }
 
@@ -66,7 +66,7 @@ export type TemplateFunction = (
   data: object,
   helpers: Helpers,
   ɵɵstart: number,
-  ɵɵcacheHit: boolean
+  ɵɵcacheHit: boolean,
 ) => string;
 
 export interface ErrorData {
@@ -239,4 +239,12 @@ export interface InjectedData {
   data: Data;
   helpers: Helpers;
   helpersStore: Store<HelperFunction>;
+}
+
+export interface TemplateExpression {
+  id: number;
+  prefixType: TagType;
+  expression: string;
+  templateStart: number;
+  templateEnd: number;
 }

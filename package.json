@@ -20,7 +20,7 @@
   "license": "MIT",
   "scripts": {
     "test": "jest",
-    "build": "rimraf dist && tsc && cpx src/error/error.html dist/error && cpx package.json dist/ && cpx README.md dist/",
+    "build": "rimraf dist && tsc && cpx src/error/error.html dist/error && cpx package.json dist/ && cpx README.md dist/ && cpx src/template.html dist",
     "start": "nodemon --ext ts,js,json,css,html --watch src --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/error/**/* dist/error && node dist/server.js\""
   },
   "devDependencies": {

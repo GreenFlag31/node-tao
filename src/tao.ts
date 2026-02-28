@@ -44,6 +44,7 @@ import {
   CompileChildExecuteData,
   DebugData,
   InjectedData,
+  TemplateExpression,
 } from './interfaces';
 import { Store } from './store';
 import {
@@ -167,70 +168,109 @@ export class Tao {
     return result;
   }
 
-  private parse(expression: string, debugData: DebugData): AstObject[] {
+  private parse(rawTemplate: string, debugData: DebugData): AstObject[] {
     const { parse, tags } = this.config;
     const { closing, opening } = tags;
 
-    let openingResult: RegExpExecArray | null = null;
     const compiledData: AstObject[] = [];
+    const templateExpressions: TemplateExpression[] = [];
     let lastIndex = 0;
+    let match: RegExpExecArray | null = null;
+    let id = 0;
 
-    const parseOpenReg = new RegExp(
-      escapeRegExp(opening) + '\\s*(' + this.prefixBuild + ')?\\s*',
-      'g',
+    const templateRegex = new RegExp(
+      escapeRegExp(opening) +
+        // first capture group is the prefix
+        '(' +
+        this.prefixBuild +
+        // second capture group is the expression
+        ')?\\s*([^' +
+        escapeRegExp(closing) +
+        ']+?)\\s*' +
+        escapeRegExp(closing),
+      'gm',
     );
 
-    const parseCloseReg = new RegExp('\'|"|`|(\\s*' + escapeRegExp(closing) + ')', 'g');
+    while ((match = templateRegex.exec(rawTemplate))) {
+      const prefix = match[1];
+      const prefixType = getCurrentPrefixType(prefix, parse);
 
-    while ((openingResult = parseOpenReg.exec(expression))) {
-      // openingPrefix by default either ~, =, or empty
-      const [originalOpen, openingPrefix = ''] = openingResult;
-      let closeResult: RegExpExecArray | null = null;
-      let templateData: TemplateData | undefined = undefined;
-
-      // l'html qui précéde
-      const precedingExpression = expression.slice(lastIndex, openingResult.index);
-      lastIndex = originalOpen.length + openingResult.index;
-
-      const escapedExpression = escapeJSLiteral(precedingExpression);
-      compiledData.push(escapedExpression);
-      parseCloseReg.lastIndex = lastIndex;
-
-      while ((closeResult = parseCloseReg.exec(expression))) {
-        const [originalClose, closePrefix] = closeResult;
-
-        if (closePrefix) {
-          const content = expression.slice(lastIndex, closeResult.index);
-
-          lastIndex = parseCloseReg.lastIndex;
-          parseOpenReg.lastIndex = lastIndex;
-
-          const prefixType = getCurrentPrefixType(openingPrefix, parse);
-          templateData = { type: prefixType, content };
-          compiledData.push(templateData);
-          break;
-        }
-
-        parseCloseReg.lastIndex = handleQuotes(
-          expression,
-          originalClose,
-          closeResult.index,
-          debugData.fileContent,
-        );
-      }
-
-      checkForUnclosedPrefix(
-        templateData,
-        expression,
-        originalOpen,
-        openingResult.index,
-        debugData.fileContent,
-      );
+      templateExpressions.push({
+        id: id++,
+        prefixType,
+        expression: match[2],
+        templateStart: match.index,
+        templateEnd: templateRegex.lastIndex,
+      });
     }
 
-    const endOfTemplate = expression.slice(lastIndex);
+    for (const templateExpression of templateExpressions) {
+      const { expression, prefixType: type, templateStart, templateEnd } = templateExpression;
+
+      const precedingExpression = rawTemplate.slice(lastIndex, templateStart);
+      const escapedExpression = escapeJSLiteral(precedingExpression);
+
+      // l'HTML
+      const htmlData: TemplateData = { type: null, content: escapedExpression };
+
+      // l'expression
+      const templateValue: TemplateData = { type, content: expression };
+
+      compiledData.push(htmlData, templateValue);
+      lastIndex = templateEnd;
+    }
+
+    // while ((openingResult = parseOpenReg.exec(expression))) {
+    //   // openingPrefix by default either ~, =, or empty
+    //   const [originalOpen, openingPrefix = ''] = openingResult;
+    //   let closeResult: RegExpExecArray | null = null;
+    //   let templateData: TemplateData | undefined = undefined;
+
+    //   // l'html qui précéde
+    //   const precedingExpression = expression.slice(lastIndex, openingResult.index);
+    //   lastIndex = originalOpen.length + openingResult.index;
+
+    //   const escapedExpression = escapeJSLiteral(precedingExpression);
+    //   const htmlData: TemplateData = { type: null, content: escapedExpression };
+    //   compiledData.push(htmlData);
+    //   parseCloseReg.lastIndex = lastIndex;
+
+    //   while ((closeResult = parseCloseReg.exec(expression))) {
+    //     const [originalClose, closePrefix] = closeResult;
+
+    //     if (closePrefix) {
+    //       const content = expression.slice(lastIndex, closeResult.index);
+
+    //       lastIndex = parseCloseReg.lastIndex;
+    //       parseOpenReg.lastIndex = lastIndex;
+
+    //       const prefixType = getCurrentPrefixType(openingPrefix, parse);
+    //       templateData = { type: prefixType, content };
+    //       compiledData.push(templateData);
+    //       break;
+    //     }
+
+    //     parseCloseReg.lastIndex = handleQuotes(
+    //       expression,
+    //       originalClose,
+    //       closeResult.index,
+    //       debugData.fileContent,
+    //     );
+    //   }
+
+    //   // checkForUnclosedPrefix(
+    //   //   templateData,
+    //   //   expression,
+    //   //   originalOpen,
+    //   //   openingResult.index,
+    //   //   debugData.fileContent,
+    //   // );
+    // }
+
+    const endOfTemplate = rawTemplate.slice(lastIndex);
     const escapedEndOfTemplate = escapeJSLiteral(endOfTemplate);
-    compiledData.push(escapedEndOfTemplate);
+    const html: TemplateData = { type: null, content: escapedEndOfTemplate };
+    compiledData.push(html);
 
     return compiledData;
   }
