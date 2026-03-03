@@ -3,7 +3,7 @@ import { ErrorData, ErrorType } from './interfaces';
 function findOriginalLineNumberWithMessage(
   error: ErrorData,
   compiledAnonymousFnContent: string,
-  originalFileContent: string
+  originalFileContent: string,
 ): [string, string[], number | null] {
   const basicErrorTypes: ErrorType[] = [
     'Template Type Error',
@@ -15,7 +15,7 @@ function findOriginalLineNumberWithMessage(
     return [error.message, [], null];
   }
   if (error.type === 'Parse Error') {
-    handleParseError(error);
+    // handleParseError(error);
     return [error.message, error.fileContent, error.lineNumber];
   }
   if (error.type === 'ReadFile Error') {
@@ -32,7 +32,7 @@ function findOriginalLineNumberWithMessage(
 
   const compiledContent = extractContentFromAnonymousFunction(
     compiledAnonymousFnContent,
-    lineFromAnonymousFn
+    lineFromAnonymousFn,
   );
   const lineNumber = getOriginalLineNumber(compiledContent);
   const fileContent = splitByLine(originalFileContent);
@@ -100,7 +100,7 @@ function splitByLine(fileContent: string) {
 }
 
 /**
- * Error occurred while parsing the template (unclosed string)
+ * Error occurred while parsing the template
  */
 function handleParseError(error: any) {
   const { fileContent } = error;
@@ -114,7 +114,7 @@ function getParsingErrorData(
   expression: string,
   index: number,
   message: string,
-  fileContent: string
+  fileContent: string,
 ): ErrorData {
   const lineNumber = getTemplateParsedLineNumber(expression, index);
   const type: ErrorType = 'Parse Error';
@@ -138,7 +138,7 @@ function infiniteInclusionError(filename: string, children: string[]) {
   const error: any = new Error();
   const errorType: ErrorType = 'Inclusion Error';
   error.message = `Possible infinite inclusion detected in ${filename} with children: ${children.join(
-    ' - '
+    ' - ',
   )}`;
   error.lineNumber = null;
   error.fileContent = '';
@@ -201,6 +201,22 @@ function handleNoTemplateFilesFound(views: string, extension: string) {
   return error;
 }
 
+function logger(level: 'info' | 'warn' | 'error' | 'debug', message: string) {
+  if (!message) return;
+
+  const color = {
+    debug: '\x1b[90m',
+    info: '\x1b[36m',
+    warn: '\x1b[33m',
+    error: '\x1b[31m',
+  }[level];
+
+  const reset = '\x1b[0m';
+  const time = new Date().toISOString();
+
+  console.log(`${color}[${time}] [${level.toUpperCase()}]${reset}`, message);
+}
+
 export {
   getErrorMessageAndSource,
   getLineFromAnonymousFunction,
@@ -214,4 +230,5 @@ export {
   handleWrongTypeOfTemplate,
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,
+  logger,
 };

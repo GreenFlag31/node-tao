@@ -46,18 +46,15 @@ export interface Tags {
   closing?: string;
 }
 
-/**
- * HTML content or template data.
- */
-export type AstObject = TemplateData;
-
 export type TagType = 'raw' | 'execute' | 'interpolate';
 
 export type FileResolution = 'strict' | 'flexible';
 
 export interface TemplateData {
   type: TagType | null;
-  content: string;
+  value: string;
+  line: number;
+  column: number;
 }
 
 export type ChildTemplateFunction = (data: object, helpers: Helpers) => string;
@@ -144,7 +141,7 @@ export interface ExecuteFunction {
   ɵɵcacheHit: boolean;
 }
 
-export interface options {
+export interface Options {
   /**
    * Automatically XML-escape interpolations.
    *

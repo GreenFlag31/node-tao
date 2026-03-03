@@ -19,7 +19,7 @@ function updateChildrenStore(
   childrenStore: Store<string[]>,
   filename: string,
   parentTemplate: string,
-  development: boolean
+  development: boolean,
 ) {
   if (!development) return;
 
@@ -38,21 +38,21 @@ function updateChildrenStore(
  */
 function includeMetrics(metricsData: Metrics) {
   const { cacheEnabled, filename: filename, files, development } = metricsData;
-  if (!development) return '""';
+  if (!development) return '"";';
 
   const templatesPathWithDirectory = getFileNameAndAbsPath(files);
 
   return `'<script>const data = ' + JSON.stringify(${TEMPLATE_VARNAME}) + ';console.log(${logRendered(
-    filename
+    filename,
   )});${logChildTemplatesCount()};${logRenderTime()};console.log(${logCache(
-    cacheEnabled
+    cacheEnabled,
   )});${logCacheHit()};${logMappedTemplates(templatesPathWithDirectory)}</script>'`;
 }
 
 function logMappedTemplates(templates: string[]) {
   const logs = templates
     .map(
-      (template, i) => `console.log("%c#${i + 1} %c${template}", "color: #888", "color: #87cefa");`
+      (template, i) => `console.log("%c#${i + 1} %c${template}", "color: #888", "color: #87cefa");`,
     )
     .join('');
 

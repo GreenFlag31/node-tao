@@ -8,7 +8,6 @@ import {
   TP_VARNAME_WITH_PREFIX,
 } from './const';
 import {
-  AstObject,
   ChildTemplateFunction,
   Data,
   DefinitiveOptions,
@@ -21,6 +20,7 @@ import {
   InjectedData,
   Parse,
   TagType,
+  TemplateData,
   TemplateFunction,
   UserData,
   VariableData,
@@ -208,46 +208,40 @@ function getCurrentPrefixType(prefix: string, parse: DefinitiveOptions['parse'])
     [parse.interpolate]: 'interpolate',
   };
 
-  // escaping by default
-  return parseOptions[prefix] ?? 'interpolate';
+  return parseOptions[prefix] ?? null;
 }
 
-function compileBody(templateValues: AstObject[], config: DefinitiveOptions) {
+function compileBody(templateValues: TemplateData[], config: DefinitiveOptions) {
   let result = '';
 
-  for (const value of templateValues) {
-    if (typeof value === 'string') {
+  for (const { type, value } of templateValues) {
+    if (type === null) {
       // HTML content
       result += `${TP_VARNAME_WITH_PREFIX}.res+='${value}';\n`;
       continue;
     }
 
-    const { type, content = '' } = value;
-    result += compileContent(type, content, config);
+    result += compileContent(type, value, config);
   }
 
   return result;
 }
 
-function compileContent(type: any, content: string, config: DefinitiveOptions) {
-  const { autoEscape } = config;
-  const prefix = TP_VARNAME_WITH_PREFIX;
-
+function compileContent(type: any, value: string, config: DefinitiveOptions) {
   if (type === 'raw') {
-    return `${prefix}.res+=${content}\n`;
-  }
-
-  if (type === 'interpolate') {
-    if (autoEscape) {
-      content = `${prefix}.e(${content})`;
-    }
-
-    return `${prefix}.res+=${content};\n`;
+    return `${TP_VARNAME_WITH_PREFIX}.res+=${value}\n`;
   }
 
   if (type === 'execute') {
-    return `${content}\n`;
+    return `${value}\n`;
   }
+
+  // interpolate
+  if (config.autoEscape) {
+    value = `${TP_VARNAME_WITH_PREFIX}.e(${value})`;
+  }
+
+  return `${TP_VARNAME_WITH_PREFIX}.res+=${value};\n`;
 }
 
 /**

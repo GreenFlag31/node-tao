@@ -56,9 +56,7 @@ describe('error render', () => {
     const tao = new Tao({ views: templateViews, development: true });
     const result = tao.render('simple-parse-error');
 
-    expect(result).toContain(
-      `Unclosed string &quot; &#39; &quot; at line 1 in simple-parse-error.html`
-    );
+    expect(result).toContain(`Unclosed template block`);
   });
 
   it('should handle infinite inclusion error', () => {
@@ -79,7 +77,7 @@ describe('error render', () => {
     tao.loadTemplate('@header2', headerPartial);
     const result = tao.render('@header2', data);
 
-    expect(result).toContain(`Unclosed prefix`);
+    expect(result).toContain(`>Unclosed template block`);
   });
 
   it('should handle not unique child template', () => {

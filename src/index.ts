@@ -1,2 +1,2 @@
 export { Tao } from './tao';
-export { type options } from './interfaces';
+export { type Options as options } from './interfaces';

@@ -26,7 +26,6 @@ import {
 } from './utils';
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
-  AstObject,
   TemplateData,
   Data,
   Helpers,
@@ -34,7 +33,7 @@ import {
   Metrics,
   ErrorType,
   DefinitiveOptions,
-  options,
+  Options,
   LoadedTemplateData,
   CompileExecuteData,
   ExecuteFunction,
@@ -44,7 +43,6 @@ import {
   CompileChildExecuteData,
   DebugData,
   InjectedData,
-  TemplateExpression,
 } from './interfaces';
 import { Store } from './store';
 import {
@@ -53,6 +51,7 @@ import {
   handleNonUniqueFile,
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,
+  logger,
 } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -83,7 +82,7 @@ export class Tao {
   // Metrics - DX
   private childrenStore = new Store<string[]>();
 
-  constructor(customConfig: options = {}) {
+  constructor(customConfig: Options = {}) {
     this.config = { ...defaultConfig, ...customConfig } as DefinitiveOptions;
 
     this.initializeConfig();
@@ -122,7 +121,7 @@ export class Tao {
   }
 
   private compileChild(content: string, debugData: DebugData) {
-    const compiledAST = this.parse(content, debugData);
+    const compiledAST = this.parseTemplate(content);
 
     const result = `
     ${includeFn()}
@@ -142,7 +141,7 @@ export class Tao {
 
   private compile(content: string, filename: string, debugData: DebugData) {
     const { development } = this.config;
-    const compiledAST = this.parse(content, debugData);
+    const compiledAST = this.parseTemplate(content);
 
     this.childrenStore.set(this.parentTemplate, []);
     const metricsData = this.getMetrics(filename);
@@ -168,109 +167,261 @@ export class Tao {
     return result;
   }
 
-  private parse(rawTemplate: string, debugData: DebugData): AstObject[] {
+  /**
+   * A basic lexer covering most of the edge cases (quotes, comments, template literals, nested templates, etc.) to parse the template into an array of TemplateData containing the line and column information.
+   */
+  private parseTemplate(rawExpression: string) {
+    const { parse, tags } = this.config;
+    const { opening, closing } = tags;
+
+    const tokens: TemplateData[] = [];
+
+    let index = 0;
+    let line = 1;
+    let column = 1;
+
+    const openingLength = opening.length;
+    const closingLength = closing.length;
+
+    const updatePosition = (char: string) => {
+      if (char === '\n') {
+        line++;
+        column = 1;
+      } else {
+        column++;
+      }
+    };
+
+    while (index < rawExpression.length) {
+      const openIndex = rawExpression.indexOf(opening, index);
+
+      // texte final
+      if (openIndex === -1) {
+        const text = rawExpression.slice(index);
+        tokens.push({ type: null, value: escapeJSLiteral(text), line, column });
+        break;
+      }
+
+      // Texte avant bloc
+      if (openIndex > index) {
+        const text = rawExpression.slice(index, openIndex);
+        if (text.length > 0) {
+          tokens.push({ type: null, value: escapeJSLiteral(text), line, column });
+        }
+      }
+
+      // advance position until openIndex
+      while (index < openIndex) {
+        updatePosition(rawExpression[index]);
+        index++;
+      }
+
+      const blockLine = line;
+      const blockColumn = column;
+
+      let cursor = openIndex + openingLength;
+      column += openingLength;
+
+      const mode = getCurrentPrefixType(rawExpression[cursor].trim(), parse);
+
+      if (mode !== null) {
+        cursor++;
+        column++;
+      }
+
+      const contentStart = cursor;
+
+      let inSingle = false;
+      let inDouble = false;
+      let inBacktick = false;
+      let inLineComment = false;
+      let inBlockComment = false;
+      let escaped = false;
+      let templateDepth = 0;
+
+      while (cursor < rawExpression.length - 1) {
+        const char = rawExpression[cursor];
+        const next = rawExpression[cursor + 1];
+
+        // end of template, do not update the line
+        // if (next === undefined) continue;
+
+        updatePosition(char);
+
+        if (escaped) {
+          escaped = false;
+          cursor++;
+          continue;
+        }
+
+        if (char === '\\') {
+          escaped = true;
+          cursor++;
+          continue;
+        }
+
+        if (inLineComment) {
+          if (char === '\n') inLineComment = false;
+          cursor++;
+          continue;
+        }
+
+        if (inBlockComment) {
+          if (char === '*' && next === '/') {
+            inBlockComment = false;
+            cursor += 2;
+            column++;
+            continue;
+          }
+          cursor++;
+          continue;
+        }
+
+        if (!inSingle && !inDouble && !inBacktick) {
+          if (char === '/' && next === '/') {
+            inLineComment = true;
+            cursor += 2;
+            column++;
+            continue;
+          }
+          if (char === '/' && next === '*') {
+            inBlockComment = true;
+            cursor += 2;
+            column++;
+            continue;
+          }
+        }
+
+        if (!inDouble && !inBacktick && char === "'") {
+          inSingle = !inSingle;
+          cursor++;
+          continue;
+        }
+
+        if (!inSingle && !inBacktick && char === '"') {
+          inDouble = !inDouble;
+          cursor++;
+          continue;
+        }
+
+        if (!inSingle && !inDouble && char === '`') {
+          inBacktick = !inBacktick;
+          cursor++;
+          continue;
+        }
+
+        if (inBacktick && char === '$' && next === '{') {
+          templateDepth++;
+          cursor += 2;
+          column++;
+          continue;
+        }
+
+        if (templateDepth > 0 && char === '}') {
+          templateDepth--;
+          cursor++;
+          continue;
+        }
+
+        if (
+          !inSingle &&
+          !inDouble &&
+          !inBacktick &&
+          !inLineComment &&
+          !inBlockComment &&
+          templateDepth === 0 &&
+          rawExpression.startsWith(closing, cursor)
+        ) {
+          break;
+        }
+
+        cursor++;
+      }
+
+      if (cursor >= rawExpression.length) {
+        const type: ErrorType = 'Parse Error';
+        const error: any = new Error();
+        error.message = 'Unclosed template block';
+        error.lineNumber = line;
+        error.columnNumber = column;
+        error.fileContent = rawExpression;
+        error.type = type;
+        throw error;
+      }
+
+      const content = rawExpression.slice(contentStart, cursor).trim();
+      tokens.push({ type: mode, value: content, line: blockLine, column: blockColumn });
+
+      index = cursor + closingLength;
+      column += closingLength;
+    }
+
+    return tokens;
+  }
+
+  private parse(expression: string, debugData: DebugData): TemplateData[] {
     const { parse, tags } = this.config;
     const { closing, opening } = tags;
 
-    const compiledData: AstObject[] = [];
-    const templateExpressions: TemplateExpression[] = [];
+    let openingResult: RegExpExecArray | null = null;
+    const compiledData: any[] = [];
     let lastIndex = 0;
-    let match: RegExpExecArray | null = null;
-    let id = 0;
 
-    const templateRegex = new RegExp(
-      escapeRegExp(opening) +
-        // first capture group is the prefix
-        '(' +
-        this.prefixBuild +
-        // second capture group is the expression
-        ')?\\s*([^' +
-        escapeRegExp(closing) +
-        ']+?)\\s*' +
-        escapeRegExp(closing),
-      'gm',
+    const parseOpenReg = new RegExp(
+      escapeRegExp(opening) + '\\s*(' + this.prefixBuild + ')?\\s*',
+      'g',
     );
 
-    while ((match = templateRegex.exec(rawTemplate))) {
-      const prefix = match[1];
-      const prefixType = getCurrentPrefixType(prefix, parse);
+    const parseCloseReg = new RegExp('\'|"|`|(\\s*' + escapeRegExp(closing) + ')', 'g');
 
-      templateExpressions.push({
-        id: id++,
-        prefixType,
-        expression: match[2],
-        templateStart: match.index,
-        templateEnd: templateRegex.lastIndex,
-      });
-    }
+    while ((openingResult = parseOpenReg.exec(expression))) {
+      // openingPrefix by default either ~, =, or empty
+      const [originalOpen, openingPrefix = ''] = openingResult;
+      let closeResult: RegExpExecArray | null = null;
+      let templateData: any | undefined = undefined;
 
-    for (const templateExpression of templateExpressions) {
-      const { expression, prefixType: type, templateStart, templateEnd } = templateExpression;
+      const precedingExpression = expression.slice(lastIndex, openingResult.index);
+      lastIndex = originalOpen.length + openingResult.index;
 
-      const precedingExpression = rawTemplate.slice(lastIndex, templateStart);
       const escapedExpression = escapeJSLiteral(precedingExpression);
+      compiledData.push({ type: null, value: escapedExpression });
+      parseCloseReg.lastIndex = lastIndex;
 
-      // l'HTML
-      const htmlData: TemplateData = { type: null, content: escapedExpression };
+      while ((closeResult = parseCloseReg.exec(expression))) {
+        const [originalClose, closePrefix] = closeResult;
 
-      // l'expression
-      const templateValue: TemplateData = { type, content: expression };
+        if (closePrefix) {
+          const content = expression.slice(lastIndex, closeResult.index);
 
-      compiledData.push(htmlData, templateValue);
-      lastIndex = templateEnd;
+          lastIndex = parseCloseReg.lastIndex;
+          parseOpenReg.lastIndex = lastIndex;
+
+          const currentType = getCurrentPrefixType(openingPrefix, parse);
+          templateData = { type: currentType, value: content };
+          compiledData.push(templateData);
+          break;
+        }
+
+        parseCloseReg.lastIndex = handleQuotes(
+          expression,
+          originalClose,
+          closeResult.index,
+          debugData.fileContent,
+        );
+      }
+
+      checkForUnclosedPrefix(
+        templateData,
+        expression,
+        originalOpen,
+        openingResult.index,
+        debugData.fileContent,
+      );
     }
 
-    // while ((openingResult = parseOpenReg.exec(expression))) {
-    //   // openingPrefix by default either ~, =, or empty
-    //   const [originalOpen, openingPrefix = ''] = openingResult;
-    //   let closeResult: RegExpExecArray | null = null;
-    //   let templateData: TemplateData | undefined = undefined;
-
-    //   // l'html qui précéde
-    //   const precedingExpression = expression.slice(lastIndex, openingResult.index);
-    //   lastIndex = originalOpen.length + openingResult.index;
-
-    //   const escapedExpression = escapeJSLiteral(precedingExpression);
-    //   const htmlData: TemplateData = { type: null, content: escapedExpression };
-    //   compiledData.push(htmlData);
-    //   parseCloseReg.lastIndex = lastIndex;
-
-    //   while ((closeResult = parseCloseReg.exec(expression))) {
-    //     const [originalClose, closePrefix] = closeResult;
-
-    //     if (closePrefix) {
-    //       const content = expression.slice(lastIndex, closeResult.index);
-
-    //       lastIndex = parseCloseReg.lastIndex;
-    //       parseOpenReg.lastIndex = lastIndex;
-
-    //       const prefixType = getCurrentPrefixType(openingPrefix, parse);
-    //       templateData = { type: prefixType, content };
-    //       compiledData.push(templateData);
-    //       break;
-    //     }
-
-    //     parseCloseReg.lastIndex = handleQuotes(
-    //       expression,
-    //       originalClose,
-    //       closeResult.index,
-    //       debugData.fileContent,
-    //     );
-    //   }
-
-    //   // checkForUnclosedPrefix(
-    //   //   templateData,
-    //   //   expression,
-    //   //   originalOpen,
-    //   //   openingResult.index,
-    //   //   debugData.fileContent,
-    //   // );
-    // }
-
-    const endOfTemplate = rawTemplate.slice(lastIndex);
+    const endOfTemplate = expression.slice(lastIndex);
     const escapedEndOfTemplate = escapeJSLiteral(endOfTemplate);
-    const html: TemplateData = { type: null, content: escapedEndOfTemplate };
-    compiledData.push(html);
+    compiledData.push({ type: null, content: escapedEndOfTemplate });
 
     return compiledData;
   }
@@ -527,12 +678,12 @@ export class Tao {
   }
 
   private manageError(error: any, filename: string, debugData: DebugData): ErrorData {
-    // this.compiledStore.remove(filename); => pourquoi ?
     error.filename = filename;
     const errorData = this.handleErrorMessage(error, debugData);
-    console.error(new Error(`Error in ${filename}: ${errorData.message}`));
     const errorHTML = this.initErrorTemplate(errorData);
     errorData.errorHTML = errorHTML;
+
+    logger('error', `Error in ${filename}: ${errorData.message} at line ${errorData.lineNumber}`);
 
     return errorData;
   }
