@@ -43,6 +43,7 @@ import {
   CompileChildExecuteData,
   DebugData,
   InjectedData,
+  TemplateQuotePosition,
 } from './interfaces';
 import { Store } from './store';
 import {
@@ -52,6 +53,7 @@ import {
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,
   logger,
+  buildErrorData,
 } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -173,6 +175,7 @@ export class Tao {
   private parseTemplate(rawExpression: string) {
     const { parse, tags } = this.config;
     const { opening, closing } = tags;
+    const errorType: ErrorType = 'Parse Error';
 
     const tokens: TemplateData[] = [];
 
@@ -239,12 +242,14 @@ export class Tao {
       let escaped = false;
       let templateDepth = 0;
 
-      while (cursor < rawExpression.length - 1) {
+      let singleQuoteStart: TemplateQuotePosition | null = null;
+      let doubleQuoteStart: TemplateQuotePosition | null = null;
+      let backtickStart: TemplateQuotePosition | null = null;
+      let blockCommentStart: TemplateQuotePosition | null = null;
+
+      while (cursor < rawExpression.length) {
         const char = rawExpression[cursor];
         const next = rawExpression[cursor + 1];
-
-        // end of template, do not update the line
-        // if (next === undefined) continue;
 
         updatePosition(char);
 
@@ -269,10 +274,13 @@ export class Tao {
         if (inBlockComment) {
           if (char === '*' && next === '/') {
             inBlockComment = false;
+            blockCommentStart = null;
             cursor += 2;
             column++;
             continue;
           }
+
+          blockCommentStart = { line, column };
           cursor++;
           continue;
         }
@@ -294,18 +302,21 @@ export class Tao {
 
         if (!inDouble && !inBacktick && char === "'") {
           inSingle = !inSingle;
+          singleQuoteStart = inSingle ? { line, column } : null;
           cursor++;
           continue;
         }
 
         if (!inSingle && !inBacktick && char === '"') {
           inDouble = !inDouble;
+          doubleQuoteStart = inDouble ? { line, column } : null;
           cursor++;
           continue;
         }
 
         if (!inSingle && !inDouble && char === '`') {
           inBacktick = !inBacktick;
+          backtickStart = inBacktick ? { line, column } : null;
           cursor++;
           continue;
         }
@@ -338,14 +349,49 @@ export class Tao {
         cursor++;
       }
 
+      if (inSingle) {
+        const error = buildErrorData(
+          'Unclosed single quote',
+          singleQuoteStart!.line,
+          rawExpression,
+          errorType,
+        );
+        throw error;
+      }
+
+      if (inDouble) {
+        const error = buildErrorData(
+          'Unclosed double quote',
+          doubleQuoteStart!.line,
+          rawExpression,
+          errorType,
+        );
+        throw error;
+      }
+
+      if (inBacktick) {
+        const error = buildErrorData(
+          'Unclosed backtick',
+          backtickStart!.line,
+          rawExpression,
+          errorType,
+        );
+        throw error;
+      }
+
+      if (inBlockComment) {
+        const error = buildErrorData(
+          'Unclosed block comment',
+          blockCommentStart!.line,
+          rawExpression,
+          errorType,
+        );
+        throw error;
+      }
+
       if (cursor >= rawExpression.length) {
-        const type: ErrorType = 'Parse Error';
-        const error: any = new Error();
-        error.message = 'Unclosed template block';
-        error.lineNumber = line;
-        error.columnNumber = column;
-        error.fileContent = rawExpression;
-        error.type = type;
+        const error = buildErrorData('Unclosed template block', line, rawExpression, errorType);
+
         throw error;
       }
 

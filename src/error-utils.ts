@@ -128,6 +128,21 @@ function getParsingErrorData(
   return error;
 }
 
+function buildErrorData(
+  message: string,
+  lineNumber: number,
+  fileContent: string,
+  type: ErrorType,
+): ErrorData {
+  const error: any = new Error();
+  error.message = message;
+  error.lineNumber = lineNumber;
+  error.fileContent = fileContent;
+  error.type = type;
+
+  return error;
+}
+
 function getTemplateParsedLineNumber(expression: string, index: number) {
   const splitIntoLines = expression.slice(0, index).split(/\n/);
   const line = splitIntoLines.length;
@@ -231,4 +246,5 @@ export {
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,
   logger,
+  buildErrorData,
 };

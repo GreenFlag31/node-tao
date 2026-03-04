@@ -56,7 +56,7 @@ describe('error render', () => {
     const tao = new Tao({ views: templateViews, development: true });
     const result = tao.render('simple-parse-error');
 
-    expect(result).toContain(`Unclosed template block`);
+    expect(result).toContain(`Unclosed single quote`);
   });
 
   it('should handle infinite inclusion error', () => {

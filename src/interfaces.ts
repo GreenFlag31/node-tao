@@ -245,3 +245,8 @@ export interface TemplateExpression {
   templateStart: number;
   templateEnd: number;
 }
+
+export interface TemplateQuotePosition {
+  line: number;
+  column: number;
+}
