@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { Tao } from './tao';
-import { Options } from './interfaces';
 
 const tao = new Tao({ views: path.join(__dirname) });
 

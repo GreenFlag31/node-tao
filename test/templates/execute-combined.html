@@ -1,0 +1,9 @@
+<% const scores = values.filter(v => v >= 50); %> <% if (scores.length > 0) { %>
+<ul>
+  <% for (const s of scores) { %>
+  <li><%= s %></li>
+  <% } %>
+</ul>
+<% } else { %>
+<p>Aucun résultat</p>
+<% } %>

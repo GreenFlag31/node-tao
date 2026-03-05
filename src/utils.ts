@@ -14,22 +14,14 @@ import {
   ErrorData,
   ErrorType,
   FileResolution,
-  HelperData,
   HelperFunction,
   Helpers,
-  InjectedData,
-  Parse,
   TagType,
   TemplateData,
   TemplateFunction,
-  UserData,
-  VariableData,
 } from './interfaces';
 import path from 'node:path';
 import { Store } from './store';
-import fs from 'fs';
-import { fileIsUnique, findTemplateInMappedTemplates } from './templates-access';
-import { log } from 'node:console';
 
 function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
   const dataEntries = Object.entries(dataOrHelpers);
@@ -96,90 +88,6 @@ function valueIsAFunction(value: Function) {
   return typeof value === 'function';
 }
 
-/**
- * Extract injected template data (variables & helpers) to make them available through a json file for the vscode extension.
- */
-function injectUserDataForVSCodeExtension(injectedData: InjectedData) {
-  const { data, development, fullPath, helpers, helpersStore, templatePaths } = injectedData;
-
-  if (!development) return;
-  if (isTemplateDynamicallyDefined(fullPath)) return;
-
-  const files = findTemplateInMappedTemplates(templatePaths, fullPath);
-  if (!fileIsUnique(files)) return;
-
-  const templateFilePath = files[0];
-  const userDataFilePath = path.join(process.cwd(), '.vscode/tao-user-data.json');
-  const userData = buildUserData(templateFilePath, data, helpers, helpersStore);
-
-  try {
-    fs.mkdirSync('.vscode', { recursive: true });
-    const data = fs.readFileSync(userDataFilePath, 'utf8');
-    const dataParsed: UserData[] = JSON.parse(data);
-
-    const datas = getAllOtherUserDatas(templateFilePath, dataParsed);
-    datas.push(userData);
-
-    const allUserDataStringified = JSON.stringify(datas);
-    fs.writeFileSync(userDataFilePath, allUserDataStringified);
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      const userDataToArrayStringified = JSON.stringify([userData]);
-      fs.writeFileSync(userDataFilePath, userDataToArrayStringified);
-    }
-  }
-}
-
-function getAllOtherUserDatas(fileName: string, userDatas: UserData[]) {
-  return userDatas.filter((data) => data.template !== fileName);
-}
-
-function buildUserData(
-  fileName: string,
-  data: Data,
-  helpers: Helpers,
-  helpersStore: Store<HelperFunction>,
-) {
-  const variables = Object.entries(data);
-  const helpersName = Object.entries(helpers);
-  const globalHelpersName = Object.entries(helpersStore.getAll());
-  const allHelpers = [...helpersName, ...globalHelpersName];
-
-  const variablesData: VariableData[] = [];
-  for (const [key, value] of variables) {
-    variablesData.push({
-      name: key,
-      type: typeof value,
-    });
-  }
-
-  const helpersData: HelperData[] = [];
-  for (const [key, fn] of allHelpers) {
-    const source = getFunctionSignatureParams(fn);
-    helpersData.push({
-      name: key,
-      params: source,
-    });
-  }
-
-  const userData: UserData = {
-    template: fileName,
-    variables: variablesData,
-    helpers: helpersData,
-    lastUpdate: new Date().toISOString(),
-  };
-
-  return userData;
-}
-
-function getFunctionSignatureParams(fn: HelperFunction) {
-  const fnToString = fn.toString();
-  const allParamsRegex = /\([^\)]*\)/i;
-  const matchingResult = fnToString.match(allParamsRegex);
-
-  return matchingResult?.[0] || '';
-}
-
 function includeFn() {
   return `const include = (templatePath, data, helpers) => {
       data = {...${TEMPLATE_VARNAME}, ...data};
@@ -216,6 +124,8 @@ function compileBody(templateValues: TemplateData[], config: DefinitiveOptions) 
 
   for (const { type, value } of templateValues) {
     if (type === null) {
+      if (!value.trim()) continue; // otherwise this can break switch/case
+
       // HTML content
       result += `${TP_VARNAME_WITH_PREFIX}.res+='${value}';\n`;
       continue;
@@ -331,29 +241,8 @@ function getFileName(filename: string) {
   return filename.split('/').at(-1)!;
 }
 
-function buildPrefixRegex(parseOptions: Parse) {
-  const options: string[] = [];
-
-  for (const prefix of Object.values(parseOptions)) {
-    if (!prefix) continue;
-
-    const prefixEscaped = escapeRegExp(prefix);
-    options.push(prefixEscaped);
-  }
-
-  return options.join('|');
-}
-
 function replaceChar(input: string): string {
   return ESC_MAP[input];
-}
-
-/**
- * Escape special regular expression characters inside a string
- * $& means the whole matched string
- */
-function escapeRegExp(string: string) {
-  return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
@@ -374,12 +263,10 @@ export {
   escapeJSLiteral,
   getCurrentPrefixType,
   compileContent,
-  buildPrefixRegex,
   compileBody,
   includeFn,
   initVariablesAndHelpers,
   getResolvedPath,
-  escapeRegExp,
   getPathWithExtension,
   normalizeFilesPath,
   getFileName,
@@ -388,5 +275,4 @@ export {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
-  injectUserDataForVSCodeExtension,
 };

@@ -9,20 +9,17 @@ import {
 import { checkAccessPermission, fileIsUnique, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
 import {
-  buildPrefixRegex,
   compileBody,
   escapeJSLiteral,
   getCurrentPrefixType,
   includeFn,
   getResolvedPath,
-  escapeRegExp,
   getFileName,
   valueIsAFunction,
   injectDataAndHelpersInTemplate,
   compileToFunction,
   compileChildToFunction,
   isAChildError,
-  injectUserDataForVSCodeExtension,
 } from './utils';
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -59,12 +56,10 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { includeChildren, includeMetrics, includeRenderTime, updateChildrenStore } from './metrics';
 import { assignParse, assignTags, initDebugData } from './init';
-import { checkForUnclosedPrefix, handleQuotes } from './parsing-helpers';
 
 export class Tao {
   private config: DefinitiveOptions;
   private templatePaths: string[] = [];
-  private prefixBuild = '';
 
   /**
    * Stores already compiled templates.
@@ -99,7 +94,6 @@ export class Tao {
     checkOpeningAndClosingTag(this.config.tags);
     checkPrefixTemplateTags(this.config.parse);
 
-    this.prefixBuild = buildPrefixRegex(this.config.parse);
     this.templatePaths = getFilesFromDirectory(views, this.config.extension);
   }
 
@@ -123,7 +117,7 @@ export class Tao {
   }
 
   private compileChild(content: string, debugData: DebugData) {
-    const compiledAST = this.parseTemplate(content);
+    const compiledAST = this.templateLexer(content);
 
     const result = `
     ${includeFn()}
@@ -143,7 +137,7 @@ export class Tao {
 
   private compile(content: string, filename: string, debugData: DebugData) {
     const { development } = this.config;
-    const compiledAST = this.parseTemplate(content);
+    const compiledAST = this.templateLexer(content);
 
     this.childrenStore.set(this.parentTemplate, []);
     const metricsData = this.getMetrics(filename);
@@ -172,7 +166,7 @@ export class Tao {
   /**
    * A basic lexer covering most of the edge cases (quotes, comments, template literals, nested templates, etc.) to parse the template into an array of TemplateData containing the line and column information.
    */
-  private parseTemplate(rawExpression: string) {
+  private templateLexer(rawExpression: string) {
     const { parse, tags } = this.config;
     const { opening, closing } = tags;
     const errorType: ErrorType = 'Parse Error';
@@ -240,7 +234,6 @@ export class Tao {
       let inLineComment = false;
       let inBlockComment = false;
       let escaped = false;
-      let templateDepth = 0;
 
       let singleQuoteStart: TemplateQuotePosition | null = null;
       let doubleQuoteStart: TemplateQuotePosition | null = null;
@@ -280,7 +273,6 @@ export class Tao {
             continue;
           }
 
-          blockCommentStart = { line, column };
           cursor++;
           continue;
         }
@@ -294,6 +286,7 @@ export class Tao {
           }
           if (char === '/' && next === '*') {
             inBlockComment = true;
+            blockCommentStart = { line, column };
             cursor += 2;
             column++;
             continue;
@@ -321,26 +314,12 @@ export class Tao {
           continue;
         }
 
-        if (inBacktick && char === '$' && next === '{') {
-          templateDepth++;
-          cursor += 2;
-          column++;
-          continue;
-        }
-
-        if (templateDepth > 0 && char === '}') {
-          templateDepth--;
-          cursor++;
-          continue;
-        }
-
         if (
           !inSingle &&
           !inDouble &&
           !inBacktick &&
           !inLineComment &&
           !inBlockComment &&
-          templateDepth === 0 &&
           rawExpression.startsWith(closing, cursor)
         ) {
           break;
@@ -405,73 +384,6 @@ export class Tao {
     return tokens;
   }
 
-  private parse(expression: string, debugData: DebugData): TemplateData[] {
-    const { parse, tags } = this.config;
-    const { closing, opening } = tags;
-
-    let openingResult: RegExpExecArray | null = null;
-    const compiledData: any[] = [];
-    let lastIndex = 0;
-
-    const parseOpenReg = new RegExp(
-      escapeRegExp(opening) + '\\s*(' + this.prefixBuild + ')?\\s*',
-      'g',
-    );
-
-    const parseCloseReg = new RegExp('\'|"|`|(\\s*' + escapeRegExp(closing) + ')', 'g');
-
-    while ((openingResult = parseOpenReg.exec(expression))) {
-      // openingPrefix by default either ~, =, or empty
-      const [originalOpen, openingPrefix = ''] = openingResult;
-      let closeResult: RegExpExecArray | null = null;
-      let templateData: any | undefined = undefined;
-
-      const precedingExpression = expression.slice(lastIndex, openingResult.index);
-      lastIndex = originalOpen.length + openingResult.index;
-
-      const escapedExpression = escapeJSLiteral(precedingExpression);
-      compiledData.push({ type: null, value: escapedExpression });
-      parseCloseReg.lastIndex = lastIndex;
-
-      while ((closeResult = parseCloseReg.exec(expression))) {
-        const [originalClose, closePrefix] = closeResult;
-
-        if (closePrefix) {
-          const content = expression.slice(lastIndex, closeResult.index);
-
-          lastIndex = parseCloseReg.lastIndex;
-          parseOpenReg.lastIndex = lastIndex;
-
-          const currentType = getCurrentPrefixType(openingPrefix, parse);
-          templateData = { type: currentType, value: content };
-          compiledData.push(templateData);
-          break;
-        }
-
-        parseCloseReg.lastIndex = handleQuotes(
-          expression,
-          originalClose,
-          closeResult.index,
-          debugData.fileContent,
-        );
-      }
-
-      checkForUnclosedPrefix(
-        templateData,
-        expression,
-        originalOpen,
-        openingResult.index,
-        debugData.fileContent,
-      );
-    }
-
-    const endOfTemplate = expression.slice(lastIndex);
-    const escapedEndOfTemplate = escapeJSLiteral(endOfTemplate);
-    compiledData.push({ type: null, content: escapedEndOfTemplate });
-
-    return compiledData;
-  }
-
   /**
    * Render a template with data and helpers.
    * @param template The path of your template to render.
@@ -486,7 +398,7 @@ export class Tao {
       return errorHTML;
     }
 
-    const { views, extension, fileResolution, development } = this.config;
+    const { views, extension, fileResolution } = this.config;
     const ɵɵstart = performance.now();
     let ɵɵcacheHit = false;
 
@@ -495,16 +407,6 @@ export class Tao {
     const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
     this.parentTemplate = filename;
     this.childrenStore.remove(this.parentTemplate);
-
-    const injectedData: InjectedData = {
-      development,
-      fullPath,
-      data,
-      helpers,
-      helpersStore: this.helpersStore,
-      templatePaths: this.templatePaths,
-    };
-    injectUserDataForVSCodeExtension(injectedData);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -600,22 +502,12 @@ export class Tao {
       return errorData;
     }
 
-    const { views, extension, fileResolution, development } = this.config;
+    const { views, extension, fileResolution } = this.config;
     const pathWithExtension = getPathWithExtension(template, extension);
     const filename = getFileName(pathWithExtension);
     const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
 
     updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
-
-    const injectedData: InjectedData = {
-      development,
-      fullPath,
-      data,
-      helpers,
-      helpersStore: this.helpersStore,
-      templatePaths: this.templatePaths,
-    };
-    injectUserDataForVSCodeExtension(injectedData);
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -1006,9 +898,7 @@ export class Tao {
     }
 
     if (duplicate) {
-      console.warn(
-        `⚠️  Duplicate template name ${name} provided. Template content has been erased.`,
-      );
+      logger('warn', `Duplicate template name ${name} provided. Template content has been erased.`);
     }
 
     this.dynamictemplatesStore.set(name, template);

@@ -29,7 +29,7 @@ describe('basic render tests', () => {
   it('should render simple template with an include', () => {
     const data = { name: 'test included' };
     const result = tao.render('simple-2', data);
-    expect(result).toContain(`Hi ${data.name} <h3>Hello from included</h3>`);
+    expect(result).toContain(`Hi ${data.name}<h3>Hello from included</h3>`);
   });
 
   it('include should inherit data from the parent template', () => {
