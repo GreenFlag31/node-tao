@@ -39,7 +39,6 @@ import {
   LoadedChildTemplateData,
   CompileChildExecuteData,
   DebugData,
-  InjectedData,
   TemplateQuotePosition,
 } from './interfaces';
 import { Store } from './store';
@@ -164,7 +163,7 @@ export class Tao {
   }
 
   /**
-   * A basic lexer covering most of the edge cases (quotes, comments, template literals, nested templates, etc.) to parse the template into an array of TemplateData containing the line and column information.
+   * A basic lexer covering most of the edge cases (quotes, comments, template literals, nested templates, etc.) to parse the template into an array of TemplateData containing the line information, start and end positions.
    */
   private templateLexer(rawExpression: string) {
     const { parse, tags } = this.config;
@@ -175,35 +174,41 @@ export class Tao {
 
     let index = 0;
     let line = 1;
-    let column = 1;
 
     const openingLength = opening.length;
     const closingLength = closing.length;
 
     const updatePosition = (char: string) => {
-      if (char === '\n') {
-        line++;
-        column = 1;
-      } else {
-        column++;
-      }
+      if (char === '\n') line++;
     };
 
     while (index < rawExpression.length) {
       const openIndex = rawExpression.indexOf(opening, index);
 
-      // texte final
+      // Text after the last opening tag
       if (openIndex === -1) {
         const text = rawExpression.slice(index);
-        tokens.push({ type: null, value: escapeJSLiteral(text), line, column });
+        tokens.push({
+          type: null,
+          value: escapeJSLiteral(text),
+          line,
+          startPos: index,
+          endPos: rawExpression.length,
+        });
         break;
       }
 
-      // Texte avant bloc
+      // Text before an opening tag
       if (openIndex > index) {
         const text = rawExpression.slice(index, openIndex);
         if (text.length > 0) {
-          tokens.push({ type: null, value: escapeJSLiteral(text), line, column });
+          tokens.push({
+            type: null,
+            value: escapeJSLiteral(text),
+            line,
+            startPos: index,
+            endPos: openIndex,
+          });
         }
       }
 
@@ -214,16 +219,11 @@ export class Tao {
       }
 
       const blockLine = line;
-      const blockColumn = column;
-
       let cursor = openIndex + openingLength;
-      column += openingLength;
-
       const mode = getCurrentPrefixType(rawExpression[cursor].trim(), parse);
 
       if (mode !== null) {
         cursor++;
-        column++;
       }
 
       const contentStart = cursor;
@@ -269,7 +269,6 @@ export class Tao {
             inBlockComment = false;
             blockCommentStart = null;
             cursor += 2;
-            column++;
             continue;
           }
 
@@ -281,35 +280,33 @@ export class Tao {
           if (char === '/' && next === '/') {
             inLineComment = true;
             cursor += 2;
-            column++;
             continue;
           }
           if (char === '/' && next === '*') {
             inBlockComment = true;
-            blockCommentStart = { line, column };
+            blockCommentStart = { line };
             cursor += 2;
-            column++;
             continue;
           }
         }
 
         if (!inDouble && !inBacktick && char === "'") {
           inSingle = !inSingle;
-          singleQuoteStart = inSingle ? { line, column } : null;
+          singleQuoteStart = inSingle ? { line } : null;
           cursor++;
           continue;
         }
 
         if (!inSingle && !inBacktick && char === '"') {
           inDouble = !inDouble;
-          doubleQuoteStart = inDouble ? { line, column } : null;
+          doubleQuoteStart = inDouble ? { line } : null;
           cursor++;
           continue;
         }
 
         if (!inSingle && !inDouble && char === '`') {
           inBacktick = !inBacktick;
-          backtickStart = inBacktick ? { line, column } : null;
+          backtickStart = inBacktick ? { line } : null;
           cursor++;
           continue;
         }
@@ -369,16 +366,26 @@ export class Tao {
       }
 
       if (cursor >= rawExpression.length) {
-        const error = buildErrorData('Unclosed template block', line, rawExpression, errorType);
+        const error = buildErrorData(
+          `Unclosed template block ${closing}`,
+          line,
+          rawExpression,
+          errorType,
+        );
 
         throw error;
       }
 
       const content = rawExpression.slice(contentStart, cursor).trim();
-      tokens.push({ type: mode, value: content, line: blockLine, column: blockColumn });
+      tokens.push({
+        type: mode,
+        value: content,
+        line: blockLine,
+        startPos: contentStart,
+        endPos: cursor,
+      });
 
       index = cursor + closingLength;
-      column += closingLength;
     }
 
     return tokens;

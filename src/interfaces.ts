@@ -54,7 +54,8 @@ export interface TemplateData {
   type: TagType | null;
   value: string;
   line: number;
-  column: number;
+  startPos: number;
+  endPos: number;
 }
 
 export type ChildTemplateFunction = (data: object, helpers: Helpers) => string;
@@ -222,22 +223,6 @@ export interface HelperData {
   params: string;
 }
 
-export interface UserData {
-  template: string;
-  variables: VariableData[];
-  helpers: HelperData[];
-  lastUpdate: string;
-}
-
-export interface InjectedData {
-  development: boolean;
-  templatePaths: string[];
-  fullPath: string;
-  data: Data;
-  helpers: Helpers;
-  helpersStore: Store<HelperFunction>;
-}
-
 export interface TemplateExpression {
   id: number;
   prefixType: TagType;
@@ -248,5 +233,4 @@ export interface TemplateExpression {
 
 export interface TemplateQuotePosition {
   line: number;
-  column: number;
 }

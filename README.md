@@ -307,6 +307,8 @@ V0.0.4: Fix NaN or Infinity value provided inside an object into the template.
 
 V0.0.5: Fix character escape triggering an invalid js syntax.
 
+V0.0.6: Transforming the basic template expression extraction (inherited from ETA) to a lexer, more scalable, precise, and complete.
+
 ## Credits
 
 - Syntax and some parts of compilation are based on `eta`.

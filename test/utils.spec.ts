@@ -1,12 +1,5 @@
 import path from 'node:path';
-import { Parse } from '../src/interfaces';
-import {
-  buildPrefixRegex,
-  escapeJSLiteral,
-  getResolvedPath,
-  initVariablesAndHelpers,
-  XMLEscape,
-} from '../src/utils';
+import { escapeJSLiteral, getResolvedPath, initVariablesAndHelpers, XMLEscape } from '../src/utils';
 import { normalizeFilesPath } from '../src/templates-access';
 
 describe('initVariablesAndHelpers', () => {
@@ -50,33 +43,6 @@ describe('initVariablesAndHelpers', () => {
     };
     const result = initVariablesAndHelpers(input);
     expect(result).toMatch(/^const greet = function.*\{\s*return 'hello';\s*\};$/s);
-  });
-});
-
-describe('buildPrefixRegex', () => {
-  it('should return an empty string if all prefixes are undefined', () => {
-    const parseOptions: Parse = {};
-    expect(buildPrefixRegex(parseOptions)).toBe('');
-  });
-
-  it('should include only defined prefixes', () => {
-    const parseOptions: Parse = { interpolate: '=', exec: undefined, raw: '~' };
-    expect(buildPrefixRegex(parseOptions)).toBe('=|~');
-  });
-
-  it('should escape special characters', () => {
-    const parseOptions: Parse = { exec: '*', interpolate: '$', raw: '^' };
-    expect(buildPrefixRegex(parseOptions)).toBe('\\*|\\$|\\^');
-  });
-
-  it('should handle empty string as a prefix', () => {
-    const parseOptions: Parse = { exec: '', interpolate: '=', raw: '' };
-    expect(buildPrefixRegex(parseOptions)).toBe('=');
-  });
-
-  it('should handle interpolate: "=", raw: "~"', () => {
-    const parseOptions: Parse = { exec: '', interpolate: '=', raw: '~' };
-    expect(buildPrefixRegex(parseOptions)).toBe('=|~');
   });
 });
 
