@@ -1,7 +1,7 @@
-import { Tao } from '../src/index';
+import { Tao } from '../../src/index';
 import path from 'path';
 
-const templateViews = path.join(process.cwd(), 'test/templates');
+const templateViews = path.join(__dirname, 'templates');
 
 describe('advanced render tests (helpers, etc)', () => {
   it('should support local and global helpers in templates', () => {
@@ -18,7 +18,7 @@ describe('advanced render tests (helpers, etc)', () => {
       { n },
       {
         nPlusOne: (n: number) => n + 1,
-      }
+      },
     );
 
     expect(result).toContain('<p>n: 5</p>');

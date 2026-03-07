@@ -1,7 +1,7 @@
 import path from 'node:path';
-import { Tao } from '../src';
+import { Tao } from '../../src';
 
-const templateViews = path.join(process.cwd(), 'test/templates');
+const templateViews = path.join(__dirname, 'templates');
 const tao = new Tao({ views: templateViews, development: false });
 
 describe('testing injected user data', () => {

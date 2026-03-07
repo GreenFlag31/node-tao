@@ -716,7 +716,7 @@ export class Tao {
   private initErrorTemplate(errorData: Data) {
     if (!this.config.development) return '';
 
-    const templatesPath = path.join(__dirname, 'error');
+    const templatesPath = path.join(__dirname);
     const tao = new Tao({ views: templatesPath });
     return tao.render('error', errorData);
   }

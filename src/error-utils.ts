@@ -208,7 +208,7 @@ function handleNoTemplateFilesFound(views: string, extension: string) {
   const errorType: ErrorType = 'Not Found Error';
 
   const error: any = new Error();
-  error.message = `No template files found in ${views} with extension ${extension}`;
+  error.message = `No template files found (reading: ${views}.${extension})`;
   error.lineNumber = null;
   error.fileContent = '';
   error.type = errorType;

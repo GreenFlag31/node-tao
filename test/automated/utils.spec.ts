@@ -1,10 +1,16 @@
 import path from 'node:path';
-import { escapeJSLiteral, getResolvedPath, initVariablesAndHelpers, XMLEscape } from '../src/utils';
-import { normalizeFilesPath } from '../src/templates-access';
+import {
+  escapeJSLiteral,
+  getResolvedPath,
+  initVariablesAndHelpers,
+  XMLEscape,
+} from '../../src/utils';
+import { normalizeFilesPath } from '../../src/templates-access';
+
+const views = path.join(__dirname, 'templates');
 
 describe('initVariablesAndHelpers', () => {
   it('getFullPath should return a complete path when the path is not absolute', () => {
-    const views = path.join(process.cwd(), 'test/templates');
     const template = 'simple.eta';
 
     const result = getResolvedPath(views, template, 'strict');
@@ -13,7 +19,6 @@ describe('initVariablesAndHelpers', () => {
   });
 
   it('getFullPath should return a complete path when the path is absolute', () => {
-    const views = path.join(process.cwd(), 'test/templates');
     const template = 'simple.eta';
     const completePath = path.join(views, template);
 

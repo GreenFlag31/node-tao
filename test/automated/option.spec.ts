@@ -1,5 +1,7 @@
 import path from 'node:path';
-import { options, Tao } from '../src';
+import { options, Tao } from '../../src';
+
+const templateViews = path.join(__dirname, 'templates');
 
 describe('Initialisation option', () => {
   it('should render template with custom delimitators', () => {
@@ -46,14 +48,13 @@ describe('Initialisation option', () => {
   });
 
   it('should render a template with fileResolution set to strict', () => {
-    const templateViews = path.join(process.cwd(), 'test');
     const options: options = {
       fileResolution: 'strict',
       views: templateViews,
     };
 
     const tao = new Tao(options);
-    const result = tao.render('templates/simple', { name: 'my title' });
+    const result = tao.render('simple', { name: 'my title' });
 
     expect(result).toContain('Hi my title');
   });
@@ -84,7 +85,6 @@ describe('Initialisation option', () => {
   });
 
   it('should work with custom file extension', () => {
-    const templateViews = path.join(process.cwd(), 'test');
     const options: options = { extension: 'tpl', views: templateViews };
     const tao = new Tao(options);
 

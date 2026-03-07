@@ -1,7 +1,7 @@
-import { Tao } from '../src/index';
+import { Tao } from '../../src/index';
 import path from 'path';
 
-const templateViews = path.join(process.cwd(), 'test/templates');
+const templateViews = path.join(__dirname, 'templates');
 const tao = new Tao({ views: templateViews });
 
 // ---------------------------------------------------------------------------

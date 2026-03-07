@@ -1,9 +1,9 @@
-import { options, Tao } from '../src';
+import { options, Tao } from '../../src';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { DEFAULT_EXTENSION } from '../src/const';
-import { defaultConfig } from '../src/default-config';
-import { normalizeFilesPath } from '../src/utils';
+import { DEFAULT_EXTENSION } from '../../src/const';
+import { defaultConfig } from '../../src/default-config';
+import { normalizeFilesPath } from '../../src/utils';
 
 describe('tao constructor', () => {
   it('initialisation', () => {
@@ -45,7 +45,7 @@ describe('tao constructor', () => {
   });
 
   it('Simple template files should be found', () => {
-    const templateViews = path.join(process.cwd(), 'test/templates');
+    const templateViews = path.join(__dirname, 'templates');
     const tao = new Tao({ views: templateViews });
 
     const pathWithSimpleSlash = normalizeFilesPath(
@@ -56,7 +56,7 @@ describe('tao constructor', () => {
   });
 
   it('Metrics should be available when enabled', () => {
-    const templateViews = path.join(process.cwd(), 'test/templates');
+    const templateViews = path.join(__dirname, 'templates');
     const tao = new Tao({ views: templateViews, development: true });
 
     const result = tao.render('simple', { name: 'test' });

@@ -21,8 +21,8 @@
   "license": "MIT",
   "scripts": {
     "test": "jest",
-    "build": "rimraf dist && tsc && cpx src/error/error.html dist/error && cpx package.json dist/ && cpx README.md dist/ && cpx src/template.html dist",
-    "start": "nodemon --ext ts,js,json,css,html --watch src --exec \"tsc && cpx src/templates/**/* dist/templates && cpx src/error/**/* dist/error && node dist/server.js\""
+    "build": "rimraf dist && tsc && cpx src/*.html dist && cpx package.json dist/ && cpx README.md dist/",
+    "start": "nodemon --ext ts,html --watch src --exec \"tsc && cpx src/*.html dist && node dist/server.js\""
   },
   "devDependencies": {
     "@types/jest": "29.4.0",

@@ -1,5 +1,5 @@
-import { getPathWithExtension } from '../src/checks';
-import { checkAccessPermission } from '../src/templates-access';
+import { getPathWithExtension } from '../../src/checks';
+import { checkAccessPermission } from '../../src/templates-access';
 
 describe('checks function tests', () => {
   it('getPathWithExtension should return a path with its extension when the filePath does not contain the extension', () => {

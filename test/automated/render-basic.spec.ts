@@ -1,8 +1,8 @@
-import { Tao } from '../src/index';
+import { Tao } from '../../src/index';
 import path from 'path';
-import { normalizeFilesPath } from '../src/utils';
+import { normalizeFilesPath } from '../../src/utils';
 
-const templateViews = path.join(process.cwd(), 'test/templates');
+const templateViews = path.join(__dirname, 'templates');
 const tao = new Tao({ views: templateViews });
 
 describe('basic render tests', () => {
