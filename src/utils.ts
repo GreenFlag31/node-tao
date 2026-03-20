@@ -1,4 +1,4 @@
-import { isTemplateDynamicallyDefined } from './checks';
+import { isTemplateDynamicallyDefined } from './validations';
 import {
   ESC_MAP,
   HELPER_VARNAME,
@@ -10,6 +10,7 @@ import {
 import {
   ChildTemplateFunction,
   Data,
+  DataOrHelper,
   DefinitiveOptions,
   ErrorData,
   ErrorType,
@@ -23,7 +24,7 @@ import {
 import path from 'node:path';
 import { Store } from './store';
 
-function initVariablesAndHelpers(dataOrHelpers: Data | Helpers) {
+function initVariablesAndHelpers(dataOrHelpers: DataOrHelper) {
   const dataEntries = Object.entries(dataOrHelpers);
   let variables = '';
 
@@ -89,10 +90,9 @@ function valueIsAFunction(value: Function) {
 }
 
 function includeFn() {
-  return `const include = (templatePath, data, helpers) => {
-      data = {...${TEMPLATE_VARNAME}, ...data};
-      helpers = {...${HELPER_VARNAME}, ...helpers};
-      const rendered = this.renderChild(templatePath, data, helpers);
+  return `const include = (templatePath, dataOrHelpers) => {
+      const data = {...${TEMPLATE_VARNAME}, ...dataOrHelpers};
+      const rendered = this.renderChild(templatePath, data);
       if (rendered.isAChildError) throw rendered;
       return rendered;
   }`;
@@ -159,14 +159,12 @@ function compileContent(type: any, value: string, config: DefinitiveOptions) {
  * Always keep placeholders.
  */
 function injectDataAndHelpersInTemplate(
-  data: Data,
-  helpers: Helpers,
+  dataOrHelpers: DataOrHelper,
   helpersStore: Store<HelperFunction>,
   executableContent: string,
 ) {
   let newVariables = PLACEHOLDER_VAR_START;
-  newVariables += initVariablesAndHelpers(data);
-  newVariables += initVariablesAndHelpers(helpers);
+  newVariables += initVariablesAndHelpers(dataOrHelpers);
   newVariables += initVariablesAndHelpers(helpersStore.getAll());
   newVariables += PLACEHOLDER_VAR_END;
 
@@ -215,6 +213,24 @@ function getPathWithExtension(filePath: string, extension: string) {
   const pathWithoutExtension = normalizedFilePath.replace(`.${extension}`, '');
 
   return `${pathWithoutExtension}.${extension}`;
+}
+
+function cloneData(dataOrHelpers: DataOrHelper) {
+  const data: Data = {};
+  const helpers: Helpers = {};
+
+  for (const [key, value] of Object.entries(dataOrHelpers)) {
+    const isAFunction = valueIsAFunction(value);
+
+    if (isAFunction) {
+      helpers[key] = value;
+      continue;
+    }
+
+    data[key] = value;
+  }
+
+  return { data: structuredClone(data), helpers };
 }
 
 /**
@@ -275,4 +291,5 @@ export {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
+  cloneData,
 };

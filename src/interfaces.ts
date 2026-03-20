@@ -58,7 +58,7 @@ export interface TemplateData {
   endPos: number;
 }
 
-export type ChildTemplateFunction = (data: object, helpers: Helpers) => string;
+export type ChildTemplateFunction = (data: Data, helpers: Helpers) => string;
 
 export type TemplateFunction = (
   data: object,
@@ -75,6 +75,10 @@ export interface ErrorData {
   type: ErrorType;
   isAChildError: boolean;
   errorHTML: string;
+}
+
+export interface DataOrHelper {
+  [key: string]: any;
 }
 
 export interface Data {
@@ -96,15 +100,13 @@ export interface Metrics {
 
 export interface LoadedChildTemplateData {
   templateLoaded: string;
-  data: Data;
-  helpers: Helpers;
+  dataOrHelpers: DataOrHelper;
   filename: string;
 }
 
 export interface LoadedTemplateData {
   templateLoaded: string;
-  data: Data;
-  helpers: Helpers;
+  dataOrHelpers: DataOrHelper;
   ɵɵstart: number;
   filename: string;
   ɵɵcacheHit: boolean;
@@ -112,15 +114,13 @@ export interface LoadedTemplateData {
 
 export interface CompileChildExecuteData {
   fullPath: string;
-  data: Data;
-  helpers: Helpers;
+  dataOrHelpers: DataOrHelper;
   filename: string;
 }
 
 export interface CompileExecuteData {
   fullPath: string;
-  data: Data;
-  helpers: Helpers;
+  dataOrHelpers: DataOrHelper;
   ɵɵstart: number;
   filename: string;
   ɵɵcacheHit: boolean;
@@ -128,15 +128,13 @@ export interface CompileExecuteData {
 
 export interface ExecuteChildFunction {
   compiledContent: string;
-  data: Data;
-  helpers: Helpers;
+  dataOrHelpers: DataOrHelper;
   filename: string;
 }
 
 export interface ExecuteFunction {
   compiledContent: string;
-  data: Data;
-  helpers: Helpers;
+  dataOrHelpers: DataOrHelper;
   ɵɵstart: number;
   filename: string;
   ɵɵcacheHit: boolean;

@@ -13,13 +13,7 @@ describe('advanced render tests (helpers, etc)', () => {
 
     const n = 5;
 
-    const result = tao.render(
-      '/helpers',
-      { n },
-      {
-        nPlusOne: (n: number) => n + 1,
-      },
-    );
+    const result = tao.render('/helpers', { n, nPlusOne: (n: number) => n + 1 });
 
     expect(result).toContain('<p>n: 5</p>');
     expect(result).toContain('<p>n + 1: 6</p>');
@@ -57,7 +51,7 @@ describe('advanced render tests (helpers, etc)', () => {
       listTeam: (team: { name: string }[]) => team.map((m) => m.name).join(', '),
     };
 
-    const result = tao.render('advanced-helpers', data, localHelpers);
+    const result = tao.render('advanced-helpers', { ...data, ...localHelpers });
 
     expect(result).toContain('<h1>User: ALICE</h1>');
     expect(result).toContain('<p>Last login: 2025-05-30</p>');

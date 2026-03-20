@@ -72,7 +72,7 @@ describe('complex render tests', () => {
       },
     };
 
-    const result = tao.render('complex-3', data, { formatDate });
+    const result = tao.render('complex-3', { ...data, formatDate });
 
     expect(result).toContain('<h1>Welcome, Alice</h1>');
     expect(result).toContain('Last login: 2024-12-01');

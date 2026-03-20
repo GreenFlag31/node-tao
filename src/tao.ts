@@ -5,8 +5,8 @@ import {
   getPathWithExtension,
   isTemplateDynamicallyDefined,
   trimDotFromExtension,
-} from './checks';
-import { checkAccessPermission, fileIsUnique, getFilesFromDirectory } from './templates-access';
+} from './validations';
+import { checkAccessPermission, getFilesFromDirectory } from './templates-access';
 import fs from 'node:fs';
 import {
   compileBody,
@@ -20,6 +20,7 @@ import {
   compileToFunction,
   compileChildToFunction,
   isAChildError,
+  cloneData,
 } from './utils';
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
@@ -40,6 +41,7 @@ import {
   CompileChildExecuteData,
   DebugData,
   TemplateQuotePosition,
+  DataOrHelper,
 } from './interfaces';
 import { Store } from './store';
 import {
@@ -72,10 +74,13 @@ export class Tao {
    * Stores global helpers.
    */
   public helpersStore = new Store<HelperFunction>();
-
-  // Metrics - DX
+  /**
+   * Metrics - DX
+   */
   private parentTemplate = '';
-  // Metrics - DX
+  /**
+   * Metrics - DX
+   */
   private childrenStore = new Store<string[]>();
 
   constructor(customConfig: Options = {}) {
@@ -115,7 +120,7 @@ export class Tao {
     return metricsData;
   }
 
-  private compileChild(content: string, debugData: DebugData) {
+  private compileChild(content: string) {
     const compiledAST = this.templateLexer(content);
 
     const result = `
@@ -134,7 +139,7 @@ export class Tao {
     return result;
   }
 
-  private compile(content: string, filename: string, debugData: DebugData) {
+  private compile(content: string, filename: string) {
     const { development } = this.config;
     const compiledAST = this.templateLexer(content);
 
@@ -394,10 +399,9 @@ export class Tao {
   /**
    * Render a template with data and helpers.
    * @param template The path of your template to render.
-   * @param data The variables to inject.
-   * @param helpers The helpers functions to inject.
+   * @param dataOrHelpers The variables and helpers to inject.
    */
-  render(template: string, data: Data = {}, helpers: Helpers = {}): string {
+  render<T extends DataOrHelper>(template: string, dataOrHelpers: T = {} as T): string {
     const debugData = initDebugData();
     if (typeof template !== 'string') {
       const error = handleWrongTypeOfTemplate(template);
@@ -422,8 +426,7 @@ export class Tao {
         ɵɵcacheHit = true;
         const executeData: ExecuteFunction = {
           compiledContent: cachedTemplate,
-          data,
-          helpers,
+          dataOrHelpers,
           ɵɵstart,
           filename: template,
           ɵɵcacheHit,
@@ -441,8 +444,7 @@ export class Tao {
 
       const templateData: LoadedTemplateData = {
         templateLoaded,
-        data,
-        helpers,
+        dataOrHelpers,
         ɵɵstart,
         filename: template,
         ɵɵcacheHit,
@@ -458,7 +460,7 @@ export class Tao {
 
     const files = checkAccessPermission(this.templatePaths, fullPath);
 
-    if (!fileIsUnique(files)) {
+    if (files.length !== 1) {
       const error = handleNonUniqueFile(files, filename);
       const { errorHTML } = this.manageError(error, filename, debugData);
       return errorHTML;
@@ -469,8 +471,7 @@ export class Tao {
       ɵɵcacheHit = true;
       const executeData: ExecuteFunction = {
         compiledContent: cachedTemplate,
-        data,
-        helpers,
+        dataOrHelpers,
         ɵɵstart,
         filename,
         ɵɵcacheHit,
@@ -484,8 +485,7 @@ export class Tao {
     const compileData: CompileExecuteData = {
       filename,
       fullPath: file,
-      data,
-      helpers,
+      dataOrHelpers,
       ɵɵstart,
       ɵɵcacheHit,
     };
@@ -496,11 +496,7 @@ export class Tao {
   /**
    * Render a child component. Called inside the parent template.
    */
-  private renderChild(
-    template: string,
-    data: Data = {},
-    helpers: Helpers = {},
-  ): string | ErrorData {
+  private renderChild(template: string, dataOrHelpers: DataOrHelper = {}): string | ErrorData {
     const debugData = initDebugData();
 
     if (typeof template !== 'string') {
@@ -522,8 +518,7 @@ export class Tao {
       if (cachedTemplate) {
         const executeData: ExecuteChildFunction = {
           compiledContent: cachedTemplate,
-          data,
-          helpers,
+          dataOrHelpers,
           filename: template,
         };
 
@@ -539,16 +534,16 @@ export class Tao {
 
       const templateData: LoadedChildTemplateData = {
         templateLoaded,
-        data,
-        helpers,
+        dataOrHelpers,
         filename: template,
       };
+
       return this.handleLoadedChildTemplate(templateData, debugData);
     }
 
     const files = checkAccessPermission(this.templatePaths, fullPath);
 
-    if (!fileIsUnique(files)) {
+    if (files.length !== 1) {
       const error = handleNonUniqueFile(files, filename);
       const errorData = this.handleChildError(error, filename, debugData);
       return errorData;
@@ -558,10 +553,10 @@ export class Tao {
     if (cachedTemplate) {
       const executeData: ExecuteChildFunction = {
         compiledContent: cachedTemplate,
-        data,
-        helpers,
+        dataOrHelpers,
         filename,
       };
+
       return this.executeChildFunction(executeData, debugData);
     }
 
@@ -569,27 +564,25 @@ export class Tao {
     const compileData: CompileChildExecuteData = {
       filename,
       fullPath: file,
-      data,
-      helpers,
+      dataOrHelpers,
     };
 
     return this.compileAndExecuteChild(compileData, debugData);
   }
 
   private compileAndExecuteChild(compileData: CompileChildExecuteData, debugData: DebugData) {
-    const { data, filename, fullPath, helpers } = compileData;
+    const { dataOrHelpers, filename, fullPath } = compileData;
 
     try {
       const templateFn = this.readChildFileAndGetCompiledFn(
         fullPath,
-        data,
-        helpers,
+        dataOrHelpers,
         filename,
         debugData,
       );
 
-      const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers);
+      const { data, helpers } = cloneData(dataOrHelpers);
+      const html = templateFn.call(this, data, helpers);
 
       return html;
     } catch (error: any) {
@@ -599,19 +592,18 @@ export class Tao {
   }
 
   private compileAndExecute(compileData: CompileExecuteData, debugData: DebugData) {
-    const { data, filename, fullPath, helpers, ɵɵstart, ɵɵcacheHit } = compileData;
+    const { dataOrHelpers, filename, fullPath, ɵɵstart, ɵɵcacheHit } = compileData;
 
     try {
       const templateFn = this.readFileAndGetCompiledFn(
         fullPath,
-        data,
-        helpers,
+        dataOrHelpers,
         filename,
         debugData,
       );
 
-      const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+      const { data, helpers } = cloneData(dataOrHelpers);
+      const html = templateFn.call(this, data, helpers, ɵɵstart, ɵɵcacheHit);
 
       return html;
     } catch (error: any) {
@@ -634,20 +626,20 @@ export class Tao {
   }
 
   private executeChildFunction(executeData: ExecuteChildFunction, debugData: DebugData) {
-    const { data, filename, helpers, compiledContent } = executeData;
+    const { dataOrHelpers, filename, compiledContent } = executeData;
 
     try {
-      const immutableData = structuredClone(data);
       const contentReplaced = injectDataAndHelpersInTemplate(
-        data,
-        helpers,
+        dataOrHelpers,
         this.helpersStore,
         compiledContent,
       );
       debugData.compiledAnonymousFnContent = contentReplaced;
 
       const templateFn = compileChildToFunction(contentReplaced);
-      const html = templateFn.call(this, immutableData, helpers);
+
+      const { data, helpers } = cloneData(dataOrHelpers);
+      const html = templateFn.call(this, data, helpers);
 
       return html;
     } catch (error: any) {
@@ -667,20 +659,19 @@ export class Tao {
   }
 
   private executeFunction(executeData: ExecuteFunction, debugData: DebugData) {
-    const { data, filename, helpers, ɵɵstart, compiledContent, ɵɵcacheHit } = executeData;
+    const { dataOrHelpers, filename, ɵɵstart, compiledContent, ɵɵcacheHit } = executeData;
 
     try {
-      const immutableData = structuredClone(data);
+      const { data, helpers } = cloneData(dataOrHelpers);
       const contentReplaced = injectDataAndHelpersInTemplate(
-        data,
-        helpers,
+        dataOrHelpers,
         this.helpersStore,
         compiledContent,
       );
       debugData.compiledAnonymousFnContent = contentReplaced;
 
       const templateFn = compileToFunction(contentReplaced);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+      const html = templateFn.call(this, data, helpers, ɵɵstart, ɵɵcacheHit);
 
       return html;
     } catch (error: any) {
@@ -721,8 +712,8 @@ export class Tao {
     return tao.render('error', errorData);
   }
 
-  private compileChildAndCache(content: string, filename: string, debugData: DebugData) {
-    const compiledContent = this.compileChild(content, debugData);
+  private compileChildAndCache(content: string, filename: string) {
+    const compiledContent = this.compileChild(content);
 
     if (this.config.cache) {
       this.compiledStore.set(filename, compiledContent);
@@ -731,8 +722,8 @@ export class Tao {
     return compiledContent;
   }
 
-  private compileAndCache(content: string, filename: string, debugData: DebugData) {
-    const compiledContent = this.compile(content, filename, debugData);
+  private compileAndCache(content: string, filename: string) {
+    const compiledContent = this.compile(content, filename);
 
     if (this.config.cache) {
       this.compiledStore.set(filename, compiledContent);
@@ -743,18 +734,16 @@ export class Tao {
 
   private readChildFileAndGetCompiledFn(
     resolvedPath: string,
-    data: Data,
-    helpers: Helpers,
+    dataOrHelpers: DataOrHelper,
     filename: string,
     debugData: DebugData,
   ) {
     const content = this.readFile(resolvedPath);
     debugData.fileContent = content;
-    const compiledContent = this.compileChildAndCache(content, filename, debugData);
+    const compiledContent = this.compileChildAndCache(content, filename);
 
     const contentReplaced = injectDataAndHelpersInTemplate(
-      data,
-      helpers,
+      dataOrHelpers,
       this.helpersStore,
       compiledContent,
     );
@@ -766,18 +755,16 @@ export class Tao {
 
   private readFileAndGetCompiledFn(
     resolvedPath: string,
-    data: Data,
-    helpers: Helpers,
+    dataOrHelpers: DataOrHelper,
     filename: string,
     debugData: DebugData,
   ) {
     const content = this.readFile(resolvedPath);
     debugData.fileContent = content;
-    const compiledContent = this.compileAndCache(content, filename, debugData);
+    const compiledContent = this.compileAndCache(content, filename);
 
     const contentReplaced = injectDataAndHelpersInTemplate(
-      data,
-      helpers,
+      dataOrHelpers,
       this.helpersStore,
       compiledContent,
     );
@@ -806,14 +793,15 @@ export class Tao {
    * Handle dynamically defined templates
    */
   private handleLoadedTemplate(templateData: LoadedTemplateData, debugData: DebugData) {
-    const { data, filename, helpers, ɵɵstart, ɵɵcacheHit } = templateData;
+    const { dataOrHelpers, filename, ɵɵstart, ɵɵcacheHit } = templateData;
 
     try {
+      const { data, helpers } = cloneData(dataOrHelpers);
       const contentReplaced = this.compileLoadedTemplate(templateData, debugData);
 
       const templateFn = compileToFunction(contentReplaced);
-      const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers, ɵɵstart, ɵɵcacheHit);
+
+      const html = templateFn.call(this, data, helpers, ɵɵstart, ɵɵcacheHit);
 
       return html;
     } catch (error: any) {
@@ -825,15 +813,15 @@ export class Tao {
   }
 
   private handleLoadedChildTemplate(templateData: LoadedChildTemplateData, debugData: DebugData) {
-    const { data, filename, helpers } = templateData;
+    const { dataOrHelpers, filename } = templateData;
 
     try {
       const contentReplaced = this.compileLoadedChildTemplate(templateData, debugData);
 
       const templateFn = compileChildToFunction(contentReplaced);
 
-      const immutableData = structuredClone(data);
-      const html = templateFn.call(this, immutableData, helpers);
+      const { data, helpers } = cloneData(dataOrHelpers);
+      const html = templateFn.call(this, data, helpers);
 
       return html;
     } catch (error: any) {
@@ -846,12 +834,11 @@ export class Tao {
    * Handle dynamically defined templates
    */
   private compileLoadedTemplate(templateData: LoadedTemplateData, debugData: DebugData) {
-    const { data, filename, helpers, templateLoaded: content } = templateData;
+    const { dataOrHelpers, filename, templateLoaded: content } = templateData;
 
-    const compiledContent = this.compileAndCache(content, filename, debugData);
+    const compiledContent = this.compileAndCache(content, filename);
     const contentReplaced = injectDataAndHelpersInTemplate(
-      data,
-      helpers,
+      dataOrHelpers,
       this.helpersStore,
       compiledContent,
     );
@@ -861,13 +848,12 @@ export class Tao {
   }
 
   private compileLoadedChildTemplate(templateData: LoadedChildTemplateData, debugData: DebugData) {
-    const { data, filename, helpers, templateLoaded: content } = templateData;
+    const { dataOrHelpers, filename, templateLoaded: content } = templateData;
 
-    const compiledContent = this.compileChildAndCache(content, filename, debugData);
+    const compiledContent = this.compileChildAndCache(content, filename);
 
     const contentReplaced = injectDataAndHelpersInTemplate(
-      data,
-      helpers,
+      dataOrHelpers,
       this.helpersStore,
       compiledContent,
     );

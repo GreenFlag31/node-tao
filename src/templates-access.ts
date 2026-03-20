@@ -16,27 +16,13 @@ function getFilesFromDirectory(directory: string, extension: string) {
   return normalizedPaths;
 }
 
-function findTemplateInMappedTemplates(templatePaths: string[], templateFile: string) {
-  return templatePaths.filter((path) => path.endsWith(templateFile));
-}
-
 /**
  * Security measure to restrict access only to files within a previously mapped directory.
  */
 function checkAccessPermission(templatePaths: string[], templateFile: string) {
-  const files = findTemplateInMappedTemplates(templatePaths, templateFile);
+  const files = templatePaths.filter((path) => path.endsWith(templateFile));
 
   return files;
 }
 
-function fileIsUnique(files: string[]) {
-  return files.length === 1;
-}
-
-export {
-  getFilesFromDirectory,
-  checkAccessPermission,
-  normalizeFilesPath,
-  fileIsUnique,
-  findTemplateInMappedTemplates,
-};
+export { getFilesFromDirectory, checkAccessPermission, normalizeFilesPath };
