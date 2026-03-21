@@ -41,10 +41,6 @@ function buildDevtoolsWidget(filename: string, cacheEnabled: boolean, templates:
   const cacheStatus = cacheEnabled ? 'enabled' : 'disabled';
   const tmplItems = templates.map((t, i) => `<li><b>${i + 1}</b>${t}</li>`).join('');
 
-  const consoleMappedItems = templates
-    .map((t, i) => `console.log("%c#${i + 1} %c${t}","color: #888","color: #87cefa");`)
-    .join('');
-
   const css = [
     '#tao-dt{position:fixed;bottom:20px;right:20px;z-index:2147483647;font-family:ui-monospace,monospace;font-size:12px}',
     '#tao-dt-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#0f0f1a,#1e1e3a);border:1px solid #4a4a6a;color:#00ff99;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:transform .2s,box-shadow .2s;outline:none}',
@@ -90,14 +86,6 @@ function buildDevtoolsWidget(filename: string, cacheEnabled: boolean, templates:
     'var hkEl = getEl("tao-dt-hk");',
     'hkEl.textContent = String(data.hk);',
     'hkEl.className = "tao-v " + (data.hk > 0 ? "tao-v-info" : "tao-v-dim");',
-    `console.log("%c[RENDERED]%c    ${filename}", "color: #00ff99;font-weight:bold", "color: #fff");`,
-    'console.log("%c[CHILDREN]%c    " + (data.ci || ""), "color: #66ccff;font-weight:bold", "color: #fff");',
-    'console.log("%c[RENDER TIME]%c " + data.rt, "color: #ffa500;font-weight:bold", "color: #fff");',
-    `console.log("%c[CACHE]%c       ${cacheStatus}", "color: #ff4d4d;font-weight:bold", "color: #fff");`,
-    'console.log("%c[CACHE HIT]%c   " + String(cacheHit), "color:rgb(255, 0, 221);font-weight:bold", "color: #fff");',
-    `console.group("%cMAPPED TEMPLATES (${templates.length})", "color: #00ffcc; font-weight: bold");`,
-    consoleMappedItems,
-    'console.groupEnd();',
     '};',
     'var btn = getEl("tao-dt-btn");',
     'var panel = getEl("tao-dt-panel");',
