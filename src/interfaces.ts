@@ -1,5 +1,3 @@
-import { Store } from './store';
-
 export type ErrorType =
   | 'Parse Error'
   | 'ReadFile Error'

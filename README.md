@@ -193,17 +193,24 @@ In case of an error, a visual representation is available in your browser, givin
 
 ![Error representation](https://raw.githubusercontent.com/GreenFlag31/node-tao/main/error-representation.png)
 
-NB: _set `debug: true` to activate this option. Do not activate this option in production._
+NB: _set `development: true` to activate this option. Do not activate this option in production._
 
-Metrics are also available, so you get usefull informations about the template rendering time, cache hit, mapped templates, etc. in your browser console.
+### DevTools widget
 
-![Metrics](https://raw.githubusercontent.com/GreenFlag31/node-tao/main/metrics.png)
+When `development: true` is set, a floating **Tao DevTools** button (`τ`) appears in the bottom-right corner of every rendered page. Clicking it opens a panel that shows:
 
-If you want to inspect the data provided to the template, it is available directly in your browser console under the object `data`.
+| Field                | Description                                                    |
+| -------------------- | -------------------------------------------------------------- |
+| **Template**         | Name of the rendered template                                  |
+| **Render time**      | Rendering time in ms                                           |
+| **Cache**            | Whether the template cache is enabled or disabled              |
+| **Cache hit**        | Whether this render was served from cache                      |
+| **Children**         | Included sub-templates for this render                         |
+| **Data keys**        | Number of data keys passed to the template                     |
+| **Helpers**          | Number of local helpers passed to the template                 |
+| **Mapped templates** | Full list of all templates discovered in the `views` directory |
 
-![Data](https://raw.githubusercontent.com/GreenFlag31/node-tao/main/data.png)
-
-NB: _set `metrics: true` to activate this option. Do not activate this option in production._
+All the same information is also logged to the browser console.
 
 ## Integration with Web Framework
 
