@@ -2,10 +2,11 @@
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/GreenFlag31/node-tao/main/node-tao.jpg" alt="node-tao template engine representation" width="300" height="300"/>
-
 </p>
 
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.
+
+A **` VS Code Extension`** provides Typescript validation, autocompletion, and basic formatting.
 
 ### 🌟 Features
 
@@ -41,7 +42,7 @@ console.log(res); // <h1>Hi Tao!</h1>
 
 Helpers are functions that can be used inside a template. Helpers can be **local** (only available in a particular `render`) or **global** (available everywhere on the instance).
 
-```javascript
+```typescript
 import { Tao } from 'tao';
 
 const tao = new Tao({ views: path.join(__dirname, 'templates') });
@@ -53,6 +54,12 @@ function nPlusTwo(n: number) {
 // Global helper need to be registered on the instance
 tao.defineHelpers({ nPlusTwo });
 
+// Define a dedicated interface for data and helpers passed to the template
+interface SimpleData {
+  name: string;
+  nPlusOne: (n: number) => number;
+}
+
 // Render a template
 app.get('/', (req, res) => {
   // Local helper
@@ -60,8 +67,9 @@ app.get('/', (req, res) => {
     return n + 1;
   }
 
-  const res = tao.render('simple', { name: 'Ben' }, { nPlusOne });
-  console.log(res); // <h1>Hi Ben!</h1>
+  // Data and helpers are merged into a single object
+  const res = tao.render<SimpleData>('simple', { name: 'Tao', nPlusOne });
+  console.log(res); // <h1>Hi Tao!</h1>
 });
 ```
 
@@ -86,7 +94,7 @@ In your template, you might want to include other templates:
 <%~ include('article', { phone: 'Tao T9' }) %>
 ```
 
-Child components will inherit from **data** and **helpers** provided in the parent component.
+Child components will inherit from **data** provided in the parent component.
 
 ## Template prefix options
 
@@ -276,6 +284,7 @@ It started as a fork of `eta`, but became a dedicated library because the change
 - **Flexible template path resolution**: With `fileResolution` mode set to `flexible`, only end unique paths can be provided, which increases file path readability (aka. `namespaces`).
 - **Vscode extension**: Official vscode extension.
 - **Performance**: Various performance optimization.
+- **Lexer**: A lexer offers more accuracy and is more scalable.
 - **Testing**: Modern and up to date numerous tests.
 
 </details>
@@ -285,7 +294,7 @@ It started as a fork of `eta`, but became a dedicated library because the change
     <b>Choices</b>
   </summary>
 
-- **No async support**: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and can be considered as an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity and possible errors. Async logic in template make it impossible de optimize through a `Promise.all` or any parallelism, hard to test and debug. In short: if you have async data, fetch it beforehand and render it synchronously.
+- **No async support**: Supporting async rendering (e.g., `await include`) within templates encourages placing too much logic in the view layer and can be considered as an _anti-pattern_. Templates should be responsible for displaying data, while controllers should handle logic. Async behavior in templates would also require error handling (e.g., `try/catch`), adding complexity and possible errors. Async logic in template make it impossible de optimize through a `Promise.all` or any parallelism, hard to test and debug. In short: if you have async data, fetch it beforehand and render it synchronously (or use client side Javascript).
 
 - **No `layouts`**: Layouts are essentially includes and add unnecessary complexity to the rendering process.
 
