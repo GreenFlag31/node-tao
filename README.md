@@ -6,7 +6,6 @@
 
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.
 
-A **` VS Code Extension`** provides Typescript validation, autocompletion, and basic formatting.
 
 ### 🌟 Features
 
@@ -210,7 +209,6 @@ When `development: true` is set, a floating **Tao DevTools** button (`τ`) appea
 | **Helpers**          | Number of local helpers passed to the template                 |
 | **Mapped templates** | Full list of all templates discovered in the `views` directory |
 
-All the same information is also logged to the browser console.
 
 ## Integration with Web Framework
 
@@ -323,8 +321,8 @@ V0.0.4: Fix NaN or Infinity value provided inside an object into the template.
 
 V0.0.5: Fix character escape triggering an invalid js syntax.
 
-V0.0.6: Transforming the basic template expression extraction (inherited from ETA) to a lexer, more scalable, precise, and complete.
+V1.0.0: Transforming the basic template expression extraction (inherited from ETA) to a lexer. Adding a widget to developer experience. Render method accepts now a generic and two params, the second param containing data and helpers.
 
 ## Credits
 
-- Syntax and some parts of compilation are based on `eta`.
+- Syntax and some parts of compilation were based on `eta` in the versions < 1.0.0.

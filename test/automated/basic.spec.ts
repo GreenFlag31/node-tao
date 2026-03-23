@@ -61,7 +61,8 @@ describe('tao constructor', () => {
 
     const result = tao.render('simple', { name: 'test' });
 
-    expect(result).toContain('%c[RENDERED]%c');
+    // tao-dt is the id of the devtools panel
+    expect(result).toContain('tao-dt'); 
   });
 
   it('should handle dynamic child component', () => {
