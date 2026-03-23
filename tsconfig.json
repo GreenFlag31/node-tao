@@ -1,5 +1,5 @@
 {
-  "include": ["./src/**/*", "test/manual/tao.ts"],
+  "include": ["./src/**/*", ],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "target": "es2022",
