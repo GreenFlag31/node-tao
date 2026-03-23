@@ -23,13 +23,28 @@ import {
 } from './interfaces';
 import path from 'node:path';
 import { Store } from './store';
+import { logger } from './error-utils';
+
+const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
 
 function initVariablesAndHelpers(dataOrHelpers: DataOrHelper) {
   const dataEntries = Object.entries(dataOrHelpers);
   let variables = '';
 
   for (const [key, value] of dataEntries) {
-    variables += `const ${key} = ${getValueType(value)};`;
+    if (!VALID_IDENTIFIER.test(key)) {
+      throw new Error(`Invalid data key: "${key}". Keys must be valid JavaScript identifiers.`);
+    }
+
+    let valueStr: string;
+    try {
+      valueStr = `${getValueType(value)}`;
+    } catch {
+      logger('warn', `Value for key "${key}" is not serializable. Fallback to null.`);
+      valueStr = 'null';
+    }
+
+    variables += `const ${key} = ${valueStr};`;
   }
 
   return variables;
