@@ -12,7 +12,6 @@ import {
   Data,
   DataOrHelper,
   DefinitiveOptions,
-  ErrorData,
   ErrorType,
   FileResolution,
   HelperFunction,
@@ -23,11 +22,10 @@ import {
 } from './interfaces';
 import path from 'node:path';
 import { Store } from './store';
-import { logger } from './error-utils';
-
-const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+import { logger, TaoError } from './error-utils';
 
 function initVariablesAndHelpers(dataOrHelpers: DataOrHelper) {
+  const VALID_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
   const dataEntries = Object.entries(dataOrHelpers);
   let variables = '';
 
@@ -56,6 +54,7 @@ function getValueType(value: any) {
   if (valueIsABigint(value)) return value;
   if (valueIsNaN(value)) return value;
   if (valueIsInfinity(value)) return value;
+
   const objectTransformed = valueIsAnObject(value);
   if (objectTransformed) return objectTransformed;
 
@@ -113,7 +112,7 @@ function includeFn() {
   }`;
 }
 
-function isAChildError(error: any): error is ErrorData {
+function isAChildError(error: any): error is TaoError {
   return error.isAChildError;
 }
 

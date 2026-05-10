@@ -1,7 +1,47 @@
-import { ErrorData, ErrorType } from './interfaces';
+import { ErrorType } from './interfaces';
 
+class TaoError extends Error {
+  filename: string;
+  fileContent: string[];
+  lineNumber: number | null;
+  type: ErrorType;
+  isAChildError: boolean;
+  errorHTML: string;
+
+  constructor({
+    message,
+    type,
+    filename = '',
+    fileContent = [],
+    lineNumber = null,
+    errorHTML = '',
+    isAChildError = false,
+  }: {
+    message: string;
+    type: ErrorType;
+    filename?: string;
+    fileContent?: string[];
+    lineNumber?: number | null;
+    errorHTML?: string;
+    isAChildError?: boolean;
+  }) {
+    super(message);
+    this.name = 'TaoError';
+
+    this.type = type;
+    this.lineNumber = lineNumber;
+    this.fileContent = fileContent;
+    this.filename = filename;
+    this.isAChildError = isAChildError;
+    this.errorHTML = errorHTML;
+  }
+}
+
+/**
+ * @returns [error message, original file content splitted by line, original line number]
+ */
 function findOriginalLineNumberWithMessage(
-  error: ErrorData,
+  error: any,
   compiledAnonymousFnContent: string,
   originalFileContent: string,
 ): [string, string[], number | null] {
@@ -11,39 +51,37 @@ function findOriginalLineNumberWithMessage(
     'Precompilation Error',
     'Inclusion Error',
   ];
+
   if (basicErrorTypes.includes(error.type)) {
     return [error.message, [], null];
   }
-  if (error.type === 'Parse Error') {
-    // handleParseError(error);
-    return [error.message, error.fileContent, error.lineNumber];
-  }
+
   if (error.type === 'ReadFile Error') {
-    return ['Error while reading template file', [], null];
+    return ['Error while reading the template file', [], null];
   }
 
-  const [message, source] = getErrorMessageAndSource(error);
+  if (error.type === 'Parse Error') {
+    return [error.message, error.fileContent, error.lineNumber];
+  }
+
+  const [message, source] = error.stack!.split('\n');
   const lineFromAnonymousFn = getLineFromAnonymousFunction(source);
 
   if (error.type === 'Compilation Error') {
-    const fileContent = splitByLine(originalFileContent);
+    const fileContent = splitAndRemoveTrailingEmptyLine(originalFileContent);
     return [message, fileContent, lineFromAnonymousFn];
   }
+
+  // -> Execution Error
 
   const compiledContent = extractContentFromAnonymousFunction(
     compiledAnonymousFnContent,
     lineFromAnonymousFn,
   );
   const lineNumber = getOriginalLineNumber(compiledContent);
-  const fileContent = splitByLine(originalFileContent);
+  const fileContent = splitAndRemoveTrailingEmptyLine(originalFileContent);
 
   return [message, fileContent, lineNumber];
-}
-
-function getErrorMessageAndSource(error: any): [string, string] {
-  const [message, source] = error.stack.split('\n');
-
-  return [message, source];
 }
 
 /**
@@ -60,7 +98,6 @@ function extractContentFromAnonymousFunction(compiledAnonymousFnContent: string,
   const LINES_CORRECTION = 2;
 
   const lines = compiledAnonymousFnContent.split('\n');
-
   const compiledContentUntilError = lines.slice(0, line - LINES_CORRECTION);
   const compiledContent = compiledContentUntilError.join('\n');
 
@@ -90,7 +127,7 @@ function getOriginalLineNumber(compiledJoined: string) {
   return lineCount;
 }
 
-function splitByLine(fileContent: string) {
+function splitAndRemoveTrailingEmptyLine(fileContent: string) {
   const fileSplittedByNewLine = fileContent.split('\n');
   const lastLine = fileSplittedByNewLine.at(-1) || '';
   const lastLineIsEmpty = !lastLine.trim();
@@ -99,121 +136,44 @@ function splitByLine(fileContent: string) {
   return fileSplittedByNewLine;
 }
 
-/**
- * Error occurred while parsing the template
- */
-function handleParseError(error: any) {
-  const { fileContent } = error;
-  const content = splitByLine(fileContent);
-
-  error.fileContent = content;
-  return error;
-}
-
-function getParsingErrorData(
-  expression: string,
-  index: number,
-  message: string,
-  fileContent: string,
-): ErrorData {
-  const lineNumber = getTemplateParsedLineNumber(expression, index);
-  const type: ErrorType = 'Parse Error';
-
-  const error: any = new Error();
-  error.message = message;
-  error.lineNumber = lineNumber;
-  error.fileContent = fileContent;
-  error.type = type;
-
-  return error;
-}
-
-function buildErrorData(
-  message: string,
-  lineNumber: number,
-  fileContent: string,
-  type: ErrorType,
-): ErrorData {
-  const error: any = new Error();
-  error.message = message;
-  error.lineNumber = lineNumber;
-  error.fileContent = fileContent;
-  error.type = type;
-
-  return error;
-}
-
-function getTemplateParsedLineNumber(expression: string, index: number) {
-  const splitIntoLines = expression.slice(0, index).split(/\n/);
-  const line = splitIntoLines.length;
-  return line;
-}
-
 function infiniteInclusionError(filename: string, children: string[]) {
-  const error: any = new Error();
-  const errorType: ErrorType = 'Inclusion Error';
-  error.message = `Possible infinite inclusion detected in ${filename} with children: ${children.join(
-    ' - ',
-  )}`;
-  error.lineNumber = null;
-  error.fileContent = '';
-  error.type = errorType;
+  const type: ErrorType = 'Inclusion Error';
+  const message = `Possible infinite inclusion detected in ${filename} with children: ${children.join(' - ')}`;
 
-  return error;
+  return { message, type };
 }
 
 function handleNonUniqueFile(files: string[], filename: string) {
-  const errorType: ErrorType = 'Precompilation Error';
-  let errorMessage = `Non existing template or template out of scope (reading "${filename}")`;
+  const type: ErrorType = 'Precompilation Error';
+
+  let message = `Non existing template or template out of scope (reading "${filename}")`;
 
   if (files.length > 1) {
-    errorMessage = `Non unique template given "${filename}". Possible:\n- ${files.join('\n- ')}`;
+    message = `Non unique template given "${filename}". Possible:\n- ${files.join('\n- ')}`;
   }
 
-  const error: any = new Error();
-  error.message = errorMessage;
-  error.lineNumber = null;
-  error.fileContent = '';
-  error.filename = filename;
-  error.type = errorType;
-
-  return error;
+  return { message, type };
 }
 
 function handleWrongTypeOfTemplate(template: string) {
-  const errorType: ErrorType = 'Template Type Error';
+  const type: ErrorType = 'Template Type Error';
+  const message = `Invalid template "${template}" provided.`;
 
-  const error: any = new Error();
-  error.message = `Provided template "${template}" should be of type string`;
-  error.lineNumber = null;
-  error.fileContent = '';
-  error.type = errorType;
-
-  return error;
+  return { message, type };
 }
 
 function handleNotFoundDynamicTemplate(template: string) {
-  const errorType: ErrorType = 'Not Found Error';
+  const type: ErrorType = 'Not Found Error';
+  const message = `Failed to get programmaticaly defined template "${template}" from cache`;
 
-  const error: any = new Error();
-  error.message = `Failed to get programmaticaly defined template "${template}" from cache`;
-  error.lineNumber = null;
-  error.fileContent = '';
-  error.type = errorType;
-
-  return error;
+  return { message, type };
 }
 
 function handleNoTemplateFilesFound(views: string, extension: string) {
-  const errorType: ErrorType = 'Not Found Error';
+  const type: ErrorType = 'Not Found Error';
+  const message = `No template files found (reading: ${views}.${extension})`;
 
-  const error: any = new Error();
-  error.message = `No template files found (reading: ${views}.${extension})`;
-  error.lineNumber = null;
-  error.fileContent = '';
-  error.type = errorType;
-
-  return error;
+  return { message, type };
 }
 
 function logger(level: 'info' | 'warn' | 'error' | 'debug', message: string) {
@@ -233,18 +193,16 @@ function logger(level: 'info' | 'warn' | 'error' | 'debug', message: string) {
 }
 
 export {
-  getErrorMessageAndSource,
+  TaoError,
   getLineFromAnonymousFunction,
   extractContentFromAnonymousFunction,
   getOriginalLineNumber,
   findOriginalLineNumberWithMessage,
-  handleParseError,
-  getParsingErrorData,
   handleNonUniqueFile,
   infiniteInclusionError,
   handleWrongTypeOfTemplate,
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,
   logger,
-  buildErrorData,
+  splitAndRemoveTrailingEmptyLine,
 };

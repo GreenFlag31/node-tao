@@ -14,22 +14,15 @@ function includeChildren(development: boolean) {
   return `const ɵɵchildren = this.childrenStore.get(this.parentTemplate) || [];`;
 }
 
-function updateChildrenStore(
-  childrenStore: Store<string[]>,
-  filename: string,
-  parentTemplate: string,
-  development: boolean,
-) {
-  if (!development) return;
-
-  const children = childrenStore.get(parentTemplate) || [];
+function allChildren(childrenStore: Store<string[]>, filename: string, parentTemplate: string) {
+  const children = childrenStore.get(parentTemplate) ?? [];
   if (children.includes(filename)) {
     const error = infiniteInclusionError(filename, children);
     throw error;
   }
 
   children.push(filename);
-  childrenStore.set(parentTemplate, children);
+  return children;
 }
 
 /**
@@ -150,10 +143,4 @@ function getFileNameAndAbsPath(files: string[]) {
   return templatesPathWithDirectory;
 }
 
-export {
-  getFileNameAndAbsPath,
-  includeMetrics,
-  includeRenderTime,
-  includeChildren,
-  updateChildrenStore,
-};
+export { getFileNameAndAbsPath, includeMetrics, includeRenderTime, includeChildren, allChildren };

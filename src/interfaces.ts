@@ -1,11 +1,19 @@
 export type ErrorType =
+  // Errors related to template parsing
   | 'Parse Error'
+  // Errors related to reading template files (e.g. file not found)
   | 'ReadFile Error'
+  // Errors that occur during template compilation (e.g. syntax error)
   | 'Compilation Error'
+  // Errors that occur during template execution (e.g. unknown variable)
   | 'Execution Error'
+  // Errors related to template inclusion (e.g. infinite inclusion)
   | 'Inclusion Error'
+  // Errors that occur before template compilation
   | 'Precompilation Error'
+  // Errors related to template type
   | 'Template Type Error'
+  // Errors related to template not found
   | 'Not Found Error';
 
 export interface DebugData {
@@ -64,16 +72,6 @@ export type TemplateFunction = (
   ɵɵstart: number,
   ɵɵcacheHit: boolean,
 ) => string;
-
-export interface ErrorData {
-  filename: string;
-  fileContent: string[];
-  message: string;
-  lineNumber: number | null;
-  type: ErrorType;
-  isAChildError: boolean;
-  errorHTML: string;
-}
 
 export interface DataOrHelper {
   [key: string]: any;
@@ -229,4 +227,11 @@ export interface TemplateExpression {
 
 export interface TemplateQuotePosition {
   line: number;
+}
+
+export interface ErrorTemplateData {
+  lineNumber: number | null;
+  fileContent: string[];
+  message: string;
+  filename: string;
 }

@@ -6,7 +6,6 @@
 
 **`TAO`** is a simple, lightweight and very fast embedded JS templating. It emphasizes great performance, security, and developer experience.
 
-
 ### 🌟 Features
 
 - 🚀 Super Fast
@@ -209,7 +208,6 @@ When `development: true` is set, a floating **Tao DevTools** button (`τ`) appea
 | **Helpers**          | Number of local helpers passed to the template                 |
 | **Mapped templates** | Full list of all templates discovered in the `views` directory |
 
-
 ## Integration with Web Framework
 
 Fastify:
@@ -322,6 +320,8 @@ V0.0.4: Fix NaN or Infinity value provided inside an object into the template.
 V0.0.5: Fix character escape triggering an invalid js syntax.
 
 V1.0.0: Transforming the basic template expression extraction (inherited from ETA) to a lexer. Adding a widget to developer experience. Render method accepts now a generic and two params, the second param containing data and helpers.
+
+V1.0.2: Improved error management. More modern error template in case of an error when `development` is set to `true`.
 
 ## Credits
 

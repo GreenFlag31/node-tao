@@ -25,7 +25,6 @@ import {
 import { PLACEHOLDER_VAR_END, PLACEHOLDER_VAR_START, TP_VARNAME_WITH_PREFIX } from './const';
 import {
   TemplateData,
-  Data,
   Helpers,
   HelperFunction,
   Metrics,
@@ -35,13 +34,13 @@ import {
   LoadedTemplateData,
   CompileExecuteData,
   ExecuteFunction,
-  ErrorData,
   ExecuteChildFunction,
   LoadedChildTemplateData,
   CompileChildExecuteData,
   DebugData,
   TemplateQuotePosition,
   DataOrHelper,
+  ErrorTemplateData,
 } from './interfaces';
 import { Store } from './store';
 import {
@@ -51,11 +50,12 @@ import {
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,
   logger,
-  buildErrorData,
+  TaoError,
+  splitAndRemoveTrailingEmptyLine,
 } from './error-utils';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { includeChildren, includeMetrics, includeRenderTime, updateChildrenStore } from './metrics';
+import { allChildren, includeChildren, includeMetrics, includeRenderTime } from './metrics';
 import { assignParse, assignTags, initDebugData } from './init';
 
 export class Tao {
@@ -331,52 +331,56 @@ export class Tao {
       }
 
       if (inSingle) {
-        const error = buildErrorData(
-          'Unclosed single quote',
-          singleQuoteStart!.line,
-          rawExpression,
-          errorType,
-        );
+        const error = {
+          message: 'Unclosed single quote',
+          type: errorType,
+          fileContent: splitAndRemoveTrailingEmptyLine(rawExpression),
+          lineNumber: singleQuoteStart!.line,
+        };
+
         throw error;
       }
 
       if (inDouble) {
-        const error = buildErrorData(
-          'Unclosed double quote',
-          doubleQuoteStart!.line,
-          rawExpression,
-          errorType,
-        );
+        const error = {
+          message: 'Unclosed double quote',
+          type: errorType,
+          fileContent: splitAndRemoveTrailingEmptyLine(rawExpression),
+          lineNumber: doubleQuoteStart!.line,
+        };
+
         throw error;
       }
 
       if (inBacktick) {
-        const error = buildErrorData(
-          'Unclosed backtick',
-          backtickStart!.line,
-          rawExpression,
-          errorType,
-        );
+        const error = {
+          message: 'Unclosed backtick',
+          type: errorType,
+          fileContent: splitAndRemoveTrailingEmptyLine(rawExpression),
+          lineNumber: backtickStart!.line,
+        };
+
         throw error;
       }
 
       if (inBlockComment) {
-        const error = buildErrorData(
-          'Unclosed block comment',
-          blockCommentStart!.line,
-          rawExpression,
-          errorType,
-        );
+        const error = {
+          message: 'Unclosed block comment',
+          type: errorType,
+          fileContent: splitAndRemoveTrailingEmptyLine(rawExpression),
+          lineNumber: blockCommentStart!.line,
+        };
+
         throw error;
       }
 
       if (cursor >= rawExpression.length) {
-        const error = buildErrorData(
-          `Unclosed template block ${closing}`,
-          line,
-          rawExpression,
-          errorType,
-        );
+        const error = {
+          message: `Unclosed template block ${closing}`,
+          type: errorType,
+          fileContent: splitAndRemoveTrailingEmptyLine(rawExpression),
+          lineNumber: line,
+        };
 
         throw error;
       }
@@ -496,7 +500,7 @@ export class Tao {
   /**
    * Render a child component. Called inside the parent template.
    */
-  private renderChild(template: string, dataOrHelpers: DataOrHelper = {}): string | ErrorData {
+  private renderChild(template: string, dataOrHelpers: DataOrHelper = {}): string | TaoError {
     const debugData = initDebugData();
 
     if (typeof template !== 'string') {
@@ -510,7 +514,10 @@ export class Tao {
     const filename = getFileName(pathWithExtension);
     const fullPath = getResolvedPath(views, pathWithExtension, fileResolution);
 
-    updateChildrenStore(this.childrenStore, filename, this.parentTemplate, this.config.development);
+    if (this.config.development) {
+      const children = allChildren(this.childrenStore, filename, this.parentTemplate);
+      this.childrenStore.set(this.parentTemplate, children);
+    }
 
     if (isTemplateDynamicallyDefined(template)) {
       const cachedTemplate = this.compiledStore.get(template);
@@ -614,15 +621,40 @@ export class Tao {
     }
   }
 
-  private manageError(error: any, filename: string, debugData: DebugData): ErrorData {
-    error.filename = filename;
-    const errorData = this.handleErrorMessage(error, debugData);
-    const errorHTML = this.initErrorTemplate(errorData);
-    errorData.errorHTML = errorHTML;
+  private manageError(error: any, filename: string, debugData: DebugData, isAChildError = false) {
+    // Execution error is the last possible error
+    error.type = error.type ?? 'Execution Error';
 
-    logger('error', `Error in ${filename}: ${errorData.message} at line ${errorData.lineNumber}`);
+    const [finalMessage, fileContentPerLine, correctedLineNumber] =
+      findOriginalLineNumberWithMessage(
+        error,
+        debugData.compiledAnonymousFnContent,
+        debugData.fileContent,
+      );
 
-    return errorData;
+    const errorData: ErrorTemplateData = {
+      lineNumber: correctedLineNumber,
+      fileContent: fileContentPerLine,
+      message: finalMessage,
+      filename,
+    };
+
+    const errorHTML = this.buildErrorTemplate(errorData);
+
+    const taoError = new TaoError({
+      message: finalMessage,
+      type: error.type,
+      filename,
+      fileContent: fileContentPerLine,
+      lineNumber: correctedLineNumber,
+      errorHTML,
+      isAChildError,
+    });
+
+    const lineIndication = taoError.lineNumber ? ` at line ${taoError.lineNumber}` : '';
+    logger('error', `Error in template ${filename}: ${taoError.message}${lineIndication}`);
+
+    return taoError;
   }
 
   private executeChildFunction(executeData: ExecuteChildFunction, debugData: DebugData) {
@@ -651,9 +683,10 @@ export class Tao {
   private handleChildError(error: any, filename: string, debugData: DebugData) {
     // Error in a nested child — bubble up to the parent
     if (isAChildError(error)) throw error;
+
     // Error occurred in this child component - handle it
-    const errorData = this.manageError(error, filename, debugData);
-    errorData.isAChildError = true;
+    const childError = true;
+    const errorData = this.manageError(error, filename, debugData, childError);
 
     return errorData;
   }
@@ -682,34 +715,15 @@ export class Tao {
     }
   }
 
-  private handleErrorMessage(error: ErrorData, debugData: DebugData) {
-    const [finalMessage, fileContentPerLine, correctedLineNumber] =
-      findOriginalLineNumberWithMessage(
-        error,
-        debugData.compiledAnonymousFnContent,
-        debugData.fileContent,
-      );
-
-    const errorData: ErrorData = {
-      filename: error.filename,
-      fileContent: fileContentPerLine,
-      message: finalMessage,
-      lineNumber: correctedLineNumber,
-      // Execution error is the last possible error
-      type: error.type ?? 'Execution Error',
-      isAChildError: false,
-      errorHTML: '',
-    };
-
-    return errorData;
-  }
-
-  private initErrorTemplate(errorData: Data) {
+  /**
+   * Needed inside error template : lineNumber, fileContent, message, filename
+   */
+  private buildErrorTemplate(errorData: ErrorTemplateData) {
     if (!this.config.development) return '';
 
     const templatesPath = path.join(__dirname);
     const tao = new Tao({ views: templatesPath });
-    return tao.render('error', errorData);
+    return tao.render<ErrorTemplateData>('error', errorData);
   }
 
   private compileChildAndCache(content: string, filename: string) {
