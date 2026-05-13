@@ -137,9 +137,9 @@ function compileBody(templateValues: TemplateData[], config: DefinitiveOptions) 
   let result = '';
 
   for (const { type, value } of templateValues) {
-    if (type === null) {
-      if (!value.trim()) continue; // otherwise this can break switch/case
+    if (!value.trim()) continue; // otherwise this can break switch/case and empty tags
 
+    if (type === null) {
       // HTML content
       result += `${TP_VARNAME_WITH_PREFIX}.res+='${value}';\n`;
       continue;

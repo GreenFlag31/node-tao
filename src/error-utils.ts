@@ -49,7 +49,6 @@ function findOriginalLineNumberWithMessage(
     'Template Type Error',
     'Not Found Error',
     'Precompilation Error',
-    'Inclusion Error',
   ];
 
   if (basicErrorTypes.includes(error.type)) {
@@ -64,7 +63,11 @@ function findOriginalLineNumberWithMessage(
     return [error.message, error.fileContent, error.lineNumber];
   }
 
-  const [message, source] = error.stack!.split('\n');
+  if (!error.stack) {
+    return [error.message ?? 'Unknown error', [], null];
+  }
+
+  const [message, source] = error.stack.split('\n');
   const lineFromAnonymousFn = getLineFromAnonymousFunction(source);
 
   if (error.type === 'Compilation Error') {
@@ -136,13 +139,6 @@ function splitAndRemoveTrailingEmptyLine(fileContent: string) {
   return fileSplittedByNewLine;
 }
 
-function infiniteInclusionError(filename: string, children: string[]) {
-  const type: ErrorType = 'Inclusion Error';
-  const message = `Possible infinite inclusion detected in ${filename} with children: ${children.join(' - ')}`;
-
-  return { message, type };
-}
-
 function handleNonUniqueFile(files: string[], filename: string) {
   const type: ErrorType = 'Precompilation Error';
 
@@ -199,7 +195,6 @@ export {
   getOriginalLineNumber,
   findOriginalLineNumberWithMessage,
   handleNonUniqueFile,
-  infiniteInclusionError,
   handleWrongTypeOfTemplate,
   handleNotFoundDynamicTemplate,
   handleNoTemplateFilesFound,

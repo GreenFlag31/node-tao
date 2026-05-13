@@ -7,8 +7,6 @@ export type ErrorType =
   | 'Compilation Error'
   // Errors that occur during template execution (e.g. unknown variable)
   | 'Execution Error'
-  // Errors related to template inclusion (e.g. infinite inclusion)
-  | 'Inclusion Error'
   // Errors that occur before template compilation
   | 'Precompilation Error'
   // Errors related to template type
@@ -152,7 +150,7 @@ export interface Options {
   cache?: boolean;
 
   /**
-   * Display a visual error representation and activate metrics. Provided data is available in the console. Add infinite inclusion protection.
+   * Display a UI widget.
    *
    * @default false
    */

@@ -110,4 +110,11 @@ describe('basic render tests', () => {
 
     expect(result).toContain(dataErased);
   });
+
+  it('should not throw when called without a data argument', () => {
+    const taoLocal = new Tao({ views: templateViews });
+    expect(() => taoLocal.render('simple')).not.toThrow();
+    const result = taoLocal.render('simple');
+    expect(typeof result).toBe('string');
+  });
 });

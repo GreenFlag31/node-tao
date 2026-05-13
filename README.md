@@ -321,7 +321,7 @@ V0.0.5: Fix character escape triggering an invalid js syntax.
 
 V1.0.0: Transforming the basic template expression extraction (inherited from ETA) to a lexer. Adding a widget to developer experience. Render method accepts now a generic and two params, the second param containing data and helpers.
 
-V1.0.2: Improved error management. More modern error template in case of an error when `development` is set to `true`.
+V1.0.2: Improved error management. More modern error template in case of an error when `development` is set to `true`. Removed `inclusion error` which was triggering false positive.
 
 ## Credits
 

@@ -59,13 +59,6 @@ describe('error render', () => {
     expect(result).toContain(`Unclosed single quote`);
   });
 
-  it('should handle infinite inclusion error', () => {
-    const tao = new Tao({ views: templateViews, development: true });
-    const result = tao.render('infinite-inclusion-1');
-
-    expect(result).toContain(`Possible infinite inclusion detected`);
-  });
-
   it('should handle template unclosed prefix', () => {
     const tao = new Tao({ views: templateViews, development: true });
     const headerPartial = `
@@ -101,5 +94,37 @@ describe('error render', () => {
     const result = tao.render('@headerPartial');
 
     expect(result).toContain('');
+  });
+});
+
+describe('security', () => {
+  it('should block path traversal via include and return empty string', () => {
+    const tao = new Tao({ views: templateViews });
+    tao.loadTemplate('@traversal', `<%~ include('../../../package.json') %>`);
+    const result = tao.render('@traversal');
+    expect(result).toBe('');
+  });
+});
+
+describe('error-utils edge cases', () => {
+  it('findOriginalLineNumberWithMessage should not throw when error has no stack', () => {
+    const { findOriginalLineNumberWithMessage } = require('../../src/error-utils');
+
+    const err = new Error('runtime crash');
+    delete (err as any).stack;
+    (err as any).type = 'Execution Error';
+
+    expect(() => {
+      findOriginalLineNumberWithMessage(err, 'compiled content', 'original content');
+    }).not.toThrow();
+
+    const [message, lines, lineNumber] = findOriginalLineNumberWithMessage(
+      err,
+      'compiled content',
+      'original content',
+    );
+    expect(message).toBe('runtime crash');
+    expect(lines).toEqual([]);
+    expect(lineNumber).toBeNull();
   });
 });

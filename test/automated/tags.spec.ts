@@ -250,3 +250,25 @@ describe('balise execute (<% %>)', () => {
     expect(result).not.toContain('Warning');
   });
 });
+
+describe('blocs vides et espaces seuls', () => {
+  const taoLocal = new Tao({ views: templateViews });
+
+  it("un bloc execute vide <% %> ne génère pas d'erreur et ne produit pas de contenu", () => {
+    taoLocal.loadTemplate('@empty-exec', 'before<% %>after');
+    const result = taoLocal.render('@empty-exec');
+    expect(result).toBe('beforeafter');
+  });
+
+  it("un bloc raw vide <%~ %> ne génère pas d'erreur et ne produit pas de contenu", () => {
+    taoLocal.loadTemplate('@empty-raw', 'before<%~ %>after');
+    const result = taoLocal.render('@empty-raw');
+    expect(result).toBe('beforeafter');
+  });
+
+  it("un bloc interpolate vide <%= %> ne génère pas d'erreur et ne produit pas de contenu", () => {
+    taoLocal.loadTemplate('@empty-interpolate', 'before<%= %>after');
+    const result = taoLocal.render('@empty-interpolate');
+    expect(result).toBe('beforeafter');
+  });
+});

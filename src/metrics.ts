@@ -1,4 +1,3 @@
-import { infiniteInclusionError } from './error-utils';
 import { Metrics } from './interfaces';
 import { Store } from './store';
 
@@ -16,12 +15,8 @@ function includeChildren(development: boolean) {
 
 function allChildren(childrenStore: Store<string[]>, filename: string, parentTemplate: string) {
   const children = childrenStore.get(parentTemplate) ?? [];
-  if (children.includes(filename)) {
-    const error = infiniteInclusionError(filename, children);
-    throw error;
-  }
-
   children.push(filename);
+
   return children;
 }
 
@@ -47,7 +42,7 @@ function buildDevtoolsWidget(filename: string, cacheEnabled: boolean, templates:
     '.tao-pb{padding:10px 14px}',
     '.tao-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid #111128}',
     '.tao-k{color:#555;font-size:10px;text-transform:uppercase;letter-spacing:.6px}',
-    '.tao-v{color:#ccc;text-align:right;word-break:break-all;max-width:185px;font-size:11px}',
+    '.tao-v{color:#ccc;text-align:right;font-size:11px}',
     '.tao-v-ok{color:#00ff99}.tao-v-warn{color:#ffa500}.tao-v-info{color:#66ccff}.tao-v-dim{color:#555}',
     '.tao-sep{color:#3a3a6a;font-size:10px;text-transform:uppercase;letter-spacing:.6px;margin:10px 0 6px;font-weight:700}',
     '.tao-ul{list-style:none;padding:0;margin:0;max-height:100px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a2a4a #0d0d1a}',
