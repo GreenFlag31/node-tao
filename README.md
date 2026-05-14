@@ -181,6 +181,14 @@ By default, `TAO` assume you are running your app in production, so no error wil
 
 ## 🟦 Official VS Code Extension
 
+This extension provides Typescript hovering and validation along other tags or structure completions.
+
+Make sure to link your template with an interface to activate Typescript support:
+
+```typescript
+const template = tao.render<UserDashboardData>('user-dashboard', userData);
+```
+
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/ManuC.tao-vscode-extension?style=for-the-badge&logo=visualstudiocode&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=ManuC.tao-vscode-extension)
 
 ## Developer experience
